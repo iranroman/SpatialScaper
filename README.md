@@ -20,7 +20,8 @@ pip install mirdata
 ```
 >>> import mirdata
 >>> orchset = mirdata.initialize('orchset')
->>> orchset = mirdata.initialize('orchset', data_home='/home/iran/datasets/orchset')     >>> orchset.download()
+>>> orchset = mirdata.initialize('orchset', data_home='/home/iran/datasets/orchset')
+>>> orchset.download()
 ```
 
 ```
@@ -52,5 +53,5 @@ The repository is licensed under the [TAU License](LICENSE.md).
 
 | Dataset | ER<sub>20°</sub> | F<sub>20°</sub> | LE<sub>CD</sub> | LR<sub>CD</sub> |
 | ----| --- | --- | --- | --- |
-| Ambisonic (FOA + Multi-ACCDOA) | 0.00 | 00.0 % | 00.0&deg; | 00.0 % |
+| Ambisonic (FOA + Multi-ACCDOA) | 0.60 | 28.7 % | 23.2&deg; | 48.8 % |
 | Microphone Array (MIC-GCC + Multi-ACCDOA) | 0.64 | 26.9 % | 23.8&deg; | 46.2 % |
