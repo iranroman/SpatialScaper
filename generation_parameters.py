@@ -10,8 +10,8 @@ def get_params(argv='1'):
         mixturepath = 'E:/DCASE2022/TAU_Spatial_RIR_Database_2021/Dataset-NIGENS',  # output path for the generated dataset
         noisepath = '/home/iran/SELD-data-generator/TAU_DB/TAU-SNoise_DB',  # path containing background noise recordings
         nb_folds = 2,  # number of folds (default 2 - training and testing)
-        rooms2fold = [[10, 6, 1, 4, 3, 8], # FOLD 1, rooms assigned to each fold (0's are ignored)
-                      [9, 5, 2, 0, 0, 0]], # FOLD 2
+        rooms2fold = [['tc352','sc203','bomb_shelter','pc226','pb132','se203'],
+                                 ['tb103','sa203','gym']],
         db_path = 'E:/DCASE2022/TAU_Spatial_RIR_Database_2021/Code/NIGENS',  # path containing audio events to be utilized during data generation
         max_polyphony = 3,  # maximum number of overlapping sound events
         active_classes = [0, 1, 2, 3, 5, 6, 8, 9, 10, 11, 12, 13],  # list of sound classes to be used for data generation

@@ -28,6 +28,10 @@ db_handler = open('db_config_fsd.obj','rb')
 db_config = pickle.load(db_handler)
 db_handler.close()
 
+file = open("rirdata_dict.pkl",'rb')
+db_config._rirdata = pickle.load(file)
+file.close()
+
 # fix the music files (assuming orchset)
 all_music_files = [f for f in os.listdir(params['db_path']) if 'ex' in f]
 tr_music = [f for f in all_music_files if 'Beethoven' not in f]

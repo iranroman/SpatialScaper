@@ -39,9 +39,14 @@ This repository contains several Python file, which in total create a complete d
 * The `make_dataset.py` is the main script in which the whole framework is used to perform the full data generation process.
 * The `utils.py` is an additional file containing complementary functions for other scripts.
 
-Moreover, two object files are included in case the database configuration via `db_config.py` takes too much time:
+Moreover, an object file is included in case the database configuration via `db_config.py` takes too much time:
 * The `db_config_fsd.obj` is a DBConfig class containing information about the database and files for the FSD50K audioset.
-* The `db_config_nigens.obj` is a DBConfig class containing information about the database and files for the NIGENS audioset.
+* you will need to run the `mat2dict.py` script to convert `matlab` files with RIR data into python pickles. 
+
+```
+python mat2dict.py /path/to/TAU_DB/TAU-SRIR_DB/
+``` 
+
 
 The exemplary script is:
 * The `example_script_DCASE2022.py` is a script showing a pipeline to generate data similar to the current DCASE2022 dataset.
