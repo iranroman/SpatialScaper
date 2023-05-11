@@ -114,7 +114,7 @@ class AudioSynthesizer(object):
                             ntraj = int(mixture_nm['trajectory'])
                             
                         # load event audio and resample to match RIR sampling
-                        eventsig, fs_db = soundfile.read(self._db_path + '/' + filename.split('/')[-1])
+                        eventsig, fs_db = soundfile.read(self._db_path + '/' + filename)#.split('/')[-1])
                         if len(np.shape(eventsig)) > 1:
                             eventsig = eventsig[:,0]
                         eventsig = signal.resample_poly(eventsig, self._fs_mix, fs_db)

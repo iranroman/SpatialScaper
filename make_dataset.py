@@ -1,4 +1,5 @@
 import sys
+import os
 import numpy as np
 from db_config import DBConfig
 from metadata_synthesizer import MetadataSynthesizer
@@ -32,13 +33,15 @@ def main(argv):
 
     params = get_params(task_id)
     
-    ### Create database config based on params (e.g. filelist name etc.)
-    db_config = DBConfig(params)
     
-    # LOAD DB-config which is already done
-    # db_handler = open('db_config_fsd.obj','rb')
-    # db_config = pickle.load(db_handler)
-    # db_handler.close()
+    #import database config file if provided, sles
+    if len(argv) >= 3:
+        print(f"Loading db_config {argv[2]}")
+        with open(os.path.join('db_configs', argv[2]), 'rb') as f:
+            db_config = pickle.load(f)
+    else:
+        ### Create database config based on params (e.g. filelist name etc.)
+        db_config = DBConfig(params)
     
     #create mixture synthesizer class
     noiselessSynth = MetadataSynthesizer(db_config, params, 'target_noiseless')

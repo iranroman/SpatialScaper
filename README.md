@@ -51,8 +51,6 @@ python mat2dict.py /path/to/TAU_DB/TAU-SRIR_DB/
 The exemplary script is:
 * The `example_script_DCASE2022.py` is a script showing a pipeline to generate data similar to the current DCASE2022 dataset.
 
-The repository is licensed under the [TAU License](LICENSE.md).
-
 ### Using the generated dataset to train the DCASE 2023 Task 3 audio-only baseline you should get results similar to these:
 
 
