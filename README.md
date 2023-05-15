@@ -47,6 +47,14 @@ Moreover, an object file is included in case the database configuration via `db_
 python mat2dict.py /path/to/TAU_DB/TAU-SRIR_DB/
 ``` 
 
+## adding more rooms
+
+To add the METU-SPARG dataset run
+```
+python metusparg/preprocess_sparg.py mic
+
+python metusparg/sparg_meas_to_pickle.py mic
+```
 
 The exemplary script is:
 * The `example_script_DCASE2022.py` is a script showing a pipeline to generate data similar to the current DCASE2022 dataset.

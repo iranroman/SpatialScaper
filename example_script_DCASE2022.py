@@ -32,6 +32,12 @@ file = open("rirdata_dict.pkl",'rb')
 db_config._rirdata = pickle.load(file)
 file.close()
 
+### add the METU-SPARG room
+file = open("doa_xyz_mic.pkl",'rb') # need a better name
+db_config._rirdata['metu'] = {} 
+db_config._rirdata['metu']['doa_xyz'] = pickle.load(file)
+file.close()
+
 # fix the music files (assuming orchset)
 all_music_files = [f for f in os.listdir(params['db_path']) if 'ex' in f]
 tr_music = [f for f in all_music_files if 'Beethoven' not in f]
