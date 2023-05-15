@@ -20,12 +20,24 @@ def az_ele_from_source(ref_point, src_point):
 def unit_vector(azimuth, elevation):
     """
     Compute unit vector given the azimuth and elevetion of source in 3D space
+    Args:
+        azimuth (float)
+        elevation (float)
+    Returns:
+        A list representing the coordinate points xyz in 3D space
     """
     x = math.cos(elevation) * math.cos(azimuth)
     y = math.cos(elevation) * math.sin(azimuth)
     z = math.sin(elevation)
     return [x, y, z]
 
+def get_mic_xyz():
+    """
+    Get em32 microphone coordinates in 3D space
+    """
+    return [(3 - 3) * 0.5, (3 - 3) * 0.5, (2 - 2) * 0.3 + 1.5]
+
+# Full set of measurements from METU Sparg dataset
 rir_meas_data = [
     '000', '012', '024', '041', '053', '100', '112', '124', '141', '153', '200', '212', '224', '241', '253', '300', '312', '324', '342', '354', '401', '413', '430', '442', '454', '501', '513', '530', '542', '554', '601', '613', '630', '642', '654',
     '001', '013', '030', '042', '054', '101', '113', '130', '142', '154', '201', '213', '230', '242', '254', '301', '313', '330', '343', '360', '402', '414', '431', '443', '460', '502', '514', '531', '543', '560', '602', '614', '631', '643', '660', 
