@@ -6,13 +6,16 @@ Data generator for creating synthetic audio mixtures suitable for DCASE Challeng
 The provided code was tested with Python 3.8 and the following libraries:
 SoundFile 0.10.3, mat73 0.58, numpy 1.20.1, scipy 1.6.2, librosa 0.8.1. 
 
-Must also download these RIR databases:
-* TAU SRIR DB: https://zenodo.org/record/6408611
+## Before getting started
 
-Also download
-* FSD50K https://zenodo.org/record/4060432
-* orchset (could be done using `mirdata`)
+* Download the [TAU Spatial Room Impulse Response Database (TAU-SRIR DB)](https://zenodo.org/record/6408611#.ZE6s7y2B3T8) dataset.
+* Download the [FSD50K](https://zenodo.org/record/4060432#.ZE7ely2B0Ts) dataset.
+* Run the script `setup_utils/fsd50k_to_dcase_format.py` to update and restructure the downloaded `FSD50K` dataset. The dataset needs to follow the structure that this synthesizer pipeline expected, which is dictated by the [FSD50K_selected.txt file.](https://zenodo.org/record/6406873/files/FSD50K_selected.txt?download=1)
+* Download music tracks (two alternatives):
+  * Download orchset (could be done using `mirdata`), see setup instructions below.
+  * Download the [FMA dataset](https://github.com/mdeff/fma), see setup instructions below. 
 
+#### Orchset setup
 ```
 pip install mirdata
 ```
@@ -26,6 +29,18 @@ pip install mirdata
 
 ```
 cp /path/to/orchset/audio/mono/* /path/to/FSD50K/
+```
+
+#### FMA (fma_small) setup
+
+```
+wget <url-to-fma_small> /dest/path/to/fma_small
+```
+
+Load music tracks into DCASE SELD format (train and test):
+
+```
+python setup_utils/get_fma_music_tracks.py
 ```
 
 ## Getting Started
