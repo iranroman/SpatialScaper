@@ -32,7 +32,7 @@ class AudioSynthesizer(object):
         
         
     def synthesize_mixtures(self):
-        rirdata2room_idx = {'bomb_shelter':1, 'gym':2, 'pb132':3, 'pc226':4, 'sa203':5, 'sc203':6, 'se203':8, 'tb103':9, 'tc352':10}
+        rirdata2room_idx = {'bomb_shelter':1, 'gym':2, 'pb132':3, 'pc226':4, 'sa203':5, 'sc203':6, 'se203':8, 'tb103':9, 'tc352':10, 'metu':11}
         # create path if doesn't exist
         if not os.path.isdir(self._outpath):
             os.makedirs(self._outpath)

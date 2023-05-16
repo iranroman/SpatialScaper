@@ -54,7 +54,6 @@ class MetadataSynthesizer(object):
     def create_mixtures(self):
         self._mixtures = []
         foldlist = []
-        rirdata2room_idx = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 6, 9: 7, 10: 8} # room numbers in the rirdata array
 
         for nfold in range(self._mixture_setup['nb_folds']):
             print('Generating metadata for fold {}'.format(str(nfold+1)))
