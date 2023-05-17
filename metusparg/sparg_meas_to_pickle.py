@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from sparg_utils import *
 
-METU_PATH = "/home/iran/datasets/spargair/em32"
+METU_PATH = "/mnt/ssdt7/RIR-datasets/spargair/em32"
 
 def main():
     parser = argparse.ArgumentParser(description='Description of your program')

@@ -99,7 +99,7 @@ class AudioSynthesizer(object):
                     except TypeError:
                         nb_events = 1
                     
-                    mixsig = np.zeros((self._l_mix, 4))
+                    mixsig = np.zeros((self._l_mix, nCh))
                     for nev in range(nb_events):
                         if not nb_events == 1:
                             classidx = int(mixture_nm['class'][nev])
@@ -112,9 +112,12 @@ class AudioSynthesizer(object):
                             onoffset = mixture_nm['event_onoffsets']
                             filename = mixture_nm['files']
                             ntraj = int(mixture_nm['trajectory'])
-                            
+                        if "//scratch/data/FSD50K/FSD50K_DCASE/" in filename:
+                            # print("replacing corrupted filename")
+                            filename = filename.replace("//scratch/data/FSD50K/FSD50K_DCASE/", "")   
                         # load event audio and resample to match RIR sampling
-                        eventsig, fs_db = soundfile.read(self._db_path + '/' + filename.split('/')[-1])
+                        # print("Filename", self._db_path + '/' + filename)
+                        eventsig, fs_db = soundfile.read(self._db_path + '/' + filename)
                         if len(np.shape(eventsig)) > 1:
                             eventsig = eventsig[:,0]
                         eventsig = signal.resample_poly(eventsig, self._fs_mix, fs_db)
@@ -134,12 +137,13 @@ class AudioSynthesizer(object):
                             ir_times = self._time_idx100[np.arange(0,nRirs_moving)]
                             mixeventsig = 481.6989*utils.ctf_ltv_direct(eventsig, channel_rirs[:, :, riridx, ntraj], ir_times, self._fs_mix, self._stft_winsize_moving) / float(len(eventsig))
                         else:
-                            mixeventsig0 = scipy.signal.convolve(eventsig, np.squeeze(channel_rirs[:, 0, riridx, ntraj]), mode='full', method='fft')
-                            mixeventsig1 = scipy.signal.convolve(eventsig, np.squeeze(channel_rirs[:, 1, riridx, ntraj]), mode='full', method='fft')
-                            mixeventsig2 = scipy.signal.convolve(eventsig, np.squeeze(channel_rirs[:, 2, riridx, ntraj]), mode='full', method='fft')
-                            mixeventsig3 = scipy.signal.convolve(eventsig, np.squeeze(channel_rirs[:, 3, riridx, ntraj]), mode='full', method='fft')
+                            mixeventsig_list = []  # List to store individual mixeventsig arrays
+                            for channel_idx in range(nCh):#[6, 10, 26, 22]:
+                                channel_rir = np.squeeze(channel_rirs[:, channel_idx, riridx, ntraj])
+                                mixeventsig_channel = signal.convolve(eventsig, channel_rir, mode='full', method='fft')
+                                mixeventsig_list.append(mixeventsig_channel)
+                            mixeventsig = np.stack(mixeventsig_list, axis=1)
 
-                            mixeventsig = np.stack((mixeventsig0,mixeventsig1,mixeventsig2,mixeventsig3),axis=1)
                         if self._apply_event_gains:
                             # apply random gain to each event based on class gain, distribution given externally
                             K=1000
@@ -169,6 +173,7 @@ class AudioSynthesizer(object):
 
                     mixsig = gnorm*mixsig
                     mixture_filename = 'fold{}_room{}_mix{:03}.wav'.format(nfold+1, nr+1, nmix+1)
+                    print("created mixture", mixture_filename)
                     soundfile.write(self._outpath + '/' + mixture_filename, mixsig, self._fs_mix)
 
 

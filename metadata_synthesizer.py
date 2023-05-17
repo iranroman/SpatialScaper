@@ -62,7 +62,6 @@ class MetadataSynthesizer(object):
             rooms_nf = self._mixture_setup['rooms2folds'][nfold]
             nb_rooms_nf = len(rooms_nf)
             
-            
             idx_active = np.array([])
             for na in range(self._nb_active_classes):
                 idx_active = np.append(idx_active, np.nonzero(self._db_config._samplelist[nfold]['class'] == self._active_classes[na]))
