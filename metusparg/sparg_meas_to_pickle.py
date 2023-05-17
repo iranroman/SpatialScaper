@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 from sparg_utils import *
 
-METU_PATH = "/Users/adrianromanguzman/Documents/repos/SELD-data-generator/spargair/em32"
+METU_PATH = "/home/iran/datasets/spargair/em32"
 
 def main():
     parser = argparse.ArgumentParser(description='Description of your program')
@@ -30,7 +30,7 @@ def main():
     rirdata_dict[room] = {}
     rirdata_dict[room]['doa_xyz'] = [[]]
     rirdata_dict[room]['dist'] = [[]]
-    rirdata_dict[room]['rir'] = [[]]
+    rirdata_dict[room]['rir'] = {'mic':[[]]}
 
     for height in range(0, top_height): # loop through heights
         heights_list = []   # list of heights
@@ -52,11 +52,11 @@ def main():
             irdata, sr = librosa.load(ir_path, mono=False, sr=48000)
             irdata_resamp = librosa.resample(irdata, orig_sr=sr, target_sr=24000)
             hir_list.append(irdata_resamp)
-        rirdata_dict[room]['doa_xyz'][0].append(doa_xyz)
+        rirdata_dict[room]['doa_xyz'][0].append(np.array(doa_xyz))
         rirdata_dict[room]['dist'][0].append(heights_list)
-        rirdata_dict[room]['rir'][0].append(hir_list)
+        rirdata_dict[room]['rir']['mic'][0].append(np.transpose(np.array(hir_list),(2,1,0)))
 
-    with open('{}.pkl'.format(f"rir_{microphone}"), 'wb') as outp:
+    with open('{}.pkl'.format(f"rir_{microphone}"), 'wb') as outp: # should go inside TAU_DB/TAU-SRIR_DB/rirs_11_metu.pkl
         pickle.dump(rirdata_dict[room]['rir'], outp, pickle.HIGHEST_PROTOCOL)
 
     with open('{}.pkl'.format(f"doa_xyz_{microphone}"), 'wb') as outp:
