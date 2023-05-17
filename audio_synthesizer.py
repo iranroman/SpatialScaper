@@ -27,6 +27,7 @@ class AudioSynthesizer(object):
         self._stft_winsize_moving = 0.1*self._fs_mix//2
         self._nb_folds = len(mixtures)
         self._apply_event_gains = db_config._apply_class_gains
+        self._db_name = params['db_name']
         if self._apply_event_gains:
             self._class_gains = db_config._class_gains
         
@@ -114,7 +115,17 @@ class AudioSynthesizer(object):
                             ntraj = int(mixture_nm['trajectory'])
                             
                         # load event audio and resample to match RIR sampling
-                        eventsig, fs_db = soundfile.read(self._db_path + '/' + filename)#.split('/')[-1])
+                        
+                        if self._db_name == 'nigens':
+                            eventsig, fs_db = soundfile.read(self._db_path + '/' + filename)   
+                        elif self._db_name == 'fsd50k':
+                            eventsig, fs_db = soundfile.read(self._db_path + '/' + filename.split('/')[-1])
+                        else:
+                            raise Exception(f"Unknown event database: {self._db_name}")
+                            
+                
+
+                        
                         if len(np.shape(eventsig)) > 1:
                             eventsig = eventsig[:,0]
                         eventsig = signal.resample_poly(eventsig, self._fs_mix, fs_db)
