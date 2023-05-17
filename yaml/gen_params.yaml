@@ -1,0 +1,15 @@
+idb_name: fsd50k
+rirpath: /scratch/data/TAU-SRIR/TAU-SRIR_DB
+mixturepath: /scratch/data/FSD50K-DCASE-SYNTH-EM32
+noisepath: /scratch/data/TAU-SRIR/TAU-SNoise_DB
+nb_folds: 2
+rooms2fold:
+  - - metu
+  - - metu
+db_path: /scratch/data/FSD50K/FSD50K_DCASE
+max_polyphony: 3
+active_classes: [0, 1, 2, 3, 5, 6, 8, 9, 10, 11, 12]
+nb_mixtures_per_fold: [15, 30]
+mixture_duration: 60.0
+event_time_per_layer: 40.0
+audio_format: mic
