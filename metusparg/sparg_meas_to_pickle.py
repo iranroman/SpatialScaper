@@ -40,7 +40,7 @@ def main():
             # Coords computed based on documentation.pdf from METU Sparg
             x = (3 - int(num[0])) * 0.5
             y = (3 - int(num[1])) * 0.5
-            z = (2 - int(num[2])+height) * 0.3 + 1.5
+            z = (2 - (int(num[2])-height)) * 0.3 + 1.5
             source_xyz = [x, y, z]
             azi, ele, dist = az_ele_from_source(mic_xyz, source_xyz)
             uvec_xyz = unit_vector(azi, ele)
