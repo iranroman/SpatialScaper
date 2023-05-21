@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import librosa
 import numpy as np
 import math
+import pickle
 
 
 def unit_vector(azimuth, elevation):
@@ -29,7 +30,7 @@ def compute_azimuth_elevation(receiver_pos, source_pos):
     # Calculate the elevation angle
     distance = math.sqrt(vector[0] ** 2 + vector[1] ** 2 + vector[2] ** 2)
     elevation = math.asin(vector[2] / distance)
-    return azimuth, elevation
+    return azimuth, elevation, distance
 
 # Load the .sofa file
 file_path = '/mnt/ssdt7/RIR-datasets/Arni/6dof_SRIRs_eigenmike_raw/6DoF_SRIRs_eigenmike_raw_0percent_absorbers_enabled.sofa'
@@ -101,24 +102,28 @@ rirdata_dict[room]['rir'] = {'mic':[[] for i in range(num_mics_traj)]}
 meas_count = 0
 for mic_traj in range(num_mics_traj):
     doa_xyz = [] # assume only one height
+    dists = []
     hir_data = [] # assume only one height
     for meas in range(meas_per_mic):
         # add impulse response
         irdata = rirdata[meas_count, :, :]
-        # irdata_resamp = librosa.resample(irdata, orig_sr=FS, target_sr=NEW_FS)
-        # print(irdata_resamp.shape)
-        hir_data.append(irdata)
+        irdata_resamp = librosa.resample(irdata, orig_sr=FS, target_sr=NEW_FS)
+        hir_data.append(irdata_resamp)
         print("mic and source", mic_xyz[mic_traj], sourcePositions[meas_count])
-        azi, ele = compute_azimuth_elevation(mic_xyz[mic_traj], sourcePositions[meas_count])
+        azi, ele, dis = compute_azimuth_elevation(mic_xyz[mic_traj], sourcePositions[meas_count])
         print("Azi and ele", azi, ele)
         uvec_xyz = unit_vector(azi, ele)
         doa_xyz.append(uvec_xyz)
-        # TODO:
-        # Compute distance
+        dists.append(dis)
         meas_count += 1
     rirdata_dict[room]['doa_xyz'][mic_traj].append(np.array(doa_xyz))
     rirdata_dict[room]['rir']['mic'][mic_traj].append(np.transpose(np.array(hir_data),(2,1,0)))
     
+with open('{}.pkl'.format(f"rirs_13_arni"), 'wb') as outp: # should go inside TAU_DB/TAU-SRIR_DB/rirs_13_arni.pkl
+    pickle.dump(rirdata_dict[room]['rir'], outp, pickle.HIGHEST_PROTOCOL)
+
+with open('{}.pkl'.format(f"doa_xyz_arni"), 'wb') as outp:
+    pickle.dump(rirdata_dict[room]['doa_xyz'], outp, pickle.HIGHEST_PROTOCOL)
 
 # (Nsamps, Nch, N_ir)
 
