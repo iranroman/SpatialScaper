@@ -41,6 +41,7 @@ This repository contains several Python file, which in total create a complete d
 
 Moreover, an object file is included in case the database configuration via `db_config.py` takes too much time:
 * The `db_config_fsd.obj` is a DBConfig class containing information about the database and files for the FSD50K audioset.
+* If you'd like to change the configuration (e.g. using NIGENS Sound Event Database), you can manually edit the `db_config_fsd.obj` file, or create a new one using `db_config.py`
 * you will need to run the `mat2dict.py` script to convert `matlab` files with RIR data into python pickles. 
 
 ```
