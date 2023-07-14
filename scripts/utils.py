@@ -1,5 +1,6 @@
 import argparse
 import sys
+import numpy as np
 
 def parse_args():
     """
@@ -17,3 +18,7 @@ def parse_args():
     if len(sys.argv) == 1:
         parser.print_help()
     return parser.parse_args()
+
+def get_y(angle,x):
+    angle2 = np.pi-angle-np.pi/2
+    return x * np.sin(angle) / np.sin(angle2)
