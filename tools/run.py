@@ -1,6 +1,8 @@
 from room_scaper.utils.parser import parse_args, load_config
-from room_scaper.data.utils import ROOM_REGISTRY
+from room_scaper.data.utils import get_path_to_room_files
 import yaml
+import pickle
+import os
 
 def get_fold_files(foldname, filenames):
     """
@@ -23,12 +25,20 @@ def get_sound_event_filenames(path):
     # TODO: make this work with recursive listing of files in a directory
     return filenames
         
-def get_room_trajectories(room_name):
-    '''
-    room_name: a string with the room name
-    '''
-    assert room_name in ROOM_REGISTRY()
+def load_pickle(filename):
+    file = open(filename,'rb')
+    object_file = pickle.load(file)
+    file.close()
+    return object_file
+    
 
+
+def get_room_trajectories(path_to_room_files):
+    '''
+    room_name: a string with the name
+    '''
+    room_trajs = load_pickle(os.path.join(path_to_room_files,'metadata','doa_xyz.pkl'))
+    return room_trajs
 
 def main():
     '''
@@ -56,7 +66,9 @@ def main():
         fold_rooms = cfg.FOLD_ROOMS[fold]
         for room_name in fold_rooms:
 
-            roomn_trajs = get_room_trajectories(room_name)
+            path_to_room_files = get_path_to_room_files(room_name)
+            room_trajs = get_room_trajectories(path_to_room_files)
+            print(room_trajs[0][0].shape)
         
 
 
