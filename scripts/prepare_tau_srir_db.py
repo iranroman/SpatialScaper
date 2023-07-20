@@ -64,33 +64,21 @@ def main():
         # compute distances
         trajs_list = []
         for ntraj in range(len(trajectories)):
-            heights_list = []
-            for nheight in range(len(heights[0])):
-                ndoas = trajs_list_doa[ntraj][nheight].shape[0]
-                height_delta = heights[0,nheight] - 1.2 # the microphone height is assumed to be 1.2
-                if trajectory_type == 'circular':
-                    dist_xy = dists[0,ntraj]
-                    distances = np.sqrt(dist_xy**2 + height_delta**2)*np.ones((ndoas,1))
-                else: # assuming it's a straight line
-                    pse = dists[...,ntraj] # path start and end
-                    pse[:,-1] = height_delta
-                    # in this database of IRs, all IRs start with positive y and end with negative y
-                    # calculate the angle to the starting point
-                    angle_str = np.arctan2(pse[0,1],pse[0,0]) 
-                    angle_end = np.arctan2(pse[1,1],pse[1,0])
-
-                    if pse[0,0] < 0: # if on the negative side of x
-                        angles = np.linspace(angle_str, 2*np.pi + angle_end, ndoas)
-                        x = np.abs(pse[0,0]) 
-                        x_y_z = [[-x,get_y(np.pi-a,x),height_delta] if a < np.pi else [-x,-get_y(a-np.pi,x),height_delta] for a in angles]
-                    elif pse[0,0] > 0: # if on the positive side of x
-                        angles = np.linspace(angle_str, angle_end, ndoas)
-                        x = np.abs(pse[0,0])
-                        x_y_z = [[x,get_y(a,x),height_delta] if a > 0 else [x,-get_y(np.abs(a),x),height_delta] for a in angles]
-                    distances = np.sqrt(np.sum(np.square(np.array(x_y_z)),axis=1,keepdims=True))
-                heights_list.append(distances)
-
-            trajs_list.append(heights_list)
+        heights_list = []
+        for nheight in range(len(heights[0])):
+            #start
+            path = trajs_list_doa[ntraj][nheight]
+            ndoas = trajs_list_doa[ntraj][nheight].shape[0]
+            height_delta = heights[0,nheight] - 1.2 # the microphone height is assumed to be 1.2
+            
+            if trajectory_type == 'circular':
+                rad = dists[0,ntraj]
+                distances = map_to_cylinder(path, rad, axis=2)
+            else: # assuming it's a straight line
+                rad = np.sqrt(dists[0][0][ntraj]**2 + (dists[0][2][ntraj]+height_delta)**2)
+                distances = map_to_cylinder(path, rad, axis=1)
+            heights_list.append(distances)            
+        trajs_list.append(heights_list)
 
         with open(os.path.join(room_out_path_meta, 'dist.pkl'), 'wb') as outp:
             pickle.dump(trajs_list, outp, pickle.HIGHEST_PROTOCOL)
