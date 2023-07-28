@@ -97,41 +97,6 @@ def center_mic_coords(mic_coords, mic_center):
         mic_locs = np.vstack([mic_locs,mic_loc])
     return mic_locs
 
-def load_tau_paths(room_idx, tau_db_dir, center_on_mic = False):
-    rooms = ['bomb_shelter', 'gym', 'pb132', 'pc226', 'sa203', 'sc203', 'se203', 'tb103', 'tc352']
-    room = rooms[room_idx]
-    
-    measinfo = loadmat(os.path.join(tau_db_dir,'measinfo.mat'))['measinfo']
-    rirdata = loadmat(os.path.join(tau_db_dir, 'rirdata.mat'))['rirdata'][0]
-
-    trajs = measinfo[room_idx][0][4][0]
-    heights = measinfo[room_idx][0][5][0]
-    dists = measinfo[room_idx][0][6][0]
-    mic_pos = measinfo[room_idx][0][7][0]
-    traj_type = measinfo[room_idx][0][9][0]
-    paths = rirdata[0][1][room_idx][0][2]
-    
-    output_paths = np.empty(paths.shape, dtype=object)
-    path_metadata = np.empty(paths.shape, dtype=object)
-    room_metadata = {'room': room, 'trajectory_type': traj_type, 'microphone_position': mic_pos}
-    for i, traj in enumerate(trajs):
-        for j, height in enumerate(heights):
-            
-            if traj_type == 'circular':
-                dist = dists[0][i]
-            elif traj_type =='linear':
-                dist = dists[:,i]
-            
-            path_unitvec = paths[i,j][0]
-            path_dict = {'trajectory': traj, 'height': height}
-            path_cartesian = unitvec_to_cartesian(path_unitvec, height, dist)
-            if center_on_mic:
-                path_cartesian += mic_pos
-            output_paths[i,j] = path_cartesian
-            path_metadata[i,j] = path_dict
-            
-    return output_paths, path_metadata, room_metadata
-
 def unitvec_to_cartesian(path_unitvec, height, dist):
     if type(dist) == np.ndarray:
         z_offset = height
