@@ -1,6 +1,30 @@
 PATH_TO_SOUND_EVENT_FILES: 'dcase_datagen/metadata/fsd50k/sound_event_filenames.txt'
+PATH_TO_SOUND_EVENT_DURS: 'dcase_datagen/metadata/fsd50k/sound_event_durations.txt'
 FOLD_NAMES: ['train', 'test']
 FOLD_ROOMS: {
   'train': ['tc352','sc203','bomb_shelter','pc226','pb132','se203'],
   'test': ['tb103','sa203','gym'],
 }
+N_MIX_PER_FOLD: [900, 300]
+SNR_RANGE: [6, 31]
+MAX_POLYPHONY: 2
+MIXTURE_DUR: 60
+MIXTURE_LAYER_SILENCE: 20
+MIN_GAP_BTW_LAYER_EVENTS: 1
+CLASS_DICT: {
+  'femaleSpeech':     0,
+  'maleSpeech':       1,
+  'clapping':         2,
+  'telephone':        3,
+  'laughter':         4,
+  'domesticSounds':   5,
+  'footsteps':        6,
+  'doorCupboard':     7,
+  'music':            8,
+  'musicInstrument':  9,
+  'waterTap':         10,
+  'bell':             11,
+  'knock':            12,
+}
+CLASS_MOBILITY: [2, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0]
+SPEED_SET: [10, 20, 30]
