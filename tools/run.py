@@ -4,6 +4,7 @@ import yaml
 import pickle
 import os
 import numpy as np
+import librosa
 
 MOVE_THRESHOLD = 3
 
@@ -27,17 +28,16 @@ def cart2sph(xyz):
         return np.array([azimuth, elevation])
 
 
-def get_fold_files_and_durs(foldname, filenames, filedurs):
+def get_fold_files(foldname, filenames):
     """
     assuming the foldname is in the
     relevant filenames path
     """
     fold_files = [fname for fname in filenames if foldname in fname.split('/')]
-    fold_durs = [float(f.split('/')[-1]) for f in filedurs if foldname in f.split('/')]
-    assert len(fold_files) == len(fold_durs)
+    #fold_durs = [float(f.split('/')[-1]) for f in filedurs if foldname in f.split('/')]
     if fold_files:
         sampleperm = np.random.permutation(len(fold_files))
-        return [fold_files[i] for i in sampleperm], [fold_durs[i] for i in sampleperm], 
+        return [fold_files[i] for i in sampleperm]
     else:
         import warnings
         warnings.warn(f'No files found for fold {foldname}')
@@ -51,22 +51,11 @@ def get_sound_event_filenames(path):
     # TODO: make this work with recursive listing of files in a directory
     return filenames
 
-def get_sound_event_filedurs(path):
-    if path.endswith('.txt'):
-        filedurs = []
-        with open(path) as file:
-            while line := file.readline():
-                filedurs.append(line.strip())
-    # TODO: make this work with recursive listing of files in a directory
-    return filedurs
-        
 def load_pickle(filename):
     file = open(filename,'rb')
     object_file = pickle.load(file)
     file.close()
     return object_file
-    
-
 
 def get_room_trajectories(path_to_room_files):
     '''
@@ -115,120 +104,102 @@ def get_traj_doas(room_trajs, n_traj):
 
     return traj_doas
 
-def initialize_mixture_metadata(room_name, snr_range):
-    nth_mixture = {
-            'files': np.array([]), 
-            'class': np.array([]), 
-            'event_onoffsets': np.array([]),
-            'sample_onoffsets': np.array([]), 
-            'trajectory': np.array([]), 
-            'isMoving': np.array([]), 
-            'isFlippedMoving': np.array([]),
-            'speed': np.array([]), 
-            'rirs': [], 
-            'doa_azel': np.array([],dtype=object)
-    }
-    nth_mixture['room'] = room_name
-    nth_mixture['snr'] = np.random.choice(range(*snr_range))
+def get_filename_class_duration(fold_event_filenames, path_to_dataset, class_dict=None):
+
+    irand = np.random.randint(len(fold_event_filenames))
+
+    filename = fold_event_filenames[irand]
+    filepath = os.path.join(path_to_dataset, filename.split('/')[-1]) # HACKY, BAD, Will improve with Adrian's contrib
+    filedur = librosa.get_duration(path=filepath)
+    classid = filename.split('/')[0] # HACKY, BAD, Will improve with Adrian's contrib
+    if class_dict:
+       classid = class_dict[classid]
+    return {'filename': filename, 'filepath': filepath, 'classid':classid, 'filedur':filedur}
+
+def find_saturated_timepoints(track_events, max_polyphony, dt=0.1):
+
+    if track_events:
+        track_events = np.array(track_events)
+        times = []
+        for event_time in track_events:
+            t_ = np.arange(*event_time, dt)
+            times.extend([round(t,1) for t in t_])
+        saturated_times = set([x for x in times if times.count(x) >= max_polyphony])
+    else:
+        saturated_times = []
+    return saturated_times
+
+def get_event_start_stop(max_time, filedur, satur_times, dt):
+    event_start = np.random.choice(np.arange(0, max_time, dt))
+    event_stop = event_start + (np.ceil(filedur*10)/10)
+    event_times = np.arange(event_start, event_stop+dt, dt)
+    event_times = [round(t,1) for t in event_times]
+
+    if any([t in satur_times for t in event_times]):
+        return get_event_start_stop(max_time, filedur, satur_times, dt)
+    else:
+        return [round(event_start,1), round(event_stop,1)]
+
+def place_event_in_track_time(track_events, source_file_metadata, max_polyphony, track_dur, dt):
+
+    satur_times = find_saturated_timepoints(track_events, max_polyphony, dt)
+
+    # here we need to incorporate the placement of events in time using
+    # distributions like scaper does
+    # in the meantime:
+    filedur = source_file_metadata['filedur']
+    max_time = track_dur - filedur
+    event_start, event_stop = get_event_start_stop(max_time, filedur, satur_times, dt)
+    track_events.append([event_start, event_stop])
+    return track_events
+
+def sort_by_event_onset(all_events_meta, event_onsets):
+
+    event_onsets = np.array(event_onsets)
+    idx = np.argsort(event_onsets[:,0])
+
+    return [all_events_meta[i] for i in idx]
+
+
+def generate_nth_mixture_dict(all_events_meta):
+    nth_mixture = {}
+    nth_mixture['files'] = np.array([event['filename'] for event in all_events_meta])
+    nth_mixture['class'] = np.array([event['classid'] for event in all_events_meta])
+    nth_mixture['event_onoffsets'] = np.array([event['event_onoffsets'] for event in all_events_meta])
+    nth_mixture['sample_onoffsets'] = np.array([np.array([0.0,np.floor(event['filedur']*10)/10]) for event in all_events_meta])
+    nth_mixture['trajectory'] = np.array([event['traj'] for event in all_events_meta])
+    nth_mixture['isMoving'] = np.array([event['isMoving'] for event in all_events_meta])
+    nth_mixture['isFlippedMoving'] = np.array([event['isFlippedMoving'] for event in all_events_meta])
+    nth_mixture['speed'] = np.array([event['speed'] for event in all_events_meta])
+    nth_mixture['rirs'] = [np.array(event['rirs']) for event in all_events_meta]
+    nth_mixture['doa_azel'] = [np.array(event['doa_azel']) for event in all_events_meta]
+    nth_mixture['snr'] = all_events_meta[0]['snr'] # TODO: how to make each event have its own SNR?
+
     return nth_mixture
 
-def get_layer_event_indices(fold_event_durs, mixture_events_dur_sum, event_counter, sample_counter):
-    TRIMMED_SAMPLE_AT_END = 0
-    #fetch event samps till they add up to the target event time per layer
-    event_time_in_layer = 0
-    event_idx_in_layer = []
-
-    while event_time_in_layer < mixture_events_dur_sum:
-        #get event duration
-        ev_duration = np.ceil(fold_event_durs[sample_counter]*10.)/10.
-        event_time_in_layer += ev_duration
-        event_idx_in_layer.append(sample_counter)
-        
-        event_counter += 1
-        sample_counter += 1
-  
-        if sample_counter == len(fold_event_durs):
-            sample_counter = 0
-    overshoot = mixture_events_dur_sum - (event_time_in_layer - ev_duration)
-    if overshoot:
-        event_counter -= 1
-        sample_counter -= 1 if sample_counter else len(fold_event_durs) - 1
-        event_time_in_layer -= ev_duration
-        event_idx_in_layer = event_idx_in_layer[:-1]
-    return event_idx_in_layer, event_counter, sample_counter
-
-def get_silence_gaps(nevents_in_layer, layer_silence_dur, min_gap_length):
-    # split silences between events
-    # randomize N split points uniformly for N events (in
-    # steps of 100msec)
-    mult_silence = np.round(layer_silence_dur*10.)
-    
-    mult_min_gap_len = np.round(min_gap_length*10.)
-    if nevents_in_layer > 1:
-        
-        silence_splits = np.sort(np.random.randint(1, mult_silence, nevents_in_layer-1))
-        #force gaps smaller then _min_gap_len to it
-        gaps = np.diff(np.concatenate(([0],silence_splits,[mult_silence])))
-        smallgaps_idx = np.argwhere(gaps[:(nevents_in_layer-1)] < mult_min_gap_len)
-        while np.any(smallgaps_idx):
-            temp = np.concatenate(([0], silence_splits))
-            silence_splits[smallgaps_idx] = temp[smallgaps_idx] + mult_min_gap_len
-            gaps = np.diff(np.concatenate(([0],silence_splits,[mult_silence])))
-            smallgaps_idx = np.argwhere(gaps[:(nevents_in_layer-1)] < mult_min_gap_len)
-        if np.any(gaps < mult_min_gap_len):
-            min_idx = np.argwhere(gaps < mult_min_gap_len)
-            gaps[min_idx] = mult_min_gap_len
-        # if gaps[nb_samples_in_layer-1] < mult_min_gap_len:
-        #     gaps[nb_samples_in_layer-1] = mult_min_gap_len
-        
-    else:
-        gaps = np.array([mult_silence])
-
-    while np.sum(gaps) > layer_silence_dur*10.:
-        silence_diff = np.sum(gaps) - layer_silence_dur*10.
-        picked_gaps = np.argwhere(gaps > np.mean(gaps))
-        eq_subtract = silence_diff / len(picked_gaps)
-        picked_gaps = np.argwhere((gaps - eq_subtract) > mult_min_gap_len)
-        gaps[picked_gaps] -= eq_subtract
-    return gaps
-                            
-
-def get_event_riridx_onoffset(nl, silence_gaps, event_idx_in_layer, fold_event_durs, fold_event_filenames, cfg, time_idx, n_traj, traj_doas):
-    # TODO: modify to not pass `cfg`
-    gap_nl = int(silence_gaps[nl])
-    time_idx += gap_nl
-    event_nl = event_idx_in_layer[nl]
-    event_duration_nl = np.ceil(fold_event_durs[event_nl]*10.)
-    event_class_nl = cfg.CLASS_DICT[fold_event_filenames[event_nl].split('/')[0]] 
-    onoffsets = np.array([0,fold_event_durs[event_nl]])
-
-    sample_onoffsets = np.floor(onoffsets*10.)/10.
+def get_event_riridx(n_traj, source_file_metadata, traj_doas, speed_set, MOVE_THRESHOLD=3):
 
     # trajectory
     ev_traj = np.random.randint(0, n_traj)
     nRirs = traj_doas[ev_traj].shape[0]
-    if event_duration_nl <= MOVE_THRESHOLD*10:
+    if source_file_metadata['filedur'] <= MOVE_THRESHOLD:
         is_moving = 0 
     else:
-        if cfg.CLASS_MOBILITY == 2:
-            # randomly moving or static
-            is_moving = np.random.randint(0,2)
-        else:
-            # only static or moving depending on class
-            is_moving = cfg.CLASS_MOBILITY[event_class_nl]
+        # randomly moving or static
+        is_moving = np.random.randint(0,2)
 
     if is_moving:
-        ev_nspeed = np.random.randint(0,len(cfg.SPEED_SET))
-        ev_speed = cfg.SPEED_SET[ev_nspeed]
+        ev_nspeed = np.random.randint(0,len(speed_set))
+        ev_speed = speed_set[ev_nspeed]
         # check if with the current speed there are enough
         # RIRs in the trajectory to move through the full
         # duration of the event, otherwise, lower speed
+        event_duration_nl = source_file_metadata['filedur']*10
         while len(np.arange(0,nRirs,ev_speed/10)) <= event_duration_nl:
             ev_nspeed = ev_nspeed-1
             if ev_nspeed == -1:
                 break
-
-            ev_speed = cfg.SPEED_SET[ev_nspeed]
+            ev_speed = speed_set[ev_nspeed]
         
         is_flipped_moving = np.random.randint(0,2)
         event_span_nl = event_duration_nl * ev_speed / 10.
@@ -262,77 +233,12 @@ def get_event_riridx_onoffset(nl, silence_gaps, event_idx_in_layer, fold_event_d
         riridx = np.array([np.random.randint(0,nRirs)])
     riridx = riridx.astype('int')
 
-    return event_duration_nl, riridx, sample_onoffsets, ev_traj, is_moving, is_flipped_moving, ev_speed, event_nl, time_idx
+    return riridx, is_moving, is_flipped_moving, ev_speed, ev_traj
 
-def update_nth_mixture(nth_mixture, riridx, time_idx, event_duration_nl, sample_onoffsets, traj_doas, nl, layer, ev_traj, fold_event_filenames, is_moving, is_flipped_moving, ev_speed, event_nl, cfg):
-    if nl == 0 and layer==0:
-        nth_mixture['event_onoffsets'] = np.array([[time_idx/10., (time_idx+event_duration_nl)/10.]])
-        nth_mixture['doa_azel'] = [cart2sph(traj_doas[ev_traj][riridx,:])]
-        nth_mixture['sample_onoffsets'] = [sample_onoffsets]
-    else:
-        nth_mixture['event_onoffsets'] = np.vstack((nth_mixture['event_onoffsets'], np.array([time_idx/10., (time_idx+event_duration_nl)/10.])))
-        nth_mixture['doa_azel'].append(cart2sph(traj_doas[ev_traj][riridx,:]))
-        nth_mixture['sample_onoffsets'].append(sample_onoffsets)
-                 
-    nth_mixture['files'] = np.append(nth_mixture['files'], fold_event_filenames[event_nl])
-    nth_mixture['class'] = np.append(nth_mixture['class'], cfg.CLASS_DICT[fold_event_filenames[event_nl].split('/')[0]]) 
-    nth_mixture['trajectory'] = np.append(nth_mixture['trajectory'], ev_traj)
-    nth_mixture['isMoving'] = np.append(nth_mixture['isMoving'], is_moving)
-    nth_mixture['isFlippedMoving'] = np.append(nth_mixture['isFlippedMoving'], is_flipped_moving)
-    nth_mixture['speed'] = np.append(nth_mixture['speed'], ev_speed)
-    nth_mixture['rirs'].append(riridx)
-    return nth_mixture
+def DCASE_main():
 
-
-def populate_mixture(cfg, sample_counter, fold_event_durs, fold_event_filenames, n_traj, traj_doas, max_polyphony, nth_mixture):
-    event_counter = 0
-
-    # populate each "layer" in the mixture
-    for layer in range(max_polyphony):
-
-        event_idx_in_layer, event_counter, sample_counter = get_layer_event_indices(fold_event_durs, cfg.MIXTURE_DUR - cfg.MIXTURE_LAYER_SILENCE, event_counter, sample_counter)
-        nevents_in_layer = len(event_idx_in_layer)
-
-        silence_gaps = get_silence_gaps(nevents_in_layer, cfg.MIXTURE_LAYER_SILENCE, cfg.MIN_GAP_BTW_LAYER_EVENTS)
-
-        # distribute each event in the timeline
-        time_idx = 0
-        for nl in range(nevents_in_layer):
-
-            event_duration_nl, riridx, sample_onoffsets, ev_traj, is_moving, is_flipped_moving, ev_speed, event_nl, time_idx = get_event_riridx_onoffset(nl, silence_gaps, event_idx_in_layer, fold_event_durs, fold_event_filenames, cfg, time_idx, n_traj, traj_doas)
-
-            nth_mixture = update_nth_mixture(nth_mixture, riridx, time_idx, event_duration_nl, sample_onoffsets, traj_doas, nl, layer, ev_traj, fold_event_filenames, is_moving, is_flipped_moving, ev_speed, event_nl, cfg)
-
-            time_idx += event_duration_nl
-
-    sort_idx = np.argsort(nth_mixture['event_onoffsets'][:,0])
-    nth_mixture['files'] = nth_mixture['files'][sort_idx]
-    nth_mixture['class'] = nth_mixture['class'][sort_idx]
-    nth_mixture['event_onoffsets'] = nth_mixture['event_onoffsets'][sort_idx]
-    #nth_mixture['sample_onoffsets'] = nth_mixture['sample_onoffsets'][sort_idx]
-    nth_mixture['trajectory'] = nth_mixture['trajectory'][sort_idx]
-    nth_mixture['isMoving'] = nth_mixture['isMoving'][sort_idx]
-    nth_mixture['isFlippedMoving'] = nth_mixture['isFlippedMoving'][sort_idx]
-    nth_mixture['speed'] = nth_mixture['speed'][sort_idx]
-    nth_mixture['rirs'] = np.array(nth_mixture['rirs'],dtype=object)
-    nth_mixture['rirs'] = nth_mixture['rirs'][sort_idx]
-    new_doas = np.zeros(len(sort_idx),dtype=object)
-    new_sample_onoffsets = np.zeros(len(sort_idx),dtype=object)
-    upd_idx = 0
-    for idx in sort_idx:
-        new_doas[upd_idx] = nth_mixture['doa_azel'][idx].T
-        new_sample_onoffsets[upd_idx] = nth_mixture['sample_onoffsets'][idx]
-        upd_idx += 1
-    nth_mixture['doa_azel'] = new_doas
-    nth_mixture['sample_onoffsets'] = new_sample_onoffsets 
-
-    return nth_mixture
-
-def main():
-    '''
-    main function to trigger the data generation
-    '''
-
+    # 0. parse the yaml with the config. Define if you are generating data in 
+    # the "training" or "testing" fold then, for each audio mixture you generate:
     # parse config arguments
     args = parse_args()
     cfg = load_config(args, args.path_to_config)
@@ -341,8 +247,6 @@ def main():
 
     
     event_filenames = get_sound_event_filenames(cfg.PATH_TO_SOUND_EVENT_FILES)
-    event_durs = get_sound_event_filedurs(cfg.PATH_TO_SOUND_EVENT_DURS)
-
 
     fold_names = cfg.FOLD_NAMES
     snr_range = cfg.SNR_RANGE
@@ -352,41 +256,86 @@ def main():
     # iterate over fold names
     for ifold, fold in enumerate(fold_names):
         
-        fold_event_filenames, fold_event_durs = get_fold_files_and_durs(
+        fold_event_filenames = get_fold_files(
                 fold, 
-                event_filenames, 
-                event_durs)
+                event_filenames)
         n_mixtures_per_fold = cfg.N_MIX_PER_FOLD[ifold]
 
+        #######################
+        # synthesize metadata #
+        #######################
+
+        # 1. determine a room and gather possible IRs and locations. If synthetic room, 
+        # just define room shape parameters (the IRs will be generated only when relevant)
         # iterate over rooms
-        fold_rooms = cfg.FOLD_ROOMS[fold]
+        fold_rooms = cfg.FOLD_ROOMS[fold] 
         room_mixtures=[]
         for room_name in fold_rooms:
-            fold_mixture = {'mixture': []}
-            fold_mixture['roomidx'] = room_name
 
             # get the room's relevant info
             path_to_room_files = get_path_to_room_files(room_name)
             room_trajs = get_room_trajectories(path_to_room_files)
-            n_traj = len(room_trajs)
-            traj_doas = get_traj_doas(room_trajs, n_traj)
-            sample_counter = 0
+            n_traj = len(room_trajs) 
+            traj_doas = get_traj_doas(room_trajs, n_traj) # TO BE SUBSTITUTED by "draw traj"
 
-            # generate each mixture
-            for nmix in range(n_mixtures_per_fold):
-                print('Room {}, generating mixture {}'.format(room_name, nmix+1))
+            # 2. add sound events to the mixture by determininig:
+            for imixture in range(n_mixtures_per_fold//len(fold_rooms)):
 
-                nth_mixture = initialize_mixture_metadata(room_name, snr_range)
+                # this can also be probabilistic
+                nevents = cfg.NUM_EVENTS_IN_MIXTURE
 
-                nth_mixture = populate_mixture(cfg, sample_counter, fold_event_durs, fold_event_filenames, n_traj, traj_doas, max_polyphony, nth_mixture)
+                track_events = [] # to ensure MAX_POLYPHONY
+                all_events_meta = []
+                for ievent in range(nevents):
+                    # a. determine the label and the specific source file. The source time will
+                    # be from 0 to its total duration. Map the label to the DCASE index
+                    source_file_metadata = get_filename_class_duration(fold_event_filenames, cfg.PATH_TO_DATASET, cfg.CLASS_DICT)
 
-                print(nth_mixture['event_onoffsets'])
-                print(nth_mixture['sample_onoffsets'])
-                input()
-                fold_mixture['mixture'].append(nth_mixture)
-            room_mixtures.append(fold_mixture)
-        mixtures.append(room_mixtures)
+                    # b. assign an event onoffset in the duration of the track. Make sure that no
+                    # more than MAX_POLYPHONY events overlap at a time
+                    track_events = place_event_in_track_time(track_events, source_file_metadata, cfg.MAX_POLYPHONY, cfg.MIXTURE_DUR, 1/cfg.METADATA_SR)
+                    source_file_metadata['event_onoffsets'] = track_events[-1]
+
+                    # c. determine the SNR from SNR_RANGE
+                    source_file_metadata['snr'] = np.random.randint(*cfg.SNR_RANGE)
+
+                    # d. determine whether the event_effects "pitch_shift" or "time_stretch"
+                    # should be applied, and with which parameters
+
+                    # e. place the sound in an initial precise location (a=[x,y,z] coordinates)
+                    # real_rooms: if the coordinate does not exist, place its NN (warn user)
+
+                    # f. determine whether the sound will be static or move in a trajectory:
+                    # from a to b, around a (what speed?), random path (what speed?)
+                    riridx, is_moving, is_flipped_moving, ev_speed, ev_traj = get_event_riridx(n_traj, source_file_metadata, traj_doas, cfg.SPEED_SET)
+
+                    source_file_metadata['traj'] = ev_traj
+                    source_file_metadata['isMoving'] = is_moving
+                    source_file_metadata['isFlippedMoving'] = is_flipped_moving
+                    source_file_metadata['speed'] = ev_speed
+                    source_file_metadata['rirs'] = riridx
+                    source_file_metadata['doa_azel'] = [cart2sph(traj_doas[ev_traj][riridx,:])]
+
+                    all_events_meta.append(source_file_metadata)
+
+                all_events_meta = sort_by_event_onset(all_events_meta, track_events)
+
+                nth_mixture = generate_nth_mixture_dict(all_events_meta)
+                nth_mixture['room'] = room_name
+
+                # sanity check
+                for k,v in nth_mixture.items(): 
+                    print(k)
+                    input()
+                    print(v)
+                    input()
+
+    # 3. determine whether the mixture will undergo "channel_swap" augmentations
+    # (channel_swap only applies to RIRs from real rooms) 
+
+    # 4. dump resulting file with annotations
+
 
 
 if __name__ == "__main__":
-    main()
+    DCASE_main()

@@ -1,5 +1,6 @@
 PATH_TO_SOUND_EVENT_FILES: 'dcase_datagen/metadata/fsd50k/sound_event_filenames.txt'
 PATH_TO_SOUND_EVENT_DURS: 'dcase_datagen/metadata/fsd50k/sound_event_durations.txt'
+PATH_TO_DATASET: '/home/iran/datasets/FSD50K'
 FOLD_NAMES: ['train', 'test']
 FOLD_ROOMS: {
   'train': ['tc352','sc203','bomb_shelter','pc226','pb132','se203'],
@@ -9,8 +10,6 @@ N_MIX_PER_FOLD: [900, 300]
 SNR_RANGE: [6, 31]
 MAX_POLYPHONY: 2
 MIXTURE_DUR: 60
-MIXTURE_LAYER_SILENCE: 20
-MIN_GAP_BTW_LAYER_EVENTS: 1
 CLASS_DICT: {
   'femaleSpeech':     0,
   'maleSpeech':       1,
@@ -26,5 +25,6 @@ CLASS_DICT: {
   'bell':             11,
   'knock':            12,
 }
-CLASS_MOBILITY: [2, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0]
-SPEED_SET: [10, 20, 30]
+SPEED_SET: [10, 20, 40]
+NUM_EVENTS_IN_MIXTURE: 10
+METADATA_SR: 10
