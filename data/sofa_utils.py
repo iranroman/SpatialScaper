@@ -8,7 +8,7 @@ import numpy as np
 from netCDF4 import Dataset
 import time
 
-def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt='foa'):
+def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt='foa', flip=True):
     rooms = ['bomb_shelter', 'gym', 'pb132', 'pc226', 'sa203', 'sc203', 'se203', 'tb103', 'tc352']
     room = rooms[room_idx]
     rir_file = [file for file in os.listdir(tau_db_dir) if room in file][0]
@@ -21,8 +21,15 @@ def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt='foa'):
     M = 0
     for i in range(n_traj):
         for j in range(n_heights):
-            path_stack = np.concatenate((path_stack, output_paths[i,j]), axis=0)
-            rir_stack = np.concatenate((rir_stack, rirs[aud_fmt][i][j]), axis=2)
+            path_ij = output_paths[i,j]
+            rir_ij = rirs[aud_fmt][i][j]
+            if flip:
+                if j%2==1:
+                    #flip every other height, as in DCASE
+                    path_ij = path_ij[::-1]
+                    rir_ij = rir_ij[::-1]
+            path_stack = np.concatenate((path_stack, path_ij), axis=0)
+            rir_stack = np.concatenate((rir_stack, rir_ij), axis=2) 
             M += output_paths[i,j].shape[0]
             
     rirs = np.reshape(rir_stack, (M,R,N))
@@ -152,15 +159,20 @@ def load_rir_pos(filepath, doas=True):
     sofa.close()
     return rirs, source_pos
 
-if __name__ == '__main__':
-    tau_db_dir = '/scratch/ci411/TAU_SRIR_DB/TAU-SRIR_DB'
-    sofa_db_dir = '/scratch/ci411/TAU_SRIR_DB_SOFA'
-    db_name = "TAU-SRIR-DB-SOFA"
+def load_rir(filepath):
+    sofa = pysofa.SOFAFile(filepath,'r')
+    assert sofa.isValid()
+    rirs = sofa.getVariableValue('Data.IR')
+    sofa.close()
+    return rirs
 
-    for room_idx in range(9):
-        for aud_fmt in ['foa','mic']:
-            rirs, source_pos, mic_pos, room = load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt=aud_fmt)
-            filepath = os.path.join(sofa_db_dir, aud_fmt, room+'.sofa')
-            comment = f"SOFA conversion of {room} from TAU-SRIR-DB"
-            create_srir_sofa(filepath, rirs, source_pos, mic_pos, db_name=db_name,\
-                         room_name=room, listener_name=aud_fmt, sr=24000, comment=comment)
+def load_pos(filepath, doas=True):
+    sofa = pysofa.SOFAFile(filepath,'r')
+    assert sofa.isValid()
+    source_pos = sofa.getVariableValue('SourcePosition')
+    if doas:
+        source_pos = source_pos * (1/np.sum(source_pos, axis=1))[:, np.newaxis] #normalize
+    sofa.close()
+    return source_pos
+
+
