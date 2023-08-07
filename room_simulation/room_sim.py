@@ -246,7 +246,7 @@ if __name__ == "__main__":
                 for l in range(len(path)):
                     path_rirs[k,l] = room.rir[k][l][:args.rir_len]
             
-            if flip:
+            if args.flip:
                 if j%2==1:
                     #flip every other height, as in DCASE
                     path_rirs = path_rirs[::-1]
