@@ -1,6 +1,4 @@
 import numpy as np
-from generation_parameters import get_params
-from db_config import DBConfig
 from scipy.io import loadmat
 import os
 import h5py
@@ -11,6 +9,9 @@ from pyroomacoustics import directivities as dr
 from pyroomacoustics.experimental.rt60 import measure_rt60
 import argparse
 import tau_loading
+import sys
+sys.path.append('../data')
+import sofa_utils
 
 tau_room_list = ["bomb_shelter",
              "gym",
@@ -97,41 +98,6 @@ def center_mic_coords(mic_coords, mic_center):
         mic_locs = np.vstack([mic_locs,mic_loc])
     return mic_locs
 
-def load_tau_paths(room_idx, tau_db_dir, center_on_mic = False):
-    rooms = ['bomb_shelter', 'gym', 'pb132', 'pc226', 'sa203', 'sc203', 'se203', 'tb103', 'tc352']
-    room = rooms[room_idx]
-    
-    measinfo = loadmat(os.path.join(tau_db_dir,'measinfo.mat'))['measinfo']
-    rirdata = loadmat(os.path.join(tau_db_dir, 'rirdata.mat'))['rirdata'][0]
-
-    trajs = measinfo[room_idx][0][4][0]
-    heights = measinfo[room_idx][0][5][0]
-    dists = measinfo[room_idx][0][6][0]
-    mic_pos = measinfo[room_idx][0][7][0]
-    traj_type = measinfo[room_idx][0][9][0]
-    paths = rirdata[0][1][room_idx][0][2]
-    
-    output_paths = np.empty(paths.shape, dtype=object)
-    path_metadata = np.empty(paths.shape, dtype=object)
-    room_metadata = {'room': room, 'trajectory_type': traj_type, 'microphone_position': mic_pos}
-    for i, traj in enumerate(trajs):
-        for j, height in enumerate(heights):
-            
-            if traj_type == 'circular':
-                dist = dists[0][i]
-            elif traj_type =='linear':
-                dist = dists[:,i]
-            
-            path_unitvec = paths[i,j][0]
-            path_dict = {'trajectory': traj, 'height': height}
-            path_cartesian = unitvec_to_cartesian(path_unitvec, height, dist)
-            if center_on_mic:
-                path_cartesian += mic_pos
-            output_paths[i,j] = path_cartesian
-            path_metadata[i,j] = path_dict
-            
-    return output_paths, path_metadata, room_metadata
-
 def unitvec_to_cartesian(path_unitvec, height, dist):
     if type(dist) == np.ndarray:
         z_offset = height
@@ -160,19 +126,15 @@ parser.add_argument("room_name", type=str,
 
 parser.add_argument("--output", dest="output_dir", type=str, 
                     help="directory for file output", required=False,
-                    default='/scratch/ci411/DCASE_GEN/sim_rirs')
+                    default='/scratch/ci411/SRIR_DATASETS/TAU-SIM-SOFA')
 
 parser.add_argument("--tau-db-dir", dest="tau_db_dir", type=str,
                     help="directory for TAU-SRIR-DB", required=False,
-                    default="/scratch/ci411/TAU_SRIR_DB/TAU-SRIR_DB")
+                    default="/scratch/ci411/SRIR_DATASETS/TAU_SRIR_DB/TAU-SRIR_DB")
 
 parser.add_argument("--decay-db", dest="decay_db", type=int,
                     help="decay db for estimating rt60", required=False,
                     default=15)
-
-parser.add_argument("--t-type", dest="t_type", type=str, required=False,
-                    help="type of trajectory (circular or linear)",
-                    default="circular")
 
 parser.add_argument("--max-order", dest="max_order", type=int, required=False,
                     help="maximum order of reflections for ISM sim",
@@ -194,12 +156,16 @@ parser.add_argument("--single-path", dest="single_path", type=bool, required=Fal
                     help="debugging option for computing a single path",
                     default=False)
 
-parser.add_argument("--store-hdf5", dest="store_hdf5", type=bool, required=False,
-                    help="Option to store output to hdf5 files",
-                    default=False)
-
 parser.add_argument("--mic-center", dest="mic_center", type=list, required=False,
                     help="center of microphone array (in meters)", default=[0.05, 0.05, 0.05])
+
+parser.add_argument("--db-name", dest="db_name", type=str, required=False,
+                    help="name of database creating",
+                    default="TAU-SIM-SOFA")
+
+parser.add_argument("--flip", dest="flip", type=bool, required=False,
+                    help="flip every other height, as in DCASE generator",
+                    default=True)
 
 
 if __name__ == "__main__":
@@ -209,33 +175,30 @@ if __name__ == "__main__":
     #microphone array definitions
     print("Defining mics...")
     mic_coords, mic_dirs = get_tetra_mics() #this can be subbed for other mic configs
-    n_mics = mic_coords
+    n_mics = len(mic_coords)
     
     mic_loc_center = np.array(args.mic_center)
     mic_locs = center_mic_coords(mic_coords, mic_loc_center)
 
-    rirdata2room_idx = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 6, 9: 7, 10: 8}
-    rirdata2room_idx = {v:k for k,v in rirdata2room_idx.items()}
-
     #load room info
     print("Loading room info...")
     room_idx = tau_room_list.index(args.room_name)
-
+    #load paths
+    paths, paths_meta, room_meta = tau_loading.load_paths(room_idx, args.tau_db_dir)
+    t_type = room_meta['trajectory_type']
+    
     #sample rirs for rt60 to calculate MAC
-    rir_file = [filename for filename in os.listdir(args.tau_db_dir) if room_name in filename][0]
-    samples = tau_loading.load_rir_sample(rir_file, t_type=args.t_type)
+    rir_file = [filename for filename in os.listdir(args.tau_db_dir) if args.room_name in filename][0]
+    rir_path = os.path.join(args.tau_db_dir, rir_file)
+    samples = tau_loading.load_rir_sample(rir_path, t_type=t_type)
     rt = []
     for i in range(samples.shape[0]):
         rt.append(measure_rt60(samples[i], fs=args.sr, decay_db=args.decay_db))
-    rt = np.array(rt) * (60/decay_db)
+    rt = np.array(rt) * (60/args.decay_db)
     rt_avg = np.average(rt)
 
     room_dim = tau_dim_list[room_idx]
     e_absorption, _ = pra.inverse_sabine(rt_avg, room_dim)
-
-    print("Loading path data...")
-    #load paths
-    paths, paths_meta, room_meta = tau_loading.load_paths(room_idx, db_config)
 
     #place mics in center-ish of room
     room_center = np.array([room_dim[0]/2, room_dim[1]/2, 0])
@@ -251,15 +214,17 @@ if __name__ == "__main__":
         n_heights = 1
 
     #check for outputdir (create if doesn't exist)
-    room_rir_dir = os.path.join(args.output_dir, 'mic', args.room_name)
+    room_rir_dir = os.path.join(args.output_dir, 'mic')
     if not os.path.exists(room_rir_dir):
         os.mkdir(room_rir_dir)
 
     #iterating through paths and simulating (one at a time)
     print("Computing rirs...")
-    out_pickle = []
+    path_stack = np.empty((0, 3))
+    rir_stack = np.empty((0, n_mics, args.rir_len))
+    
     for i in range(n_traj):
-        out_pickle.append([])
+        mic_array_list = []
         for j in range(n_heights):
 
             room = pra.ShoeBox(room_dim, fs=args.sr, 
@@ -280,28 +245,19 @@ if __name__ == "__main__":
             for k in range(n_mics):
                 for l in range(len(path)):
                     path_rirs[k,l] = room.rir[k][l][:args.rir_len]
+            
+            if flip:
+                if j%2==1:
+                    #flip every other height, as in DCASE
+                    path_rirs = path_rirs[::-1]
+                    path = path[::-1]
+            
+            path_rirs = np.moveaxis(path_rirs, [0,1,2], [1,0,2])
+            rir_stack = np.concatenate((rir_stack, path_rirs), axis=0)
+            path_stack = np.concatenate((path_stack, path), axis=0)
 
-            path_rirs = np.moveaxis(path_rirs, [0,1,2], [1,2,0])
-            #save to pickle list
-            out_pickle[i].append(path_rirs)
-
-            #store to hdf5
-            if args.store_hdf5:
-                path_label = "{}_t{}h{}.hdf5".format(args.room_name, i, j)
-                path_filename = os.path.join(room_rir_dir, path_label)
-                if not os.path.exists(path_filename):
-                    with h5py.File(path_filename, 'w') as f:
-                        f.create_dataset('rirs', data=path_rirs)
-                        f.create_dataset('rate', data=np.array([args.sr]))
-                else:
-                    with h5py.File(path_filename, 'r+') as f:
-                        f['rirs'][:] = path_rirs
-                        f['rate'][:] = np.array([args.sr])
-                print("Stored path at {}".format(path_filename))
-
-    pickle_path = os.path.join(args.output_dir, 'rirs_{:02d}_{}.pkl'.format(rirdata2room_idx[room_idx],args.room_name))
-    print(f"Storing result to {pickle_path}")
-
-    out_pickle = {'mic':out_pickle}
-    with open(pickle_path, 'wb') as outp:
-        pickle.dump(out_pickle, outp, pickle.HIGHEST_PROTOCOL)
+    sofa_path = os.path.join(room_rir_dir, f'{args.room_name}.sofa')
+    print(f"Storing result to {sofa_path}")
+    
+    sofa_utils.create_srir_sofa(sofa_path, rir_stack, path_stack, room_meta['microphone_position'],\
+                     db_name=args.db_name, room_name=args.room_name, listener_name='mic')
