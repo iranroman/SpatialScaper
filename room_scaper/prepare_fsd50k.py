@@ -4,7 +4,7 @@ import json
 import soundata
 import numpy as np
 import pandas as pd
-from prepare_utils import *
+from room_scaper.prepare_utils import *
 
 PARENT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
