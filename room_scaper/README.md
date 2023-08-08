@@ -26,8 +26,11 @@ PARAM_CONFIG = {
 
 #### Get fsd50k dataset object
 ```
-import prepare_fsd50k
+from room_scaper.prepare_fsd50k import prepare_fsd50k
+
 fsd50k = prepare_fsd50k()
+
+print(fsd50k.fsd_to_dcase_dict)
 ```
 
 #### Use dictionary to find DCASE filenames to FSD50K path names
