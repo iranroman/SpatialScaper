@@ -276,7 +276,7 @@ def DCASE_main():
             path_to_room_files = get_path_to_room_files(room_name)
             room_trajs = get_room_trajectories(path_to_room_files)
             n_traj = len(room_trajs) 
-            traj_doas = get_traj_doas(room_trajs, n_traj) # TO BE SUBSTITUTED by "draw traj"
+            traj_doas = get_traj_doas(room_trajs, n_traj) # TO BE SUBSTITUTED 
 
             # 2. add sound events to the mixture by determininig:
             for imixture in range(n_mixtures_per_fold//len(fold_rooms)):
