@@ -11,6 +11,19 @@ Set `"download": True` within the configuration dictionary `PARAM_CONFIG` in `pr
 
 If the dataset already exists and all you need is to load the fsd50k dictionary:
 
+```
+PARAM_CONFIG = {
+    "dataset_home": "/path/to" # add only /path/to the FSD50K location
+    "metadata_path": "/path/to" # add only /path/to the metadata location,
+    "dcase_sound_events_txt": os.path.join(PARENT_DIR,"dcase_datagen/metadata/sound_event_fsd50k_filenames.txt"), # I recommend leaving this file path as is
+    "download": False,
+    "music_home": "/path/to" # add only /path/to the FMA location
+    "music_metadata": os.path.join(PARENT_DIR, "dcase_datagen/metadata"),  # I recommend leaving this file path as is
+    "ntracks_genre": 10,
+    "split_prob": 0.6
+}
+```
+
 #### Get fsd50k dataset object
 ```
 import prepare_fsd50k

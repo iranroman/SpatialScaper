@@ -84,13 +84,14 @@ class FMADataLoad(BaseDataLoad):
     
 
 class FSD50KDataLoad(BaseDataLoad):
-    def __init__(self, dataset_name="fsd50k", download=False, 
-                music_home=None, dcase_sound_events_txt=None,
+    def __init__(self, dataset_name="fsd50k", download=False, music_home=None,
+                music_metadata=None, dcase_sound_events_txt=None,
                 ntracks_genre=10, split_prob=0.6, **kwargs):
         super().__init__(**kwargs)
         self.dataset_name = dataset_name
         self.download = download
         self.music_home = music_home
+        self.music_metadata = music_metadata
         self.dcase_sound_events_txt = dcase_sound_events_txt
         self.url_fsd_selected_txt = "https://zenodo.org/record/6406873/files/FSD50K_selected.txt"
         self.fsd_to_dcase_dict = {} # Dict containing FSD50K to DCASE file mappings
@@ -98,9 +99,10 @@ class FSD50KDataLoad(BaseDataLoad):
         # Remove 'dataset_home' from kwargs before passing to FMADataLoad
         if 'dataset_home' in kwargs:
             del kwargs['dataset_home']
+            del kwargs['metadata_path']
 
-        self.music = FMADataLoad(dataset_home=self.music_home, ntracks_genre=ntracks_genre,
-                                split_prob=split_prob, **kwargs)
+        self.music = FMADataLoad(dataset_home=self.music_home, metadata_path=self.music_metadata,
+                                ntracks_genre=ntracks_genre, split_prob=split_prob)
         
     def download_dataset(self):
         self.fsd50k.download()
@@ -111,10 +113,9 @@ class FSD50KDataLoad(BaseDataLoad):
         self.fsd50k = soundata.initialize(self.dataset_name, self.dataset_home)
         if self.download:
             self.download_dataset() # download fsd50k
-        if "fma" in self.music_home:
-            self.music.load_dataset()
-            self.music.gen_dataset_splits()
-            self.music.save_fma_to_dcase_json()
+        self.music.load_dataset() # load fma
+        self.music.gen_dataset_splits()
+        self.music.save_fma_to_dcase_json()
         self.gen_fsd_to_dcase_dict()
 
     def save_fsd_to_dcase_json(self):
@@ -127,6 +128,10 @@ class FSD50KDataLoad(BaseDataLoad):
         return self.fsd_to_dcase_dict[fold]
 
     def gen_fsd_to_dcase_dict(self):
+
+        os.makedirs(self.dataset_home, exist_ok=True)
+        os.makedirs(self.metadata_path, exist_ok=True)
+
         if not os.path.exists(self.dcase_sound_events_txt):
             download_file(self.url_fsd_selected_txt, self.dcase_sound_events_txt)
 
@@ -147,11 +152,12 @@ class FSD50KDataLoad(BaseDataLoad):
         self.fsd_to_dcase_dict['test'].update(self.music.fma_to_dcase_dict['test'])
 
 PARAM_CONFIG = {
-    "dataset_home": os.path.join(PARENT_DIR, "dcase_datagen/data/fsd50k"),
-    "metadata_path": os.path.join(PARENT_DIR, "dcase_datagen/metadata/fsd50k"),
-    "dcase_sound_events_txt": os.path.join(PARENT_DIR,"dcase_datagen/metadata/fsd50k/sound_event_fsd50k_filenames.txt"),
+    "dataset_home": os.path.join(PARENT_DIR, "dcase_datagen/data"), # add /path/to (not path/to/dir)
+    "metadata_path": os.path.join(PARENT_DIR, "dcase_datagen/metadata"), # add /path/to (not path/to/dir)
+    "dcase_sound_events_txt": os.path.join(PARENT_DIR,"dcase_datagen/metadata/sound_event_fsd50k_filenames.txt"),
     "download": False,
-    "music_home": os.path.join(PARENT_DIR, "dcase_datagen/data/fma"),
+    "music_home": os.path.join(PARENT_DIR, "dcase_datagen/data"), # add /path/to (not path/to/dir)
+    "music_metadata": os.path.join(PARENT_DIR, "dcase_datagen/metadata"), # add /path/to (not path/to/dir)
     "ntracks_genre": 10,
     "split_prob": 0.6
 }
