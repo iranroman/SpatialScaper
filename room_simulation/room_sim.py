@@ -1,6 +1,4 @@
 import numpy as np
-from generation_parameters import get_params
-from db_config import DBConfig
 from scipy.io import loadmat
 import os
 import h5py
@@ -125,19 +123,15 @@ parser.add_argument("room_name", type=str,
 
 parser.add_argument("--output", dest="output_dir", type=str, 
                     help="directory for file output", required=False,
-                    default='/scratch/ci411/DCASE_GEN/sim_rirs')
+                    default='/scratch/ci411/SRIR_DATASETS/sim_rirs')
 
 parser.add_argument("--tau-db-dir", dest="tau_db_dir", type=str,
                     help="directory for TAU-SRIR-DB", required=False,
-                    default="/scratch/ci411/TAU_SRIR_DB/TAU-SRIR_DB")
+                    default="/scratch/ci411/SRIR_DATASETS/TAU_SRIR_DB/TAU-SRIR_DB")
 
 parser.add_argument("--decay-db", dest="decay_db", type=int,
                     help="decay db for estimating rt60", required=False,
                     default=15)
-
-parser.add_argument("--t-type", dest="t_type", type=str, required=False,
-                    help="type of trajectory (circular or linear)",
-                    default="circular")
 
 parser.add_argument("--max-order", dest="max_order", type=int, required=False,
                     help="maximum order of reflections for ISM sim",
@@ -166,6 +160,9 @@ parser.add_argument("--store-hdf5", dest="store_hdf5", type=bool, required=False
 parser.add_argument("--mic-center", dest="mic_center", type=list, required=False,
                     help="center of microphone array (in meters)", default=[0.05, 0.05, 0.05])
 
+parser.add_argument("--density-scale", dest="density_scale", type=int, required=False,
+                    help="inverse of sampling density (e.g. 2 = half density)", default=1)
+
 
 if __name__ == "__main__":
 
@@ -174,7 +171,7 @@ if __name__ == "__main__":
     #microphone array definitions
     print("Defining mics...")
     mic_coords, mic_dirs = get_tetra_mics() #this can be subbed for other mic configs
-    n_mics = mic_coords
+    n_mics = len(mic_coords)
     
     mic_loc_center = np.array(args.mic_center)
     mic_locs = center_mic_coords(mic_coords, mic_loc_center)
@@ -184,23 +181,27 @@ if __name__ == "__main__":
 
     #load room info
     print("Loading room info...")
-    room_idx = tau_room_list.index(args.room_name)
+    room_name = args.room_name
+    room_idx = tau_room_list.index(room_name)
+    
+    print("Loading path data...")
+    #load paths
+    paths, paths_meta, room_meta = tau_loading.load_paths(room_idx, args.tau_db_dir)
+    t_type = room_meta['trajectory_type']
 
     #sample rirs for rt60 to calculate MAC
     rir_file = [filename for filename in os.listdir(args.tau_db_dir) if room_name in filename][0]
-    samples = tau_loading.load_rir_sample(rir_file, t_type=args.t_type)
+    samples = tau_loading.load_rir_sample(rir_file,  args.tau_db_dir, t_type=t_type)
     rt = []
     for i in range(samples.shape[0]):
         rt.append(measure_rt60(samples[i], fs=args.sr, decay_db=args.decay_db))
-    rt = np.array(rt) * (60/decay_db)
+    rt = np.array(rt) * (60/args.decay_db)
     rt_avg = np.average(rt)
 
     room_dim = tau_dim_list[room_idx]
     e_absorption, _ = pra.inverse_sabine(rt_avg, room_dim)
 
-    print("Loading path data...")
-    #load paths
-    paths, paths_meta, room_meta = tau_loading.load_paths(room_idx, db_config)
+    
 
     #place mics in center-ish of room
     room_center = np.array([room_dim[0]/2, room_dim[1]/2, 0])
@@ -216,9 +217,8 @@ if __name__ == "__main__":
         n_heights = 1
 
     #check for outputdir (create if doesn't exist)
-    room_rir_dir = os.path.join(args.output_dir, 'mic', args.room_name)
-    if not os.path.exists(room_rir_dir):
-        os.mkdir(room_rir_dir)
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
 
     #iterating through paths and simulating (one at a time)
     print("Computing rirs...")
@@ -236,34 +236,27 @@ if __name__ == "__main__":
             path = paths[i,j]
             centered_path = path + mic_center
             path_rirs = np.empty((n_mics, len(path), args.rir_len))
-            for source in centered_path:
-                try:
-                    room.add_source(np.maximum(source,0)) #force source in room
-                except ValueError:
-                    print("Source at {} is not inside room of dimensions {}".format(source, room_dim))
+            for k, source in enumerate(centered_path):
+                if k%args.density_scale==0:
+                    try:
+                        room.add_source(np.maximum(source,0)) #force source in room
+                    except ValueError:
+                        print("Source at {} is not inside room of dimensions {}".format(source, room_dim))
+                else:
+                    continue
+                    
             room.compute_rir()
-            for k in range(n_mics):
-                for l in range(len(path)):
+            
+            print(f"computed rir shape {len(room.rir)},{len(room.rir[0])}")
+            
+            for k in range(len(room.rir)):
+                for l in range(len(room.rir[0])):
                     path_rirs[k,l] = room.rir[k][l][:args.rir_len]
-
+            
             path_rirs = np.moveaxis(path_rirs, [0,1,2], [1,2,0])
             #save to pickle list
             out_pickle[i].append(path_rirs)
-
-            #store to hdf5
-            if args.store_hdf5:
-                path_label = "{}_t{}h{}.hdf5".format(args.room_name, i, j)
-                path_filename = os.path.join(room_rir_dir, path_label)
-                if not os.path.exists(path_filename):
-                    with h5py.File(path_filename, 'w') as f:
-                        f.create_dataset('rirs', data=path_rirs)
-                        f.create_dataset('rate', data=np.array([args.sr]))
-                else:
-                    with h5py.File(path_filename, 'r+') as f:
-                        f['rirs'][:] = path_rirs
-                        f['rate'][:] = np.array([args.sr])
-                print("Stored path at {}".format(path_filename))
-
+    
     pickle_path = os.path.join(args.output_dir, 'rirs_{:02d}_{}.pkl'.format(rirdata2room_idx[room_idx],args.room_name))
     print(f"Storing result to {pickle_path}")
 

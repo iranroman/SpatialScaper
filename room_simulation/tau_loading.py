@@ -6,7 +6,7 @@ import os
 def unitvec_to_cartesian(path_unitvec, height, dist):
     if type(dist) == np.ndarray:
         z_offset = height
-        rad = np.sqrt(dist[0][0]**2 + (dist[0][2]+z_offset)**2)
+        rad = np.sqrt(dist[0]**2 + (dist[2]+z_offset)**2)
         scaled_path = map_to_cylinder(path_unitvec, rad, axis=1)
     else:    
         scaled_path = map_to_cylinder(path_unitvec, dist, axis=2)
@@ -85,8 +85,8 @@ def sample_rirs(rirs, n, t_type='circular'):
         output[i, :] = rirs[ts][hs][:, cs, ps]
     return output
     
-def load_rir_sample(rir_file, n=5, t_type='circular', audio_format='mic'):
-    rirs = mat73.loadmat(rir_file)
+def load_rir_sample(rir_file, tau_db_dir, n=5, t_type='circular', audio_format='mic'):
+    rirs = mat73.loadmat(os.path.join(tau_db_dir, rir_file))
     rirs = rirs['rirs'][audio_format]
     sample = sample_rirs(rirs, n, t_type=t_type)
     return sample
