@@ -1,5 +1,3 @@
-import sys
-sys.path.append('/home/ci411/SELD-data-generator/')
 from room_scaper.utils.parser import parse_args, load_config
 from room_scaper.data import sofa_utils
 import yaml
