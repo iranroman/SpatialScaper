@@ -1,5 +1,7 @@
+import sys
+sys.path.append('/home/ci411/SELD-data-generator/')
 from room_scaper.utils.parser import parse_args, load_config
-from room_scaper.data.utils import get_path_to_room_files
+from room_scaper.data import sofa_utils
 import yaml
 import pickle
 import os
@@ -51,58 +53,6 @@ def get_sound_event_filenames(path):
     # TODO: make this work with recursive listing of files in a directory
     return filenames
 
-def load_pickle(filename):
-    file = open(filename,'rb')
-    object_file = pickle.load(file)
-    file.close()
-    return object_file
-
-def get_room_trajectories(path_to_room_files):
-    '''
-    room_name: a string with the name
-    '''
-    room_trajs = load_pickle(os.path.join(path_to_room_files,'metadata','doa_xyz.pkl'))
-    return room_trajs
-
-def get_traj_n_heights_n_rirs(ntraj, room_trajs):
-    n_heights = len(room_trajs[ntraj])
-    n_rirs = sum([len(room_trajs[ntraj][iheight]) for iheight in range(n_heights)])
-    return n_heights, n_rirs
-
-def get_traj_all_doas(room_trajs, ntraj, n_heights, n_rirs):
-    all_doas = np.zeros((n_rirs, 3))
-    n_rirs_accum = 0
-    flip = 0
-    for nheight in range(n_heights):
-        n_rirs_nh = len(room_trajs[ntraj][nheight])
-        doa_xyz = room_trajs[ntraj][nheight]
-        #   stack all doas of trajectory together
-        #   flip the direction of each second height, so that a
-        #   movement can jump from the lower to the higher smoothly and
-        #   continue moving the opposite direction
-        if flip:
-            nb_doas = np.shape(doa_xyz)[0]
-            all_doas[n_rirs_accum + np.arange(n_rirs_nh), :] = doa_xyz[np.flip(np.arange(nb_doas)), :]
-        else:
-            all_doas[n_rirs_accum + np.arange(n_rirs_nh), :] = doa_xyz
-        
-        n_rirs_accum += n_rirs_nh
-        flip = not flip
-        
-    return all_doas
-            
-def get_traj_doas(room_trajs, n_traj):
-
-    traj_doas = []
-    for ntraj in range(n_traj):
-
-        n_heights, n_rirs = get_traj_n_heights_n_rirs(ntraj, room_trajs)
-
-        all_doas = get_traj_all_doas(room_trajs, ntraj, n_heights, n_rirs)
-
-        traj_doas.append(all_doas)
-
-    return traj_doas
 
 def get_filename_class_duration(fold_event_filenames, path_to_dataset, class_dict=None):
 
@@ -167,7 +117,6 @@ def generate_nth_mixture_dict(all_events_meta):
     nth_mixture['class'] = np.array([event['classid'] for event in all_events_meta])
     nth_mixture['event_onoffsets'] = np.array([event['event_onoffsets'] for event in all_events_meta])
     nth_mixture['sample_onoffsets'] = np.array([np.array([0.0,np.floor(event['filedur']*10)/10]) for event in all_events_meta])
-    nth_mixture['trajectory'] = np.array([event['traj'] for event in all_events_meta])
     nth_mixture['isMoving'] = np.array([event['isMoving'] for event in all_events_meta])
     nth_mixture['isFlippedMoving'] = np.array([event['isFlippedMoving'] for event in all_events_meta])
     nth_mixture['speed'] = np.array([event['speed'] for event in all_events_meta])
@@ -177,11 +126,10 @@ def generate_nth_mixture_dict(all_events_meta):
 
     return nth_mixture
 
-def get_event_riridx(n_traj, source_file_metadata, traj_doas, speed_set, MOVE_THRESHOLD=3):
+def get_event_riridx(source_file_metadata, traj_doas, speed_set, MOVE_THRESHOLD=3):
 
     # trajectory
-    ev_traj = np.random.randint(0, n_traj)
-    nRirs = traj_doas[ev_traj].shape[0]
+    nRirs = traj_doas.shape[0]
     if source_file_metadata['filedur'] <= MOVE_THRESHOLD:
         is_moving = 0 
     else:
@@ -233,7 +181,7 @@ def get_event_riridx(n_traj, source_file_metadata, traj_doas, speed_set, MOVE_TH
         riridx = np.array([np.random.randint(0,nRirs)])
     riridx = riridx.astype('int')
 
-    return riridx, is_moving, is_flipped_moving, ev_speed, ev_traj
+    return riridx, is_moving, is_flipped_moving, ev_speed
 
 def DCASE_main():
 
@@ -245,12 +193,12 @@ def DCASE_main():
     print('generating data using parameters:')
     print(yaml.dump(dict(cfg), allow_unicode=True, default_flow_style=False))
 
-    
     event_filenames = get_sound_event_filenames(cfg.PATH_TO_SOUND_EVENT_FILES)
 
     fold_names = cfg.FOLD_NAMES
     snr_range = cfg.SNR_RANGE
     max_polyphony = cfg.MAX_POLYPHONY
+    aud_fmt = cfg.AUDIO_FMT
     mixtures = []
 
     # iterate over fold names
@@ -273,10 +221,8 @@ def DCASE_main():
         for room_name in fold_rooms:
 
             # get the room's relevant info
-            path_to_room_files = get_path_to_room_files(room_name)
-            room_trajs = get_room_trajectories(path_to_room_files)
-            n_traj = len(room_trajs) 
-            traj_doas = get_traj_doas(room_trajs, n_traj) # TO BE SUBSTITUTED 
+            room_sofa_file = os.path.join(cfg.PATH_TO_RIRS, cfg.AUDIO_FMT, room_name+'.sofa')
+            traj_doas = sofa_utils.load_pos(room_sofa_file)
 
             # 2. add sound events to the mixture by determininig:
             for imixture in range(n_mixtures_per_fold//len(fold_rooms)):
@@ -307,14 +253,13 @@ def DCASE_main():
 
                     # f. determine whether the sound will be static or move in a trajectory:
                     # from a to b, around a (what speed?), random path (what speed?)
-                    riridx, is_moving, is_flipped_moving, ev_speed, ev_traj = get_event_riridx(n_traj, source_file_metadata, traj_doas, cfg.SPEED_SET)
+                    riridx, is_moving, is_flipped_moving, ev_speed= get_event_riridx(source_file_metadata, traj_doas, cfg.SPEED_SET)
 
-                    source_file_metadata['traj'] = ev_traj
                     source_file_metadata['isMoving'] = is_moving
                     source_file_metadata['isFlippedMoving'] = is_flipped_moving
                     source_file_metadata['speed'] = ev_speed
                     source_file_metadata['rirs'] = riridx
-                    source_file_metadata['doa_azel'] = [cart2sph(traj_doas[ev_traj][riridx,:])]
+                    source_file_metadata['doa_azel'] = [cart2sph(traj_doas[riridx,:])]
 
                     all_events_meta.append(source_file_metadata)
 

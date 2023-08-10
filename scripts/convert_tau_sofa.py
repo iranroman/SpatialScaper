@@ -1,4 +1,4 @@
-import sofa_utils
+from room_scaper.data import sofa_utils
 import os
 
 tau_db_dir = '/scratch/ci411/SRIR_DATASETS/TAU_SRIR_DB/TAU-SRIR_DB'
