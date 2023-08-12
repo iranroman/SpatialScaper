@@ -6,7 +6,7 @@ FOLD_ROOMS: {
   'train': ['tc352','sc203','bomb_shelter','pc226','pb132','se203'],
   'test': ['tb103','sa203','gym'],
 }
-N_MIX_PER_FOLD: [900, 300]
+N_MIX_PER_FOLD: [90, 30]
 SNR_RANGE: [6, 31]
 MAX_POLYPHONY: 2
 MIXTURE_DUR: 60
@@ -26,5 +26,5 @@ CLASS_DICT: {
   'knock':            12,
 }
 SPEED_SET: [10, 20, 40]
-NUM_EVENTS_IN_MIXTURE: 10
+NUM_EVENTS_IN_MIXTURE: 5
 METADATA_SR: 10

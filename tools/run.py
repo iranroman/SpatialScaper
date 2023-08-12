@@ -1,10 +1,12 @@
 from room_scaper.utils.parser import parse_args, load_config
 from room_scaper.data.utils import get_path_to_room_files
+from room_scaper.prepare_fsd50k import prepare_fsd50k
 import yaml
 import pickle
 import os
 import numpy as np
 import librosa
+import random
 
 MOVE_THRESHOLD = 3
 
@@ -26,30 +28,6 @@ def cart2sph(xyz):
         return np.stack((azimuth,elevation),axis=0)
     else:
         return np.array([azimuth, elevation])
-
-
-def get_fold_files(foldname, filenames):
-    """
-    assuming the foldname is in the
-    relevant filenames path
-    """
-    fold_files = [fname for fname in filenames if foldname in fname.split('/')]
-    #fold_durs = [float(f.split('/')[-1]) for f in filedurs if foldname in f.split('/')]
-    if fold_files:
-        sampleperm = np.random.permutation(len(fold_files))
-        return [fold_files[i] for i in sampleperm]
-    else:
-        import warnings
-        warnings.warn(f'No files found for fold {foldname}')
-
-def get_sound_event_filenames(path):
-    if path.endswith('.txt'):
-        filenames = []
-        with open(path) as file:
-            while line := file.readline():
-                filenames.append(line.strip())
-    # TODO: make this work with recursive listing of files in a directory
-    return filenames
 
 def load_pickle(filename):
     file = open(filename,'rb')
@@ -104,16 +82,15 @@ def get_traj_doas(room_trajs, n_traj):
 
     return traj_doas
 
-def get_filename_class_duration(fold_event_filenames, path_to_dataset, class_dict=None):
+def get_filename_class_duration(fold_event_filenames, path_to_dataset, mixture_dur, class_dict=None):
 
-    irand = np.random.randint(len(fold_event_filenames))
-
-    filename = fold_event_filenames[irand]
-    filepath = os.path.join(path_to_dataset, filename.split('/')[-1]) # HACKY, BAD, Will improve with Adrian's contrib
-    filedur = librosa.get_duration(path=filepath)
+    filename,filepath = random.choice(list(fold_event_filenames.items()))
+    #filepath = os.path.join(path_to_dataset, filename.split('/')[-1]) # HACKY, BAD, Will improve with Adrian's contrib
     classid = filename.split('/')[0] # HACKY, BAD, Will improve with Adrian's contrib
-    if class_dict:
-       classid = class_dict[classid]
+    classid = class_dict[classid]
+    filedur = librosa.get_duration(path=filepath)
+    if filedur >= mixture_dur/4:
+        filedur = mixture_dur//4 -1
     return {'filename': filename, 'filepath': filepath, 'classid':classid, 'filedur':filedur}
 
 def find_saturated_timepoints(track_events, max_polyphony, dt=0.1):
@@ -130,6 +107,7 @@ def find_saturated_timepoints(track_events, max_polyphony, dt=0.1):
     return saturated_times
 
 def get_event_start_stop(max_time, filedur, satur_times, dt):
+    print(0, max_time, dt)
     event_start = np.random.choice(np.arange(0, max_time, dt))
     event_stop = event_start + (np.ceil(filedur*10)/10)
     event_times = np.arange(event_start, event_stop+dt, dt)
@@ -163,7 +141,7 @@ def sort_by_event_onset(all_events_meta, event_onsets):
 
 def generate_nth_mixture_dict(all_events_meta):
     nth_mixture = {}
-    nth_mixture['files'] = np.array([event['filename'] for event in all_events_meta])
+    nth_mixture['files'] = np.array([event['filepath'] for event in all_events_meta])
     nth_mixture['class'] = np.array([event['classid'] for event in all_events_meta])
     nth_mixture['event_onoffsets'] = np.array([event['event_onoffsets'] for event in all_events_meta])
     nth_mixture['sample_onoffsets'] = np.array([np.array([0.0,np.floor(event['filedur']*10)/10]) for event in all_events_meta])
@@ -235,6 +213,222 @@ def get_event_riridx(n_traj, source_file_metadata, traj_doas, speed_set, MOVE_TH
 
     return riridx, is_moving, is_flipped_moving, ev_speed, ev_traj
 
+def prepare_metadata_and_stats(mixtures,
+        fold_names,
+        fold_rooms,
+        class_dict,
+        nb_frames,
+        nb_mixtures_per_fold,
+        max_polyphony,
+    ):
+    print('Calculate statistics and prepate metadata')
+    #stats = []
+    metadata = []
+    stats = {}
+    stats['nFrames_total'] = len(fold_names) * nb_mixtures_per_fold * nb_frames if np.isscalar(nb_mixtures_per_fold) else np.sum(nb_mixtures_per_fold) * nb_frames
+    stats['class_multi_instance'] = np.zeros(len(class_dict))
+    stats['class_instances'] = np.zeros(len(class_dict))
+    stats['class_nEvents'] = np.zeros(len(class_dict))
+    stats['class_presence'] = np.zeros(len(class_dict))
+    
+    stats['polyphony'] = np.zeros(max_polyphony+1)
+    stats['event_presence'] = 0
+    stats['nEvents_total'] = 0
+    stats['nEvents_static'] = 0
+    stats['nEvents_moving'] = 0
+    
+    # iterate over fold names
+    for nfold, fold in enumerate(fold_names):
+        print('Statistics and metadata for fold {}'.format(fold))
+        rooms = fold_rooms[fold]
+        nb_rooms = len(rooms)
+        room_mixtures=[]
+        for nr in range(nb_rooms):
+            nb_mixtures = len(mixtures[nfold][nr]['mixture'])
+            per_room_mixtures = []
+            for nmix in range(nb_mixtures):
+                mixture = {'classid': np.array([]), 'trackid': np.array([]), 'eventtimetracks': np.array([]), 'eventdoatimetracks': np.array([])}
+                mixture_nm = mixtures[nfold][nr]['mixture'][nmix]
+                event_classes = mixture_nm['class']
+                event_states = mixture_nm['isMoving']
+                
+                #idx of events and interferers
+                nb_events = len(event_classes)
+                nb_events_moving = np.sum(event_states)
+                stats['nEvents_total'] += nb_events
+                stats['nEvents_static'] += nb_events - nb_events_moving
+                stats['nEvents_moving'] += nb_events_moving
+
+                # number of events per class
+                for nc in range(len(class_dict)):
+                    nb_class_events = np.sum(event_classes == nc)
+                    stats['class_nEvents'][nc] += nb_class_events
+                
+                # store a timeline for each event
+                eventtimetracks = np.zeros((nb_frames, nb_events))
+                eventdoatimetracks = np.nan*np.ones((nb_frames, 2, nb_events))
+                print(eventtimetracks.shape)
+                print(eventdoatimetracks.shape)
+                input()
+
+                #prepare metadata for synthesis
+                for nev in range(nb_events):
+                    event_onoffset = mixture_nm['event_onoffsets'][nev,:]*10
+                    doa_azel = np.round(mixture_nm['doa_azel'][nev])
+                    #zero the activity according to perceptual onsets/offsets
+                    sample_onoffsets = mixture_nm['sample_onoffsets'][nev]
+                    ev_idx = np.arange(event_onoffset[0], event_onoffset[1]+0.1,dtype=int)
+                    activity_mask = np.zeros(len(ev_idx),dtype=int)
+                    sample_shape = np.shape(sample_onoffsets)
+                    if len(sample_shape) == 1:
+                        activity_mask[np.arange(int(np.round(sample_onoffsets[0]*10)),int(np.round(sample_onoffsets[1]*10)))] = 1
+                    else:
+                        for nseg in range(sample_shape[0]):
+                            ran = np.arange(int(np.round(sample_onoffsets[nseg,0]*10)),int(np.round((sample_onoffsets[nseg,1])*10)))
+                            activity_mask[ran] = 1
+                    
+                    if len(activity_mask) > len(ev_idx):
+                        activity_mask = activity_mask[0:len(ev_idx)]
+
+                    if np.shape(doa_azel)[0] == 1:
+                        # static event
+                        try:
+                            eventtimetracks[ev_idx, nev] = activity_mask
+                            print(ev_idx)
+                            print(ev_idx.shape)
+                            print(activity_mask.astype(bool))
+                            print(activity_mask.astype(bool).shape)
+                            print(nev)
+                            print(activity_mask)
+                            print(np.sum(activity_mask==1))
+                            print(np.sum(activity_mask.astype(bool)))
+                            print(activity_mask.shape)
+                            print(doa_azel.shape)
+                            print(eventdoatimetracks[ev_idx[activity_mask.astype(bool)],0,nev].shape) 
+                            print((np.ones(np.sum(activity_mask==1))*doa_azel[0,0]).shape)
+                            input()
+                            eventdoatimetracks[ev_idx[activity_mask.astype(bool)],0,nev] = np.ones(np.sum(activity_mask==1))*doa_azel[0,0]
+                            eventdoatimetracks[ev_idx[activity_mask.astype(bool)],1,nev] = np.ones(np.sum(activity_mask==1))*doa_azel[0,1]
+                        except IndexError:
+                             excess_idx = len(np.argwhere(ev_idx >= nb_frames))
+                             ev_idx = ev_idx[:-excess_idx]
+                             if len(activity_mask) > len(ev_idx):
+                                 activity_mask = activity_mask[0:len(ev_idx)]
+                             eventtimetracks[ev_idx, nev] = activity_mask
+                             eventdoatimetracks[ev_idx[activity_mask.astype(bool)],0,nev] = np.ones(np.sum(activity_mask==1))*doa_azel[0,0]
+                             eventdoatimetracks[ev_idx[activity_mask.astype(bool)],1,nev] = np.ones(np.sum(activity_mask==1))*doa_azel[0,1]
+
+                    else:
+                        # moving event
+                        nb_doas = np.shape(doa_azel)[0]
+                        ev_idx = ev_idx[:nb_doas]
+                        activity_mask = activity_mask[:nb_doas]
+                        try:
+                            eventtimetracks[ev_idx,nev] = activity_mask
+                            eventdoatimetracks[ev_idx[activity_mask.astype(bool)],:,nev] = doa_azel[activity_mask.astype(bool),:]
+                        except IndexError:
+                            excess_idx = len(np.argwhere(ev_idx >= nb_frames))
+                            ev_idx = ev_idx[:-excess_idx]
+                            if len(activity_mask) > len(ev_idx):
+                                activity_mask = activity_mask[0:len(ev_idx)]
+                            eventtimetracks[ev_idx,nev] = activity_mask
+                            eventdoatimetracks[ev_idx[activity_mask.astype(bool)],:,nev] = doa_azel[activity_mask.astype(bool),:]
+
+                mixture['classid'] = event_classes
+                mixture['trackid'] = np.arange(0,nb_events)
+                mixture['eventtimetracks'] = eventtimetracks
+                mixture['eventdoatimetracks'] = eventdoatimetracks
+                
+                for nf in range(nb_frames):
+                    # find active events
+                    active_events = np.argwhere(eventtimetracks[nf,:] > 0)
+                    # find the classes of the active events
+                    active_classes = event_classes[active_events]
+                    
+                    if not active_classes.ndim and active_classes.size:
+                        # add to zero polyphony
+                        stats['polyphony'][0] += 1
+                    else:
+                        # add to general event presence
+                        stats['event_presence'] += 1
+                        # number of simultaneous events
+                        nb_active = len(active_events)
+
+                        # add to respective polyphony
+                        try:
+                            stats['polyphony'][nb_active] += 1
+                        except IndexError:
+                            pass #TODO: this is a workaround for less than 1% border cases, needs to be fixed although not very relevant
+                        
+                        # presence, instances and multi-instance for each class
+                        
+                        for nc in range(len(class_dict)):
+                            nb_instances = np.sum(active_classes == nc)
+                            if nb_instances > 0:
+                                stats['class_presence'][nc] += 1
+                            if nb_instances > 1:
+                                stats['class_multi_instance'][nc] += 1
+                            stats['class_instances'][nc] += nb_instances
+                per_room_mixtures.append(mixture)
+            room_mixtures.append(per_room_mixtures)
+        metadata.append(room_mixtures)
+    print('here!')
+    input()
+     
+    # compute average polyphony
+    weighted_polyphony_sum = 0
+    for nn in range(self._mixture_setup['nOverlap']):
+        weighted_polyphony_sum += nn * stats['polyphony'][nn+1]
+    
+    stats['avg_polyphony'] = weighted_polyphony_sum / stats['event_presence']
+    
+    #event percentages
+    stats['class_event_pc'] = np.round(stats['class_nEvents']*1000./stats['nEvents_total'])/10.
+    stats['event_presence_pc'] = np.round(stats['event_presence']*1000./stats['nFrames_total'])/10.
+    stats['class_presence_pc'] = np.round(stats['class_presence']*1000./stats['nFrames_total'])/10.
+    # percentage of frames with same-class instances
+    stats['multi_class_pc'] = np.round(np.sum(stats['class_multi_instance']*1000./stats['nFrames_total']))/10.
+
+
+    return self._metadata, stats
+
+def write_metadata(self):
+    if not os.path.isdir(self._metadata_path):
+        os.makedirs(self._metadata_path)
+    
+    for nfold in range(self._mixture_setup['nb_folds']):
+        print('Writing metadata files for fold {}'.format(nfold+1))
+        nb_rooms = len(self._metadata[nfold])
+        for nr in range(nb_rooms):
+            nb_mixtures = len(self._metadata[nfold][nr])
+            for nmix in range(nb_mixtures):
+                print('Mixture {}'.format(nmix))
+                metadata_nm = self._metadata[nfold][nr][nmix]
+                
+                # write to filename, omitting non-active frames
+                mixture_filename = 'fold{}_room{}_mix{:03}.csv'.format(nfold+1, nr+1, nmix+1)
+                file_id = open(self._metadata_path + '/' + mixture_filename, 'w', newline="")
+                metadata_writer = csv.writer(file_id,delimiter=',',quoting = csv.QUOTE_NONE)
+                for nf in range(self._nb_frames):
+                    # find active events
+                    active_events = np.argwhere(metadata_nm['eventtimetracks'][nf, :]>0)
+                    nb_active = len(active_events)
+                    
+                    if nb_active > 0:
+                        # find the classes of active events
+                        active_classes = metadata_nm['classid'][active_events]
+                        active_tracks = metadata_nm['trackid'][active_events]
+                        
+                        # write to file
+                        for na in range(nb_active):
+                            classidx = int(active_classes[na][0]) #additional zero index since it's packed in an array
+                            trackidx = int(active_tracks[na][0])
+                            
+                            azim = int(metadata_nm['eventdoatimetracks'][nf,0,active_events][na][0])
+                            elev = int(metadata_nm['eventdoatimetracks'][nf,1,active_events][na][0])
+                            metadata_writer.writerow([nf,classidx,trackidx,azim,elev])
+                file_id.close()
+
 def DCASE_main():
 
     # 0. parse the yaml with the config. Define if you are generating data in 
@@ -246,7 +440,7 @@ def DCASE_main():
     print(yaml.dump(dict(cfg), allow_unicode=True, default_flow_style=False))
 
     
-    event_filenames = get_sound_event_filenames(cfg.PATH_TO_SOUND_EVENT_FILES)
+    event_filenames = prepare_fsd50k()
 
     fold_names = cfg.FOLD_NAMES
     snr_range = cfg.SNR_RANGE
@@ -256,9 +450,7 @@ def DCASE_main():
     # iterate over fold names
     for ifold, fold in enumerate(fold_names):
         
-        fold_event_filenames = get_fold_files(
-                fold, 
-                event_filenames)
+        fold_event_filenames = event_filenames.get_filenames(fold)
         n_mixtures_per_fold = cfg.N_MIX_PER_FOLD[ifold]
 
         #######################
@@ -271,6 +463,9 @@ def DCASE_main():
         fold_rooms = cfg.FOLD_ROOMS[fold] 
         room_mixtures=[]
         for room_name in fold_rooms:
+
+            fold_mixture = {'mixture': []}
+            fold_mixture['roomidx'] = room_name
 
             # get the room's relevant info
             path_to_room_files = get_path_to_room_files(room_name)
@@ -289,7 +484,7 @@ def DCASE_main():
                 for ievent in range(nevents):
                     # a. determine the label and the specific source file. The source time will
                     # be from 0 to its total duration. Map the label to the DCASE index
-                    source_file_metadata = get_filename_class_duration(fold_event_filenames, cfg.PATH_TO_DATASET, cfg.CLASS_DICT)
+                    source_file_metadata = get_filename_class_duration(fold_event_filenames, cfg.PATH_TO_DATASET, cfg.MIXTURE_DUR, cfg.CLASS_DICT)
 
                     # b. assign an event onoffset in the duration of the track. Make sure that no
                     # more than MAX_POLYPHONY events overlap at a time
@@ -322,13 +517,15 @@ def DCASE_main():
 
                 nth_mixture = generate_nth_mixture_dict(all_events_meta)
                 nth_mixture['room'] = room_name
+				#accumulate mixtures for each room
+                fold_mixture['mixture'].append(nth_mixture)
+            #accumulate rooms
+            room_mixtures.append(fold_mixture)
+        #accumulate mixtures per fold
+        mixtures.append(room_mixtures)
+        
 
-                # sanity check
-                for k,v in nth_mixture.items(): 
-                    print(k)
-                    input()
-                    print(v)
-                    input()
+    prepare_metadata_and_stats(mixtures,fold_names, cfg.FOLD_ROOMS, cfg.CLASS_DICT, cfg.METADATA_SR * cfg.MIXTURE_DUR, cfg.N_MIX_PER_FOLD, cfg.MAX_POLYPHONY)
 
     # 3. determine whether the mixture will undergo "channel_swap" augmentations
     # (channel_swap only applies to RIRs from real rooms) 
