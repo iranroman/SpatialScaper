@@ -161,11 +161,11 @@ class FSD50KDataLoad(BaseDataLoad):
         self.fsd_to_dcase_dict['test'].update(self.music.fma_to_dcase_dict['test'])
 
 PARAM_CONFIG = {
-    "dataset_home": "/scratch/data/FSD50K", # add /path/to (not path/to/dir)
+    "dataset_home": "/datasets/FSD50K", # add /path/to (not path/to/dir)
     "metadata_path": "dcase_datagen/metadata", # add /path/to (not path/to/dir)
     "dcase_sound_events_txt": "dcase_datagen/metadata/sound_event_fsd50k_filenames.txt",
     "download": False,
-    "music_home": "dcase_datagen/data", # add /path/to (not path/to/dir)
+    "music_home": "/datasets/fma", # add /path/to (not path/to/dir)
     "music_metadata": "dcase_datagen/metadata", # add /path/to (not path/to/dir)
     "ntracks_genre": 40,
     "split_prob": 0.6

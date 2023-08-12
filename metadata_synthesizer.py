@@ -2,6 +2,7 @@ import numpy as np
 from utils import cart2sph
 import os
 import csv
+import librosa
 
 from prepare_fsd50k import prepare_fsd50k
 from collections import OrderedDict
@@ -22,7 +23,8 @@ class MetadataSynthesizer(object):
                 self._class2activeClassmap.append(cl)
             else:
                 self._class2activeClassmap.append(0)
-        
+        self._classname_dict = params['classname_dict']
+
         self._class_mobility = db_config._class_mobility
         self._mixture_setup = {}
         self._mixture_setup['scenario'] = scenario_name
@@ -35,6 +37,7 @@ class MetadataSynthesizer(object):
         self._mixture_setup['fs_mix'] = 24000 #fs of RIRs
         self._mixture_setup['mixture_duration'] = params['mixture_duration']
         self._nb_mixtures_per_fold = params['nb_mixtures_per_fold']
+        self._foldnames = params['foldnames']
         self._nb_mixtures = self._mixture_setup['nb_folds'] * self._nb_mixtures_per_fold if np.isscalar(self._nb_mixtures_per_fold) else np.sum(self._nb_mixtures_per_fold)
         self._mixture_setup['total_duration'] = self._nb_mixtures * self._mixture_setup['mixture_duration']
         self._mixture_setup['speed_set'] =  [10., 20., 40.]
@@ -67,27 +70,35 @@ class MetadataSynthesizer(object):
             nb_rooms_nf = len(rooms_nf)
             
             
-            idx_active = np.array([])
-            for na in range(self._nb_active_classes):
-                idx_active = np.append(idx_active, np.nonzero(self._db_config._samplelist[nfold]['class'] == self._active_classes[na]))
-            idx_active = idx_active.astype('int')
-            # get active classes
-            foldlist_nff['class'] = self._db_config._samplelist[nfold]['class'][idx_active]
 
             # Load fsd50k object containing dcase to fsd50k paths
-            file_info = fsd50k.get_filenames(foldname)
-            file_info_sorted = OrderedDict((event_class, file_info[event_class]) for event_class in self._db_config._classes)
-            n_music_nfold = np.count_nonzero(foldlist_nff['class'] == 8)
-            filter_n_music_tracks = dict(list(file_info_sorted["music"].items())[:n_music_nfold]) # [hardcoded] take only the amount of music track dcase defines
-            file_info_sorted["music"] = filter_n_music_tracks # [hardcoded] take neccesary music tracks
-            
-            # Merge all file mappings into a single dictionary (now that things are sorted by class)
-            all_file_info = {key: value for inner_dict in file_info_sorted.values() for key, value in inner_dict.items()}
-            foldlist_nff['audiofile'] = np.array([track_info[1][0] if len(track_info[1])==2 else track_info[1] for track_info in all_file_info.items()])
-            non_music_durations = self._db_config._samplelist[nfold]['duration'][idx_active] # placeholder only (may be needed in future)
-            music_durations = [track_info[1][1] for track_info in all_file_info.items() if len(track_info)==2] # placeholder only (may be needed in future)
-            foldlist_nff['duration'] = self._db_config._samplelist[nfold]['duration'][idx_active]
-            foldlist_nff['onoffset'] = self._db_config._samplelist[nfold]['onoffset'][idx_active]
+            fsd50k = prepare_fsd50k()
+            foldname = self._foldnames[nfold]
+            files_per_class = fsd50k.get_filenames(foldname)
+            audiofiles = []
+            audioclasses = []
+            durations = []
+            onoffsets = []
+            for k,v in self._classname_dict.items():
+                for kk,vv in files_per_class.items():
+                    if k == kk:
+                        audiofiles.extend(list(vv.values()))
+                        audioclasses.extend([v]*len(vv))
+            audiofiles_ = []
+            for audiof in audiofiles:
+                if type(audiof) == list:
+                    durations.append(librosa.get_duration(path=audiof[0]))
+                    onoffsets.append([0,10])
+                    audiofiles_.append(audiof[0])
+                else:
+                    durations.append(librosa.get_duration(path=audiof))
+                    onoffsets.append([0,durations[-1]])
+                    audiofiles_.append(audiof)
+            foldlist_nff['class'] = np.array(audioclasses)
+            foldlist_nff['audiofile'] = np.array(audiofiles_)
+            foldlist_nff['duration'] = np.array(durations)
+            foldlist_nff['onoffset'] = np.array(onoffsets)
+
             nb_samples_nf = len(foldlist_nff['duration'])
             
             # shuffle randomly the samples in the target list to avoid samples of the same class coming consecutively
