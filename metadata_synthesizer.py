@@ -3,6 +3,9 @@ from utils import cart2sph
 import os
 import csv
 
+from prepare_fsd50k import prepare_fsd50k
+from collections import OrderedDict
+
 class MetadataSynthesizer(object):
     def __init__(
             self, db_config, params, scenario_name
@@ -68,9 +71,21 @@ class MetadataSynthesizer(object):
             for na in range(self._nb_active_classes):
                 idx_active = np.append(idx_active, np.nonzero(self._db_config._samplelist[nfold]['class'] == self._active_classes[na]))
             idx_active = idx_active.astype('int')
-
+            # get active classes
             foldlist_nff['class'] = self._db_config._samplelist[nfold]['class'][idx_active]
-            foldlist_nff['audiofile'] = self._db_config._samplelist[nfold]['audiofile'][idx_active]
+
+            # Load fsd50k object containing dcase to fsd50k paths
+            file_info = fsd50k.get_filenames(foldname)
+            file_info_sorted = OrderedDict((event_class, file_info[event_class]) for event_class in self._db_config._classes)
+            n_music_nfold = np.count_nonzero(foldlist_nff['class'] == 8)
+            filter_n_music_tracks = dict(list(file_info_sorted["music"].items())[:n_music_nfold]) # [hardcoded] take only the amount of music track dcase defines
+            file_info_sorted["music"] = filter_n_music_tracks # [hardcoded] take neccesary music tracks
+            
+            # Merge all file mappings into a single dictionary (now that things are sorted by class)
+            all_file_info = {key: value for inner_dict in file_info_sorted.values() for key, value in inner_dict.items()}
+            foldlist_nff['audiofile'] = np.array([track_info[1][0] if len(track_info[1])==2 else track_info[1] for track_info in all_file_info.items()])
+            non_music_durations = self._db_config._samplelist[nfold]['duration'][idx_active] # placeholder only (may be needed in future)
+            music_durations = [track_info[1][1] for track_info in all_file_info.items() if len(track_info)==2] # placeholder only (may be needed in future)
             foldlist_nff['duration'] = self._db_config._samplelist[nfold]['duration'][idx_active]
             foldlist_nff['onoffset'] = self._db_config._samplelist[nfold]['onoffset'][idx_active]
             nb_samples_nf = len(foldlist_nff['duration'])

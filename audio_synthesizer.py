@@ -7,6 +7,8 @@ import scipy.signal as signal
 import soundfile
 import pickle
 
+import librosa # used since we allow .wav and .mp3 loading 
+
 class AudioSynthesizer(object):
     def __init__(
             self, params, mixtures, mixture_setup, db_config, audio_format
@@ -119,7 +121,7 @@ class AudioSynthesizer(object):
                         if self._db_name == 'nigens':
                             eventsig, fs_db = soundfile.read(self._db_path + '/' + filename)   
                         elif self._db_name == 'fsd50k':
-                            eventsig, fs_db = soundfile.read(self._db_path + '/' + filename.split('/')[-1])
+                            eventsig, fs_db = librosa.read(filename, sr=44100) # here we need librosa since we are loading .mp3 
                         else:
                             raise Exception(f"Unknown event database: {self._db_name}")
                             
