@@ -80,10 +80,9 @@ class MetadataSynthesizer(object):
             durations = []
             onoffsets = []
             for k,v in self._classname_dict.items():
-                for kk,vv in files_per_class.items():
-                    if k == kk:
-                        audiofiles.extend(list(vv.values()))
-                        audioclasses.extend([v]*len(vv))
+                vv = files_per_class[k]
+                audiofiles.extend(list(vv.values()))
+                audioclasses.extend([v]*len(vv))
             audiofiles_ = []
             for audiof in audiofiles:
                 if type(audiof) == list:
