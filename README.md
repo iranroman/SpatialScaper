@@ -6,26 +6,44 @@ Data generator for creating synthetic audio mixtures suitable for DCASE Challeng
 The provided code was tested with Python 3.8 and the following libraries:
 SoundFile 0.10.3, mat73 0.58, numpy 1.20.1, scipy 1.6.2, librosa 0.8.1. 
 
-Must also download these RIR databases:
+Must download these RIR databases:
 * TAU SRIR DB: https://zenodo.org/record/6408611
 
-Also download
-* FSD50K https://zenodo.org/record/4060432
-* orchset (could be done using `mirdata`)
+### One-time setup
+
+This data synthesizer uses sound events from the [FSD50K](https://zenodo.org/record/4060432#.ZE7ely2B0Ts) dataset. To download the dataset for first time and to also include music tracks (from the the [FMA dataset](https://github.com/mdeff/fma) dataset) as part of the data synthesizer sound events, do the following under `prepare_fsd50k.py`:
+
+- Change the dataset parameter configuration paths and select `"download": True` to download the FSD50K dataset along with the music FMA dataset.
 
 ```
-pip install mirdata
+PARAM_CONFIG = {
+    "dataset_home": "/datasets/FSD50K", # add /path/to (not path/to/dir)
+    "metadata_path": "dcase_datagen/metadata", # add /path/to (not path/to/dir)
+    "dcase_sound_events_txt": "dcase_datagen/metadata/sound_event_fsd50k_filenames.txt",
+    "download": True,
+    "music_home": "/datasets/fma", # add /path/to (not path/to/dir)
+    "music_metadata": "dcase_datagen/metadata", # add /path/to (not path/to/dir)
+    "ntracks_genre": 40,
+    "split_prob": 0.6
+}
 ```
+*Note:* if you already have the FSD50K dataset downloaded simply update the `/path/to` the dataset (the same applies for the FMA dataset) and set `"download": False`.
+
+Execute the script by:
 
 ```
->>> import mirdata
->>> orchset = mirdata.initialize('orchset')
->>> orchset = mirdata.initialize('orchset', data_home='/home/iran/datasets/orchset')
->>> orchset.download()
+python prepare_fsd50k.py
 ```
 
+After this one-time setup, the `PARAM_CONFIG` values should remain unchanged, and the data synthesizer will load all the necessary data and metada by simply loading `prepare_fsd50k` as a python module:
+
 ```
-cp /path/to/orchset/audio/mono/* /path/to/FSD50K/
+from prepare_fsd50k import prepare_fsd50k
+
+fsd50k = prepare_fsd50k() # object embedding data and metadata paths
+
+# e.g.: to retrive 'train' DCASE filenames into FSD50K filepaths
+filenames = fsd50k.get_filenames('train')
 ```
 
 ## Getting Started
