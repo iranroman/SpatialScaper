@@ -122,7 +122,7 @@ class AudioSynthesizer(object):
                         if self._db_name == 'nigens':
                             eventsig, fs_db = soundfile.read(self._db_path + '/' + filename)   
                         elif self._db_name == 'fsd50k':
-                            eventsig, fs_db = librosa.load(filename, sr=self._fs, duration=onoffset[1]/10) # here we need librosa since we are loading .mp3 
+                            eventsig, fs_db = librosa.load(filename, sr=self._fs, duration=(onoffset[1]-onoffset[0])-0.1) # here we need librosa since we are loading .mp3 
                         else:
                             raise Exception(f"Unknown event database: {self._db_name}")
                             

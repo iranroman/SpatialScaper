@@ -87,7 +87,7 @@ class MetadataSynthesizer(object):
             for audiof in audiofiles:
                 if type(audiof) == list:
                     durations.append(librosa.get_duration(path=audiof[0]))
-                    onoffsets.append([0,10])
+                    onoffsets.append([0,durations[-1]])
                     audiofiles_.append(audiof[0])
                 else:
                     durations.append(librosa.get_duration(path=audiof))
@@ -97,7 +97,10 @@ class MetadataSynthesizer(object):
             foldlist_nff['audiofile'] = np.array(audiofiles_)
             foldlist_nff['duration'] = np.array(durations)
             foldlist_nff['onoffset'] = np.array(onoffsets)
-
+            # standardize the durations to a fixed precision
+            for i in range(len(durations)): 
+                foldlist_nff['duration'][i] = np.floor(foldlist_nff['duration'][i]*100)/100 
+                foldlist_nff['onoffset'][i][1] = np.floor(foldlist_nff['onoffset'][i][1]*100)/100 
             nb_samples_nf = len(foldlist_nff['duration'])
             
             # shuffle randomly the samples in the target list to avoid samples of the same class coming consecutively
