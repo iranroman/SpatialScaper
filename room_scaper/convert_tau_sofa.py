@@ -1,8 +1,8 @@
 import sofa_utils
 import os
 
-tau_db_dir = '/scratch/ci411/SRIR_DATASETS/TAU_SRIR_DB/TAU-SRIR_DB'
-sofa_db_dir = '/scratch/ci411/SRIR_DATASETS/TAU_SRIR_DB_SOFA'
+tau_db_dir = 'TAU_DB/TAU-SRIR_DB'
+sofa_db_dir = 'TAU_DB/TAU_SRIR_DB_SOFA'
 db_name = "TAU-SRIR-DB-SOFA"
 
 for room_idx in range(9):

@@ -2,7 +2,7 @@ import os
 import mat73
 import sys
 sys.path.append('../room_simulation') #we should move stuff around to avoid this
-import tau_loading
+from room_scaper import tau_loading
 import numpy as np
 import pysofaconventions as pysofa
 
