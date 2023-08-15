@@ -91,3 +91,8 @@ def load_rir_sample(rir_file, n=5, t_type='circular', audio_format='mic'):
     rirs = rirs['rirs'][audio_format]
     sample = sample_rirs(rirs, n, t_type=t_type)
     return sample
+
+def check_n_traj(tau_db_dir, room_idx):
+    measinfo = loadmat(os.path.join(tau_db_dir,'measinfo.mat'))['measinfo']
+    trajs = measinfo[room_idx][0][4][0]
+    return len(trajs)
