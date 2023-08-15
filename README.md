@@ -1,5 +1,5 @@
 # DCASE2022-data-generator
-Data generator for creating synthetic audio mixtures suitable for DCASE Challenge 2022 Task 3
+Data generator for creating synthetic audio mixtures suitable for DCASE Challenge Task 3
 
 ### Prerequisites
 
@@ -45,8 +45,17 @@ fsd50k = prepare_fsd50k() # object embedding data and metadata paths
 # e.g.: to retrive 'train' DCASE filenames into FSD50K filepaths
 filenames = fsd50k.get_filenames('train')
 ```
+In practice, however, to generate data all you need to do is run the exemplary script is:
+* The `example_script_DCASE2022.py` is a script showing a pipeline to generate data.
 
-## Getting Started
+### Using the generated dataset to train the DCASE 2023 Task 3 audio-only baseline you should get results similar to these:
+
+| Dataset | ER<sub>20°</sub> | F<sub>20°</sub> | LE<sub>CD</sub> | LR<sub>CD</sub> |
+| ----| --- | --- | --- | --- |
+| Ambisonic (FOA + Multi-ACCDOA) | 0.60 | 28.7 % | 23.2&deg; | 48.8 % |
+| Microphone Array (MIC-GCC + Multi-ACCDOA) | 0.64 | 26.9 % | 23.8&deg; | 46.2 % |
+
+## Other info:
 
 This repository contains several Python file, which in total create a complete data generation framework.
 * The `generation_parameters.py` is a separate script used for setting the parameters for the data generation process, including things such as audio dataset, number of folds, mixuture length, etc.
@@ -67,13 +76,3 @@ python mat2dict.py /path/to/TAU_DB/TAU-SRIR_DB/
 ``` 
 
 
-The exemplary script is:
-* The `example_script_DCASE2022.py` is a script showing a pipeline to generate data similar to the current DCASE2022 dataset.
-
-### Using the generated dataset to train the DCASE 2023 Task 3 audio-only baseline you should get results similar to these:
-
-
-| Dataset | ER<sub>20°</sub> | F<sub>20°</sub> | LE<sub>CD</sub> | LR<sub>CD</sub> |
-| ----| --- | --- | --- | --- |
-| Ambisonic (FOA + Multi-ACCDOA) | 0.60 | 28.7 % | 23.2&deg; | 48.8 % |
-| Microphone Array (MIC-GCC + Multi-ACCDOA) | 0.64 | 26.9 % | 23.8&deg; | 46.2 % |
