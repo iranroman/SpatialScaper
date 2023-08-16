@@ -9,7 +9,7 @@ import pysofaconventions as pysofa
 from netCDF4 import Dataset
 import time
 
-def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt='mic', traj=None):
+def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt='mic', traj=None, flip=True):
     rooms = ['bomb_shelter', 'gym', 'pb132', 'pc226', 'sa203', 'sc203', 'se203', 'tb103', 'tc352']
     room = rooms[room_idx]
     files = os.listdir(tau_db_dir)
@@ -27,8 +27,16 @@ def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt='mic', traj=None):
         traj_iter = [traj]
     for i in traj_iter:
         for j in range(n_heights):
-            path_stack = np.concatenate((path_stack, output_paths[i,j]), axis=0)
-            rir_stack = np.concatenate((rir_stack, rirs[aud_fmt][i][j]), axis=2)
+            path = output_paths[i,j][::-1]
+            path_rirs = rirs[aud_fmt][i][j][::-1]
+            if flip:
+                if j%2==1:
+                    #flip every other height, as in DCASE
+                    path_rirs = path_rirs[::-1]
+                    path = path[::-1]
+            else:
+                path_stack = np.concatenate((path_stack, path), axis=0)
+                rir_stack = np.concatenate((rir_stack, path_rirs), axis=2)
             M += output_paths[i,j].shape[0]
             
     rirs = np.reshape(rir_stack, (M,R,N))
