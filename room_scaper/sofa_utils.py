@@ -27,8 +27,8 @@ def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt='mic', traj=None, flip=True
         traj_iter = [traj]
     for i in traj_iter:
         for j in range(n_heights):
-            path = output_paths[i,j][::-1]
-            path_rirs = rirs[aud_fmt][i][j][::-1]
+            path = output_paths[i,j]
+            path_rirs = rirs[aud_fmt][i][j]
             if flip:
                 if j%2==1:
                     #flip every other height, as in DCASE
