@@ -14,7 +14,7 @@ def get_params(argv='1'):
                                  ['tb103','sa203','gym']],
         db_path = 'E:/DCASE2022/TAU_Spatial_RIR_Database_2021/Code/NIGENS',  # path containing audio events to be utilized during data generation
         max_polyphony = 3,  # maximum number of overlapping sound events
-        active_classes = [0, 1, 2, 3, 5, 6, 8, 9, 10, 11, 12, 13],  # list of sound classes to be used for data generation
+        active_classes = [0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13],  # list of sound classes to be used for data generation
         classname_dict = {
 		    'femaleSpeech':     0,
 		    'maleSpeech':       1,
