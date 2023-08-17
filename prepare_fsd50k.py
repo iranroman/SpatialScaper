@@ -21,6 +21,8 @@ FMA_REMOTES = {
     "metadata_url": "https://os.unil.cloud.switch.ch/fma/fma_metadata.zip"
 }
 
+CORRUPT_FMA_TRACKS = ["098565", "098567", "098569", "099134", "108925", "133297"]
+
 class FMADataLoad(BaseDataLoad):
     def __init__(self, ntracks_genre=10, split_prob=0.6, **kwargs):
         super().__init__(**kwargs)
@@ -71,6 +73,8 @@ class FMADataLoad(BaseDataLoad):
                 # get track name by id
                 subdir = f'{track_id:06}'[:3]
                 fma_track_path = os.path.join(self.dataset_home, self.dataset_name, subdir, f'{track_id:06}.mp3')
+                if f'{track_id:06}' in CORRUPT_FMA_TRACKS: # skip corrupt tracks from fma_small
+                    continue # see: https://github.com/mdeff/fma/wiki#known-issues-errata, https://github.com/mdeff/fma/issues/49
                 # Based on prob decide test vs. train split
                 save_dir = None
                 # Define DCASE path format variables
