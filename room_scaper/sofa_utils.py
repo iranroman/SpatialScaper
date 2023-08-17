@@ -37,7 +37,6 @@ def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt='mic', traj=None, flip=True
             path_stack = np.concatenate((path_stack, path), axis=0)
             rir_stack = np.concatenate((rir_stack, path_rirs), axis=2)
             M += output_paths[i,j].shape[0]
-            print(path_rirs.shape, rir_stack.shape)        
         
     rirs = np.reshape(rir_stack, (M,R,N))
     source_pos = np.reshape(path_stack, (M,3))
