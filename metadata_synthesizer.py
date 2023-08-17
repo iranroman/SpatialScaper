@@ -41,7 +41,6 @@ class MetadataSynthesizer(object):
         self._mixture_setup['nOverlap'] = params['max_polyphony']
         self._nb_frames = len(self._mixture_setup['time_idx_100ms'])
         self._rnd_generator = np.random.default_rng()
-        self._rirdata = db_config._rirdata
         self._rirpath_sofa = params['rirpath_sofa']
         self._nb_classes = len(self._classnames)
         self._nb_speeds = len(self._mixture_setup['speed_set'])
@@ -93,49 +92,13 @@ class MetadataSynthesizer(object):
                 fold_mixture['roomidx'] = rooms_nf
                 nroom = nr
                 print('Room {} \n'.format(nroom)) 
-                n_traj = len(self._rirdata[nroom]['doa_xyz'])
                 room_sofas = sorted([self._rirpath_sofa+'/'+'mic'+'/'+nroom+'/'+f for f in os.listdir(self._rirpath_sofa+'/'+'mic'+'/'+nroom)]) # hacky improve path
-                n_traj_sofa = len(room_sofas)
-                assert n_traj == n_traj_sofa
+                n_traj = len(room_sofas)
                 traj_doas = []
-                traj_doas_sofa = []
                 
-                for itraj, ntraj in enumerate(self._rirdata[nroom]['doa_xyz']):
+                for itraj in range(n_traj):
                     sofa_rirs = sofa_utils.load_pos(room_sofas[itraj])
-                    n_rirs = np.sum([len(subtr) for subtr in ntraj])
-                    n_rirs_sofa = len(sofa_rirs)
-                    assert (sofa_rirs.mask == False).all()
-                    n_heights = len(ntraj)
-                    all_doas = np.zeros((n_rirs, 3))
-                    n_rirs_accum = 0
-                    flip = 0
-                    
-                    for nheight in range(n_heights):
-                        n_rirs_nh = len(ntraj[nheight])
-                        doa_xyz = ntraj[nheight]
-                        #   stack all doas of trajectory together
-                        #   flip the direction of each second height, so that a
-                        #   movement can jump from the lower to the higher smoothly and
-                        #   continue moving the opposite direction
-                        if flip:
-                            nb_doas = np.shape(doa_xyz)[0]
-                            all_doas[n_rirs_accum + np.arange(n_rirs_nh), :] = doa_xyz[np.flip(np.arange(nb_doas)), :]
-                        else:
-                            all_doas[n_rirs_accum + np.arange(n_rirs_nh), :] = doa_xyz
-                        
-                        n_rirs_accum += n_rirs_nh
-                        flip = not flip
-                        
-                    traj_doas.append(all_doas)
-                    #for i in range(len(all_doas)):
-                    #    print(i)
-                    #    print([f'{x:0.02}' for x in all_doas[i]])
-                    #    print([f'{x:0.02}' for x in sofa_rirs[i]])
-                    #    input()
-                    traj_doas_sofa.append(sofa_rirs)
-                    for i in range(len(all_doas)):
-                        close = np.allclose(all_doas[i], sofa_rirs[i])
-                        assert close
+                    traj_doas.append(sofa_rirs)
             
                 # start layering the mixtures for the specific room
                 sample_counter = 0
@@ -271,9 +234,7 @@ class MetadataSynthesizer(object):
                                     
                             # trajectory
                             ev_traj = self._rnd_generator.integers(0, n_traj)
-                            nRirs = np.sum([len(subtr) for subtr in self._rirdata[nroom]['doa_xyz'][ev_traj]])
-                            nRirs_sofa = len(sofa_utils.load_pos(room_sofas[ev_traj]))
-                            assert nRirs == nRirs_sofa
+                            nRirs = len(sofa_utils.load_pos(room_sofas[ev_traj]))
                             
                             #if event is less than move_threshold long, make it static by default
                             if event_duration_nl <= self._move_threshold*10:
