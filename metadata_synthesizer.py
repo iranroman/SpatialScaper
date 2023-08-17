@@ -2,6 +2,7 @@ import numpy as np
 from utils import cart2sph
 import os
 import csv
+from room_scaper import sofa_utils
 
 class MetadataSynthesizer(object):
     def __init__(
@@ -40,8 +41,8 @@ class MetadataSynthesizer(object):
         self._mixture_setup['nOverlap'] = params['max_polyphony']
         self._nb_frames = len(self._mixture_setup['time_idx_100ms'])
         self._rnd_generator = np.random.default_rng()
-        
         self._rirdata = db_config._rirdata
+        self._rirpath_sofa = params['rirpath_sofa']
         self._nb_classes = len(self._classnames)
         self._nb_speeds = len(self._mixture_setup['speed_set'])
         self._nb_snrs = len(self._mixture_setup['snr_set'])
@@ -93,10 +94,17 @@ class MetadataSynthesizer(object):
                 nroom = nr
                 print('Room {} \n'.format(nroom)) 
                 n_traj = len(self._rirdata[nroom]['doa_xyz'])
+                room_sofas = sorted([self._rirpath_sofa+'/'+'mic'+'/'+nroom+'/'+f for f in os.listdir(self._rirpath_sofa+'/'+'mic'+'/'+nroom)]) # hacky improve path
+                n_traj_sofa = len(room_sofas)
+                assert n_traj == n_traj_sofa
                 traj_doas = []
+                traj_doas_sofa = []
                 
-                for ntraj in self._rirdata[nroom]['doa_xyz']:
+                for itraj, ntraj in enumerate(self._rirdata[nroom]['doa_xyz']):
+                    sofa_rirs = sofa_utils.load_pos(room_sofas[itraj])
                     n_rirs = np.sum([len(subtr) for subtr in ntraj])
+                    n_rirs_sofa = len(sofa_rirs)
+                    assert (sofa_rirs.mask == False).all()
                     n_heights = len(ntraj)
                     all_doas = np.zeros((n_rirs, 3))
                     n_rirs_accum = 0
@@ -119,6 +127,15 @@ class MetadataSynthesizer(object):
                         flip = not flip
                         
                     traj_doas.append(all_doas)
+                    #for i in range(len(all_doas)):
+                    #    print(i)
+                    #    print([f'{x:0.02}' for x in all_doas[i]])
+                    #    print([f'{x:0.02}' for x in sofa_rirs[i]])
+                    #    input()
+                    traj_doas_sofa.append(sofa_rirs)
+                    for i in range(len(all_doas)):
+                        close = np.allclose(all_doas[i], sofa_rirs[i])
+                        assert close
             
                 # start layering the mixtures for the specific room
                 sample_counter = 0
@@ -255,6 +272,8 @@ class MetadataSynthesizer(object):
                             # trajectory
                             ev_traj = self._rnd_generator.integers(0, n_traj)
                             nRirs = np.sum([len(subtr) for subtr in self._rirdata[nroom]['doa_xyz'][ev_traj]])
+                            nRirs_sofa = len(sofa_utils.load_pos(room_sofas[ev_traj]))
+                            assert nRirs == nRirs_sofa
                             
                             #if event is less than move_threshold long, make it static by default
                             if event_duration_nl <= self._move_threshold*10:
