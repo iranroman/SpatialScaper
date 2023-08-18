@@ -1,4 +1,9 @@
 import numpy as np
+<<<<<<< HEAD
+=======
+from generation_parameters import get_params
+from db_config import DBConfig
+>>>>>>> ac0abafc1f0928f1820def761193c43eb9fbdaea
 from scipy.io import loadmat
 import os
 import h5py
@@ -9,9 +14,12 @@ from pyroomacoustics import directivities as dr
 from pyroomacoustics.experimental.rt60 import measure_rt60
 import argparse
 import tau_loading
+<<<<<<< HEAD
 import sys
 sys.path.append('../data')
 import sofa_utils
+=======
+>>>>>>> ac0abafc1f0928f1820def761193c43eb9fbdaea
 
 tau_room_list = ["bomb_shelter",
              "gym",
@@ -126,16 +134,31 @@ parser.add_argument("room_name", type=str,
 
 parser.add_argument("--output", dest="output_dir", type=str, 
                     help="directory for file output", required=False,
+<<<<<<< HEAD
                     default='/scratch/ci411/SRIR_DATASETS/TAU-SIM-SOFA')
 
 parser.add_argument("--tau-db-dir", dest="tau_db_dir", type=str,
                     help="directory for TAU-SRIR-DB", required=False,
                     default="/scratch/ci411/SRIR_DATASETS/TAU_SRIR_DB/TAU-SRIR_DB")
+=======
+                    default='/scratch/ci411/DCASE_GEN/sim_rirs')
+
+parser.add_argument("--tau-db-dir", dest="tau_db_dir", type=str,
+                    help="directory for TAU-SRIR-DB", required=False,
+                    default="/scratch/ci411/TAU_SRIR_DB/TAU-SRIR_DB")
+>>>>>>> ac0abafc1f0928f1820def761193c43eb9fbdaea
 
 parser.add_argument("--decay-db", dest="decay_db", type=int,
                     help="decay db for estimating rt60", required=False,
                     default=15)
 
+<<<<<<< HEAD
+=======
+parser.add_argument("--t-type", dest="t_type", type=str, required=False,
+                    help="type of trajectory (circular or linear)",
+                    default="circular")
+
+>>>>>>> ac0abafc1f0928f1820def761193c43eb9fbdaea
 parser.add_argument("--max-order", dest="max_order", type=int, required=False,
                     help="maximum order of reflections for ISM sim",
                     default=25)
@@ -156,6 +179,7 @@ parser.add_argument("--single-path", dest="single_path", type=bool, required=Fal
                     help="debugging option for computing a single path",
                     default=False)
 
+<<<<<<< HEAD
 parser.add_argument("--mic-center", dest="mic_center", type=list, required=False,
                     help="center of microphone array (in meters)", default=[0.05, 0.05, 0.05])
 
@@ -167,6 +191,15 @@ parser.add_argument("--flip", dest="flip", type=bool, required=False,
                     help="flip every other height, as in DCASE generator",
                     default=True)
 
+=======
+parser.add_argument("--store-hdf5", dest="store_hdf5", type=bool, required=False,
+                    help="Option to store output to hdf5 files",
+                    default=False)
+
+parser.add_argument("--mic-center", dest="mic_center", type=list, required=False,
+                    help="center of microphone array (in meters)", default=[0.05, 0.05, 0.05])
+
+>>>>>>> ac0abafc1f0928f1820def761193c43eb9fbdaea
 
 if __name__ == "__main__":
 
@@ -175,11 +208,16 @@ if __name__ == "__main__":
     #microphone array definitions
     print("Defining mics...")
     mic_coords, mic_dirs = get_tetra_mics() #this can be subbed for other mic configs
+<<<<<<< HEAD
     n_mics = len(mic_coords)
+=======
+    n_mics = mic_coords
+>>>>>>> ac0abafc1f0928f1820def761193c43eb9fbdaea
     
     mic_loc_center = np.array(args.mic_center)
     mic_locs = center_mic_coords(mic_coords, mic_loc_center)
 
+<<<<<<< HEAD
     #load room info
     print("Loading room info...")
     room_idx = tau_room_list.index(args.room_name)
@@ -195,11 +233,34 @@ if __name__ == "__main__":
     for i in range(samples.shape[0]):
         rt.append(measure_rt60(samples[i], fs=args.sr, decay_db=args.decay_db))
     rt = np.array(rt) * (60/args.decay_db)
+=======
+    rirdata2room_idx = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 8: 6, 9: 7, 10: 8}
+    rirdata2room_idx = {v:k for k,v in rirdata2room_idx.items()}
+
+    #load room info
+    print("Loading room info...")
+    room_idx = tau_room_list.index(args.room_name)
+
+    #sample rirs for rt60 to calculate MAC
+    rir_file = [filename for filename in os.listdir(args.tau_db_dir) if room_name in filename][0]
+    samples = tau_loading.load_rir_sample(rir_file, t_type=args.t_type)
+    rt = []
+    for i in range(samples.shape[0]):
+        rt.append(measure_rt60(samples[i], fs=args.sr, decay_db=args.decay_db))
+    rt = np.array(rt) * (60/decay_db)
+>>>>>>> ac0abafc1f0928f1820def761193c43eb9fbdaea
     rt_avg = np.average(rt)
 
     room_dim = tau_dim_list[room_idx]
     e_absorption, _ = pra.inverse_sabine(rt_avg, room_dim)
 
+<<<<<<< HEAD
+=======
+    print("Loading path data...")
+    #load paths
+    paths, paths_meta, room_meta = tau_loading.load_paths(room_idx, db_config)
+
+>>>>>>> ac0abafc1f0928f1820def761193c43eb9fbdaea
     #place mics in center-ish of room
     room_center = np.array([room_dim[0]/2, room_dim[1]/2, 0])
     mic_center = room_meta['microphone_position'] + room_center
@@ -214,17 +275,27 @@ if __name__ == "__main__":
         n_heights = 1
 
     #check for outputdir (create if doesn't exist)
+<<<<<<< HEAD
     room_rir_dir = os.path.join(args.output_dir, 'mic')
+=======
+    room_rir_dir = os.path.join(args.output_dir, 'mic', args.room_name)
+>>>>>>> ac0abafc1f0928f1820def761193c43eb9fbdaea
     if not os.path.exists(room_rir_dir):
         os.mkdir(room_rir_dir)
 
     #iterating through paths and simulating (one at a time)
     print("Computing rirs...")
+<<<<<<< HEAD
     path_stack = np.empty((0, 3))
     rir_stack = np.empty((0, n_mics, args.rir_len))
     
     for i in range(n_traj):
         mic_array_list = []
+=======
+    out_pickle = []
+    for i in range(n_traj):
+        out_pickle.append([])
+>>>>>>> ac0abafc1f0928f1820def761193c43eb9fbdaea
         for j in range(n_heights):
 
             room = pra.ShoeBox(room_dim, fs=args.sr, 
@@ -245,6 +316,7 @@ if __name__ == "__main__":
             for k in range(n_mics):
                 for l in range(len(path)):
                     path_rirs[k,l] = room.rir[k][l][:args.rir_len]
+<<<<<<< HEAD
             
             if args.flip:
                 if j%2==1:
@@ -261,3 +333,30 @@ if __name__ == "__main__":
     
     sofa_utils.create_srir_sofa(sofa_path, rir_stack, path_stack, room_meta['microphone_position'],\
                      db_name=args.db_name, room_name=args.room_name, listener_name='mic')
+=======
+
+            path_rirs = np.moveaxis(path_rirs, [0,1,2], [1,2,0])
+            #save to pickle list
+            out_pickle[i].append(path_rirs)
+
+            #store to hdf5
+            if args.store_hdf5:
+                path_label = "{}_t{}h{}.hdf5".format(args.room_name, i, j)
+                path_filename = os.path.join(room_rir_dir, path_label)
+                if not os.path.exists(path_filename):
+                    with h5py.File(path_filename, 'w') as f:
+                        f.create_dataset('rirs', data=path_rirs)
+                        f.create_dataset('rate', data=np.array([args.sr]))
+                else:
+                    with h5py.File(path_filename, 'r+') as f:
+                        f['rirs'][:] = path_rirs
+                        f['rate'][:] = np.array([args.sr])
+                print("Stored path at {}".format(path_filename))
+
+    pickle_path = os.path.join(args.output_dir, 'rirs_{:02d}_{}.pkl'.format(rirdata2room_idx[room_idx],args.room_name))
+    print(f"Storing result to {pickle_path}")
+
+    out_pickle = {'mic':out_pickle}
+    with open(pickle_path, 'wb') as outp:
+        pickle.dump(out_pickle, outp, pickle.HIGHEST_PROTOCOL)
+>>>>>>> ac0abafc1f0928f1820def761193c43eb9fbdaea
