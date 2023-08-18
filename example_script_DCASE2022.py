@@ -20,7 +20,7 @@ task_id = '2'
 
 params = get_params(task_id)
     
-    ### Create database config based on params (e.g. filelist name etc.)
+### Create database config based on params (e.g. filelist name etc.)
 #db_config = DBConfig(params)
     
     # LOAD DB-config which is already done
@@ -56,8 +56,6 @@ for sample in ts_samplelist['audiofile']:
         i += 1
     sample_list.append(sample)
 db_config._samplelist[1]['audiofile'] = np.array(sample_list)
-
-
 
 
 #create mixture synthesizer class

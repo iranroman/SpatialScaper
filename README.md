@@ -45,6 +45,12 @@ fsd50k = prepare_fsd50k() # object embedding data and metadata paths
 # e.g.: to retrive 'train' DCASE filenames into FSD50K filepaths
 filenames = fsd50k.get_filenames('train')
 ```
+
+Also trim the fma files to be 10 seconds long using the provided script
+```
+python scripts/trim_fma.py
+```
+
 In practice, however, to generate data all you need to do is run the exemplary script is:
 * The `example_script_DCASE2022.py` is a script showing a pipeline to generate data.
 

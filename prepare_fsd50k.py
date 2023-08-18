@@ -169,7 +169,7 @@ PARAM_CONFIG = {
     "metadata_path": "dcase_datagen/metadata", # add /path/to (not path/to/dir)
     "dcase_sound_events_txt": "dcase_datagen/metadata/sound_event_fsd50k_filenames.txt",
     "download": False,
-    "music_home": "/datasets/fma", # add /path/to (not path/to/dir)
+    "music_home": "/datasets/fma_10sec", # add /path/to (not path/to/dir)
     "music_metadata": "dcase_datagen/metadata", # add /path/to (not path/to/dir)
     "ntracks_genre": 40,
     "split_prob": 0.6
