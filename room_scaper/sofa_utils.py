@@ -37,8 +37,11 @@ def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt='mic', traj=None, flip=True
             rir_stack = np.concatenate((rir_stack, path_rirs), axis=2)
             M += output_paths[i,j].shape[0]
         
-    rirs = np.reshape(rir_stack, (M,R,N))
-    source_pos = np.reshape(path_stack, (M,3))
+    rirs = np.moveaxis(rir_stack, [0,2],[2,0])
+    source_pos = path_stack
+    
+    assert rirs.shape == (M,R,N)
+    assert source_pos.shape == (M,3)
     mic_pos = np.repeat([room_metadata['microphone_position']], M, axis=0) 
 
     return rirs, source_pos, mic_pos, room
