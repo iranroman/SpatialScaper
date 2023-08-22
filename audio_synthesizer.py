@@ -6,6 +6,7 @@ import mat73
 import scipy.signal as signal
 import soundfile
 import pickle
+from room_scaper import sofa_utils
 
 class AudioSynthesizer(object):
     def __init__(
@@ -13,12 +14,17 @@ class AudioSynthesizer(object):
             ):
         self._mixtures = mixtures
         self._rirpath = params['rirpath']
+        self._rirpath_sofa = params['rirpath_sofa']
         self._db_path = params['db_path']
         self._audio_format = audio_format
         self._outpath = params['mixturepath'] + '/' + mixture_setup['scenario'] + '/' + self._audio_format
         self._rirdata = db_config._rirdata
         self._nb_rooms = len(self._rirdata)
+        self._nb_rooms_sofa = sum(os.path.isdir(self._rirpath_sofa+f'/{self._audio_format}/'+i) for i in os.listdir(self._rirpath_sofa+f'/{self._audio_format}/'))
+        assert self._nb_rooms == self._nb_rooms_sofa
         self._room_names = list(self._rirdata.keys())
+        self._room_names_sofa = sorted([d for d in os.listdir(self._rirpath_sofa+f'/{self._audio_format}/') if os.path.isdir(self._rirpath_sofa+f'/{self._audio_format}/'+d)])
+        assert self._room_names == self._room_names_sofa
         self._classnames = mixture_setup['classnames']
         self._fs_mix = mixture_setup['fs_mix']
         self._t_mix = mixture_setup['mixture_duration']
@@ -86,9 +92,20 @@ class AudioSynthesizer(object):
                             
                         nRirs_accum += nRirs_nh
                         flip = not flip
-                
+
                 del rirs #clear some memory
-                
+                sofas = sorted(os.listdir(self._rirpath_sofa+f'/{self._audio_format}/'+nroom))
+                channel_rirs_sofa = []
+                for sofa in sofas:
+                    rirs = sofa_utils.load_rir(self._rirpath_sofa + f'/{self._audio_format}/'+nroom+f'/{sofa}')
+                    channel_rirs_sofa.append(np.transpose(rirs,(2,1,0))[...,np.newaxis])
+                channel_rirs_sofa = np.concatenate(channel_rirs_sofa,axis=-1)
+                for i in range(len(channel_rirs_sofa[0,0])):
+                    for j in range(4):
+                        print(i, j, channel_rirs[:,j,i])
+                        print(i, j, channel_rirs_sofa[:,j,i])
+                        input()
+                assert np.allclose(channel_rirs_sofa,channel_rirs)
                 for nmix in range(nb_mixtures):
                     print('Writing mixture {}/{}'.format(nmix+1,nb_mixtures))
 
