@@ -2,6 +2,8 @@
 This script use audio channel swapping to augment audio data and metadata in training sets from given folders.
 """
 import os
+import random
+import shutil
 
 import numpy as np
 import scipy.io.wavfile as wav
@@ -75,6 +77,16 @@ def acs_meta(csv_data):
 
 
 def acs(data_dir, aug_dir):
+    """
+
+    Args:
+        data_dir: A database of training audio data and metadata.
+        aug_dir: A new database of augmented data.
+
+    Returns:
+        Create a new folder of 7 types of channel swapping data for each audio in the original database.
+    """
+
     # determine augmentation method
     if "mic" in data_dir:
         aug_fx = acs_mic
@@ -118,9 +130,50 @@ def acs(data_dir, aug_dir):
     print("Completed augmentation in {}".format(data_dir))
 
 
+def rand_sample(base_dir, subset_dir):
+    """
+
+    Args:
+        base_dir: A folder that contains all real, synthetic, and augmented data.
+
+    Returns:
+        Create a new folder with a subset of all data.
+
+    """
+    random.seed(29)
+    create_folder(subset_dir)
+
+    for folder, subs, files in os.walk(base_dir, followlinks=True):
+        if "train" in folder:
+            if "metadata" not in folder:
+                # get subfolder name
+                rel_path = os.path.relpath(folder, base_dir)
+                sub_folder = os.path.basename(folder)
+                dst_folder = os.path.join(subset_dir, rel_path)
+                src_meta = os.path.join(base_dir, "metadata_dev", sub_folder)
+                dst_meta = os.path.join(subset_dir, "metadata_dev", sub_folder)
+                create_folder(dst_folder)
+                create_folder(dst_meta)
+
+                # select 1/8 files from every folder
+                filenames = random.sample(os.listdir(folder), round(len(files) * 0.125))
+
+                # copy all files to a new folder
+                for fname in filenames:
+                    src_path = os.path.join(folder, fname)
+                    dst_path = os.path.join(subset_dir, rel_path, fname)
+                    shutil.copyfile(src_path, dst_path)
+
+                    # copy corresponding metadata
+                    src_label = os.path.join(src_meta, os.path.splitext(fname)[0] + ".csv")
+                    dst_label = os.path.join(dst_meta, os.path.splitext(fname)[0] + ".csv")
+                    shutil.copyfile(src_label, dst_label)
+
+
 if __name__ == "__main__":
     base_dir = "/datasets/STARSS2023/"
     aug_dir = "/datasets/starss2023_aug_acs/"
+    subset_dir = "/datasets/STARSS2023_subset"
 
     foa_dir = base_dir + "foa_dev"
     meta_dir = base_dir + "metadata_dev"
@@ -130,6 +183,9 @@ if __name__ == "__main__":
     meta_dir_aug = aug_dir + "metadata_dev"
     mic_dir_aug = aug_dir + "mic_dev"
 
-    acs(mic_dir, mic_dir_aug)
-    acs(foa_dir, foa_dir_aug)
-    acs(meta_dir, meta_dir_aug)
+    # acs(mic_dir, mic_dir_aug)
+    # acs(foa_dir, foa_dir_aug)
+    # acs(meta_dir, meta_dir_aug)
+
+    rand_sample(base_dir, subset_dir)
+    rand_sample(aug_dir, subset_dir)
