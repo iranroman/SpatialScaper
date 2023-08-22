@@ -100,12 +100,7 @@ class AudioSynthesizer(object):
                     rirs = sofa_utils.load_rir(self._rirpath_sofa + f'/{self._audio_format}/'+nroom+f'/{sofa}')
                     channel_rirs_sofa.append(np.transpose(rirs,(2,1,0))[...,np.newaxis])
                 channel_rirs_sofa = np.concatenate(channel_rirs_sofa,axis=-1)
-                for i in range(len(channel_rirs_sofa[0,0])):
-                    for j in range(4):
-                        print(i, j, channel_rirs[:,j,i])
-                        print(i, j, channel_rirs_sofa[:,j,i])
-                        input()
-                assert np.allclose(channel_rirs_sofa,channel_rirs)
+                assert np.allclose(channel_rirs_sofa,channel_rirs) # this assert is not passing 08/22/23
                 for nmix in range(nb_mixtures):
                     print('Writing mixture {}/{}'.format(nmix+1,nb_mixtures))
 
