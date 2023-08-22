@@ -19,10 +19,7 @@ class MetadataSynthesizer(object):
         self._nb_active_classes = len(self._active_classes)
         self._class2activeClassmap = []
         for cl in range(len(self._db_config._classes)):
-            if cl in self._active_classes:
-                self._class2activeClassmap.append(cl)
-            else:
-                self._class2activeClassmap.append(0)
+            self._class2activeClassmap.append(cl)
         self._classname_dict = params['classname_dict']
 
         self._class_mobility = db_config._class_mobility

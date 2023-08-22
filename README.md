@@ -13,7 +13,7 @@ Must download these RIR databases:
 
 This data synthesizer uses sound events from the [FSD50K](https://zenodo.org/record/4060432#.ZE7ely2B0Ts) dataset. To download the dataset for first time and to also include music tracks (from the the [FMA dataset](https://github.com/mdeff/fma) dataset) as part of the data synthesizer sound events, do the following under `prepare_fsd50k.py`:
 
-- Change the dataset parameter configuration paths and select `"download": True` to download the FSD50K dataset along with the music FMA dataset.
+- Change the dataset parameter configuration paths and select `"download": True` to download the FSD50K dataset along with the music FMA dataset:
 
 ```
 PARAM_CONFIG = {
@@ -35,24 +35,19 @@ Execute the script by:
 python prepare_fsd50k.py
 ```
 
-After this one-time setup, the `PARAM_CONFIG` values should remain unchanged, and the data synthesizer will load all the necessary data and metada by simply loading `prepare_fsd50k` as a python module:
-
-```
-from prepare_fsd50k import prepare_fsd50k
-
-fsd50k = prepare_fsd50k() # object embedding data and metadata paths
-
-# e.g.: to retrive 'train' DCASE filenames into FSD50K filepaths
-filenames = fsd50k.get_filenames('train')
-```
-
-Also trim the fma files to be 10 seconds long using the provided script
+Also trim the fma files to be 10 seconds long using the provided script (otherwise model performance will suffer for transient sound events)
 ```
 python scripts/trim_fma.py
 ```
 
 In practice, however, to generate data all you need to do is run the exemplary script is:
 * The `example_script_DCASE2022.py` is a script showing a pipeline to generate data.
+
+* you will need to run the `mat2dict.py` script to convert `matlab` files with RIR data into python pickles. 
+
+```
+python mat2dict.py /path/to/TAU_DB/TAU-SRIR_DB/
+``` 
 
 ### Using the generated dataset to train the DCASE 2023 Task 3 audio-only baseline you should get results similar to these:
 
@@ -74,11 +69,14 @@ This repository contains several Python file, which in total create a complete d
 
 Moreover, an object file is included in case the database configuration via `db_config.py` takes too much time:
 * The `db_config_fsd.obj` is a DBConfig class containing information about the database and files for the FSD50K audioset.
-* If you'd like to change the configuration (e.g. using NIGENS Sound Event Database), you can manually edit the `db_config_fsd.obj` file, or create a new one using `db_config.py`
-* you will need to run the `mat2dict.py` script to convert `matlab` files with RIR data into python pickles. 
+
+under the hood, the data synthesizer will load all the necessary data and metada by simply loading `prepare_fsd50k` as a python module.
 
 ```
-python mat2dict.py /path/to/TAU_DB/TAU-SRIR_DB/
-``` 
+from prepare_fsd50k import prepare_fsd50k
 
+fsd50k = prepare_fsd50k() # object embedding data and metadata paths
 
+# e.g.: to retrive 'train' DCASE filenames into FSD50K filepaths
+filenames = fsd50k.get_filenames('train')
+```

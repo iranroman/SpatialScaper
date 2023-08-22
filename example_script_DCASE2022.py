@@ -32,32 +32,6 @@ file = open("rirdata_dict.pkl",'rb')
 db_config._rirdata = pickle.load(file)
 file.close()
 
-# fix the music files (assuming orchset)
-all_music_files = [f for f in os.listdir(params['db_path']) if 'ex' in f]
-tr_music = [f for f in all_music_files if 'Beethoven' not in f]
-ts_music = [f for f in all_music_files if 'Beethoven' in f]
-
-tr_samplelist = db_config._samplelist[0]
-i = 0
-sample_list = []
-for sample in tr_samplelist['audiofile']:
-    if 'music/' in sample:
-        sample = '/{}'.format(tr_music[i%len(tr_music)])
-        i += 1
-    sample_list.append(sample)
-db_config._samplelist[0]['audiofile'] = np.array(sample_list)
-
-ts_samplelist = db_config._samplelist[1]
-i = 0
-sample_list = []
-for sample in ts_samplelist['audiofile']:
-    if 'music/' in sample:
-        sample = '/{}'.format(ts_music[i%len(ts_music)])
-        i += 1
-    sample_list.append(sample)
-db_config._samplelist[1]['audiofile'] = np.array(sample_list)
-
-
 #create mixture synthesizer class
 noiselessSynth = MetadataSynthesizer(db_config, params, 'target_noiseless')
     
