@@ -31,7 +31,7 @@ def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt='mic', traj=None, flip=True
             if flip:
                 if j%2==1:
                     #flip every other height, as in DCASE
-                    path_rirs = path_rirs[::-1]
+                    path_rirs = path_rirs[:,:,::-1]
                     path = path[::-1]
             path_stack = np.concatenate((path_stack, path), axis=0)
             rir_stack = np.concatenate((rir_stack, path_rirs), axis=2)
