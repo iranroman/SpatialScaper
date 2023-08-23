@@ -65,10 +65,10 @@ def create_per_traj_sofa_file(aud_fmt, tau_db_dir, sofa_db_dir, db_name):
 
 
 # Call the function for both 'foa' and 'mic'
-#tau_db_dir = 'TAU_DB/TAU-SRIR_DB'
-#sofa_db_dir = 'TAU_DB/TAU_SRIR_DB_SOFA'
-tau_db_dir = '/scratch/ci411/SRIR_DATASETS/TAU_SRIR_DB/TAU-SRIR_DB'
-sofa_db_dir = '/scratch/ci411/SRIR_DATASETS/TAU_SRIR_DB_SOFA'
+tau_db_dir = 'TAU_DB/TAU-SRIR_DB'
+sofa_db_dir = 'TAU_DB/TAU_SRIR_DB_SOFA'
+#tau_db_dir = '/scratch/ci411/SRIR_DATASETS/TAU_SRIR_DB/TAU-SRIR_DB'
+#sofa_db_dir = '/scratch/ci411/SRIR_DATASETS/TAU_SRIR_DB_SOFA'
 db_name = "TAU-SRIR-DB-SOFA"
 for aud_fmt in ['foa', 'mic']:
     print(f"Starting .sofa creation for {aud_fmt} format, per traj.")
