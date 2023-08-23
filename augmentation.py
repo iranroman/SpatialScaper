@@ -142,32 +142,43 @@ def rand_sample(base_dir, subset_dir):
     """
     random.seed(29)
     create_folder(subset_dir)
+    src_path = os.path.join(base_dir, "mic_dev")
 
-    for folder, subs, files in os.walk(base_dir, followlinks=True):
+    for folder in os.listdir(src_path):
         if "train" in folder:
-            if "metadata" not in folder:
-                # get subfolder name
-                rel_path = os.path.relpath(folder, base_dir)
-                sub_folder = os.path.basename(folder)
-                dst_folder = os.path.join(subset_dir, rel_path)
-                src_meta = os.path.join(base_dir, "metadata_dev", sub_folder)
-                dst_meta = os.path.join(subset_dir, "metadata_dev", sub_folder)
-                create_folder(dst_folder)
-                create_folder(dst_meta)
+            # get subfolder name
+            src_mic = os.path.join(src_path, folder)
+            dst_mic = os.path.join(subset_dir, "mic_dev", folder)
 
-                # select 1/8 files from every folder
-                filenames = random.sample(os.listdir(folder), round(len(files) * 0.125))
+            src_foa = os.path.join(base_dir, "foa_dev", folder)
+            dst_foa = os.path.join(subset_dir, "foa_dev", folder)
 
-                # copy all files to a new folder
-                for fname in filenames:
-                    src_path = os.path.join(folder, fname)
-                    dst_path = os.path.join(subset_dir, rel_path, fname)
-                    shutil.copyfile(src_path, dst_path)
+            src_meta = os.path.join(base_dir, "metadata_dev", folder)
+            dst_meta = os.path.join(subset_dir, "metadata_dev", folder)
 
-                    # copy corresponding metadata
-                    src_label = os.path.join(src_meta, os.path.splitext(fname)[0] + ".csv")
-                    dst_label = os.path.join(dst_meta, os.path.splitext(fname)[0] + ".csv")
-                    shutil.copyfile(src_label, dst_label)
+            create_folder(dst_mic)
+            create_folder(dst_meta)
+            create_folder(dst_foa)
+
+            # select the same 1/8 portion of files from both foa and mic folders
+            filenames = random.sample(os.listdir(src_mic), round(len(os.listdir(src_mic)) * 0.125))
+
+            # copy all files to a new folder
+            for fname in filenames:
+                # copy mic data
+                src_mic_file = os.path.join(src_mic, fname)
+                dst_mic_file = os.path.join(dst_mic, fname)
+                shutil.copyfile(src_mic_file, dst_mic_file)
+
+                # copy foa data
+                src_foa_file = os.path.join(src_foa, fname)
+                dst_foa_file = os.path.join(dst_foa, fname)
+                shutil.copyfile(src_foa_file, dst_foa_file)
+
+                # copy corresponding metadata
+                src_label = os.path.join(src_meta, os.path.splitext(fname)[0] + ".csv")
+                dst_label = os.path.join(dst_meta, os.path.splitext(fname)[0] + ".csv")
+                shutil.copyfile(src_label, dst_label)
 
 
 if __name__ == "__main__":
