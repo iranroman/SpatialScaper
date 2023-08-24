@@ -36,6 +36,9 @@ def get_params(argv='1'):
         mixture_duration = 60., #in seconds
         event_time_per_layer = 40., #in seconds (should be less than mixture_duration)
         audio_format = 'both', # 'foa' (First Order Ambisonics) or 'mic' (four microphones) or 'both'
+        random_pitch_shift = True,
+        bins_per_octave = 12,
+        n_bins_up_down = 6,
             )
         
 
