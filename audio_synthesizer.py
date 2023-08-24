@@ -32,6 +32,10 @@ class AudioSynthesizer(object):
         self._apply_event_gains = db_config._apply_class_gains
         self._db_name = params['db_name']
         self._fs = params['fs']
+        self._pitch_shift = params['random_pitch_shift']
+        if self._pitch_shift:
+            self._bins_per_octave = params['bins_per_octave']
+            self._n_bins_up_down = params['n_bins_up_down']
         if self._apply_event_gains:
             self._class_gains = db_config._class_gains
         
@@ -97,8 +101,9 @@ class AudioSynthesizer(object):
                             eventsig, fs_db = librosa.load(filename, sr=self._fs) # here we need librosa since we are loading .mp3 
                         else:
                             raise Exception(f"Unknown event database: {self._db_name}")
-                            
-                
+                        if self._pitch_shift:
+                            n_steps = np.random.choice(range(-self._n_bins_up_down,self._n_bins_up_down+1))
+                            eventsig = librosa.effects.pitch_shift(eventsig, sr=fs_db, n_steps=n_steps, bins_per_octave=self._bins_per_octave)
 
                         
                         if len(np.shape(eventsig)) > 1:
