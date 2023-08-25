@@ -6,6 +6,7 @@ import mat73
 import scipy.signal as signal
 import soundfile
 import pickle
+from room_scaper import sofa_utils
 
 import librosa # used since we allow .wav and .mp3 loading 
 
@@ -14,13 +15,13 @@ class AudioSynthesizer(object):
             self, params, mixtures, mixture_setup, db_config, audio_format
             ):
         self._mixtures = mixtures
-        self._rirpath = params['rirpath']
+        self._rirpath_sofa = params['rirpath_sofa']
         self._db_path = params['db_path']
         self._audio_format = audio_format
         self._outpath = params['mixturepath'] + '/' + mixture_setup['scenario'] + '/' + self._audio_format
         self._rirdata = db_config._rirdata
-        self._nb_rooms = len(self._rirdata)
-        self._room_names = list(self._rirdata.keys())
+        self._nb_rooms = sum(os.path.isdir(self._rirpath_sofa+f'/{self._audio_format}/'+i) for i in os.listdir(self._rirpath_sofa+f'/{self._audio_format}/'))
+        self._room_names = sorted([d for d in os.listdir(self._rirpath_sofa+f'/{self._audio_format}/') if os.path.isdir(self._rirpath_sofa+f'/{self._audio_format}/'+d)])
         self._classnames = mixture_setup['classnames']
         self._fs_mix = mixture_setup['fs_mix']
         self._t_mix = mixture_setup['mixture_duration']
@@ -52,47 +53,18 @@ class AudioSynthesizer(object):
                 nb_mixtures = len(self._mixtures[nfold][nr]['mixture'])
                 print('Loading RIRs for room {}'.format(nroom))
                 
-                room_idx = rirdata2room_idx[nroom]
-                if room_idx > 9:
-                    struct_name = 'rirs_{}_{}'.format(room_idx,nroom)
-                else:
-                    struct_name = 'rirs_0{}_{}'.format(room_idx,nroom)
-                path = self._rirpath + '/' + struct_name + '.pkl'
-                with open(path,'rb') as f:
-                    rirs = pickle.load(f)[self._audio_format]
-                # stack all the RIRs for all heights to make one large trajectory
-                print('Stacking same trajectory RIRs')
-                lRir = len(rirs[0][0])
-                nCh = len(rirs[0][0][0])
-                
-                n_traj = len(self._rirdata[nroom]['doa_xyz'])
-                n_rirs_max = 0
-                for trj in self._rirdata[nroom]['doa_xyz']:
-                    n_rirs_ = np.sum([len(hei) for hei in trj])
-                    if n_rirs_ > n_rirs_max:
-                        n_rirs_max = n_rirs_
-                channel_rirs = np.zeros((lRir, nCh, n_rirs_max, n_traj))
-                for ntraj in range(n_traj):
-                    nHeights = len(self._rirdata[nroom]['doa_xyz'][ntraj])
-                    nRirs_accum = 0
-                    
-                    # flip the direction of each second height, so that a
-                    # movement can jump from the lower to the higher smoothly and
-                    # continue moving the opposite direction
-                    flip = False
-                    for nheight in range(nHeights):
-                        nRirs_nh = len(self._rirdata[nroom]['doa_xyz'][ntraj][nheight])
-                        rir_l = len(rirs[ntraj][nheight][0,0,:])
-                        if flip:
-                            channel_rirs[:, :, nRirs_accum + np.arange(0,nRirs_nh),ntraj] = rirs[ntraj][nheight][:,:,np.arange(rir_l-1,-1,-1)]
-                        else:
-                            channel_rirs[:, :, nRirs_accum + np.arange(0,nRirs_nh),ntraj] = rirs[ntraj][nheight]
-                            
-                        nRirs_accum += nRirs_nh
-                        flip = not flip
-                
-                del rirs #clear some memory
-                
+                sofas = sorted(os.listdir(self._rirpath_sofa+f'/{self._audio_format}/'+nroom))
+                channel_rirs_sofa = []
+                max_long = 0
+                for sofa in sofas:
+                    rirs = sofa_utils.load_rir(self._rirpath_sofa + f'/{self._audio_format}/'+nroom+f'/{sofa}')
+                    if len(rirs) > max_long:
+                        max_long = len(rirs)
+                    channel_rirs_sofa.append(np.transpose(rirs,(2,1,0))[...,np.newaxis])
+                for i in range(len(channel_rirs_sofa)):
+                    diff_ = max_long - len(channel_rirs_sofa[i][0,0])
+                    channel_rirs_sofa[i] = np.pad(channel_rirs_sofa[i], ((0,0),(0,0),(0,diff_),(0,0)))
+                channel_rirs = np.concatenate(channel_rirs_sofa,axis=-1)
                 for nmix in range(nb_mixtures):
                     print('Writing mixture {}/{}'.format(nmix+1,nb_mixtures))
 
