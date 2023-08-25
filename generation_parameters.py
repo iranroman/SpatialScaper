@@ -7,6 +7,7 @@ def get_params(argv='1'):
     params = dict(
         db_name = 'nigens',  # name of the audio dataset used for data generation
         rirpath = '/home/iran/SELD-data-generator/TAU_DB/TAU-SRIR_DB',   # path containing Room Impulse Responses (RIRs)
+        rirpath_sofa = '/home/iran/SELD-data-generator/TAU_DB/TAU_SRIR_DB_SOFA', 
         mixturepath = 'E:/DCASE2022/TAU_Spatial_RIR_Database_2021/Dataset-NIGENS',  # output path for the generated dataset
         noisepath = '/home/iran/SELD-data-generator/TAU_DB/TAU-SNoise_DB',  # path containing background noise recordings
         nb_folds = 2,  # number of folds (default 2 - training and testing)
@@ -46,7 +47,7 @@ def get_params(argv='1'):
     elif argv == '2': ###### FSD50k DATA
         params['db_name'] = 'fsd50k'
         params['db_path']= '/home/iran/datasets/FSD50K'
-        params['mixturepath'] = '/datasets/SELD-dataset'
+        params['mixturepath'] = '/datasets/SELD-dataset-sofa'
         params['active_classes'] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
         params['max_polyphony'] = 2
 
