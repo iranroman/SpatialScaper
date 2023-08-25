@@ -50,7 +50,7 @@ def get_params(argv='1'):
     elif argv == '2': ###### FSD50k DATA
         params['db_name'] = 'fsd50k'
         params['db_path']= '/home/iran/datasets/FSD50K'
-        params['mixturepath'] = '/datasets/SELD-dataset-sofa'
+        params['mixturepath'] = '/datasets/SELD-dataset-pitch'
         params['active_classes'] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
         params['max_polyphony'] = 2
 
