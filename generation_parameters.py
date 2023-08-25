@@ -15,8 +15,25 @@ def get_params(argv='1'):
                                  ['tb103','sa203','gym']],
         db_path = 'E:/DCASE2022/TAU_Spatial_RIR_Database_2021/Code/NIGENS',  # path containing audio events to be utilized during data generation
         max_polyphony = 3,  # maximum number of overlapping sound events
-        active_classes = [0, 1, 2, 3, 5, 6, 8, 9, 10, 11, 12, 13],  # list of sound classes to be used for data generation
+        active_classes = [0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13],  # list of sound classes to be used for data generation
+        classname_dict = {
+		    'femaleSpeech':     0,
+		    'maleSpeech':       1,
+		    'clapping':         2,
+		    'telephone':        3,
+		    'laughter':         4,
+		    'domesticSounds':   5,
+		    'footsteps':        6,
+		    'doorCupboard':     7,
+		    'music':            8,
+		    'musicInstrument':  9,
+		    'waterTap':         10,
+		    'bell':             11,
+		    'knock':            12,
+        },
         nb_mixtures_per_fold = [900, 300], # if scalar, same number of mixtures for each fold
+        foldnames = ['train','test'],
+        fs = 44100,
         mixture_duration = 60., #in seconds
         event_time_per_layer = 40., #in seconds (should be less than mixture_duration)
         audio_format = 'both', # 'foa' (First Order Ambisonics) or 'mic' (four microphones) or 'both'

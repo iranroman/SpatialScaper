@@ -1,34 +1,62 @@
 # DCASE2022-data-generator
-Data generator for creating synthetic audio mixtures suitable for DCASE Challenge 2022 Task 3
+Data generator for creating synthetic audio mixtures suitable for DCASE Challenge Task 3
 
 ### Prerequisites
 
 The provided code was tested with Python 3.8 and the following libraries:
 SoundFile 0.10.3, mat73 0.58, numpy 1.20.1, scipy 1.6.2, librosa 0.8.1. 
 
-Must also download these RIR databases:
+Must download these RIR databases:
 * TAU SRIR DB: https://zenodo.org/record/6408611
 
-Also download
-* FSD50K https://zenodo.org/record/4060432
-* orchset (could be done using `mirdata`)
+### One-time setup
+
+This data synthesizer uses sound events from the [FSD50K](https://zenodo.org/record/4060432#.ZE7ely2B0Ts) dataset. To download the dataset for first time and to also include music tracks (from the the [FMA dataset](https://github.com/mdeff/fma) dataset) as part of the data synthesizer sound events, do the following under `prepare_fsd50k.py`:
+
+- Change the dataset parameter configuration paths and select `"download": True` to download the FSD50K dataset along with the music FMA dataset:
 
 ```
-pip install mirdata
+PARAM_CONFIG = {
+    "dataset_home": "/datasets/FSD50K", # add /path/to (not path/to/dir)
+    "metadata_path": "dcase_datagen/metadata", # add /path/to (not path/to/dir)
+    "dcase_sound_events_txt": "dcase_datagen/metadata/sound_event_fsd50k_filenames.txt",
+    "download": True,
+    "music_home": "/datasets/fma", # add /path/to (not path/to/dir)
+    "music_metadata": "dcase_datagen/metadata", # add /path/to (not path/to/dir)
+    "ntracks_genre": 40,
+    "split_prob": 0.6
+}
 ```
+*Note:* if you already have the FSD50K dataset downloaded simply update the `/path/to` the dataset (the same applies for the FMA dataset) and set `"download": False`.
+
+Execute the script by:
 
 ```
->>> import mirdata
->>> orchset = mirdata.initialize('orchset')
->>> orchset = mirdata.initialize('orchset', data_home='/home/iran/datasets/orchset')
->>> orchset.download()
+python prepare_fsd50k.py
 ```
 
+Also trim the fma files to be 10 seconds long using the provided script (otherwise model performance will suffer for transient sound events)
 ```
-cp /path/to/orchset/audio/mono/* /path/to/FSD50K/
+python scripts/trim_fma.py
 ```
 
-## Getting Started
+In practice, however, to generate data all you need to do is run the exemplary script is:
+* The `example_script_DCASE2022.py` is a script showing a pipeline to generate data.
+
+* you will need to run the `mat2dict.py` script to convert `matlab` files with RIR data into python pickles. 
+
+```
+python mat2dict.py /path/to/TAU_DB/TAU-SRIR_DB/
+``` 
+
+### Using the generated dataset to train the DCASE 2023 Task 3 audio-only baseline you should get results similar to these:
+
+| Dataset | ER<sub>20°</sub> | F<sub>20°</sub> | LE<sub>CD</sub> | LR<sub>CD</sub> |
+| ----| --- | --- | --- | --- |
+| Ambisonic (FOA + Multi-ACCDOA) | 0.60 | 28.7 % | 23.2&deg; | 48.8 % |
+| Microphone Array (MIC-GCC + Multi-ACCDOA) | 0.64 | 26.9 % | 23.8&deg; | 46.2 % |
+
+## Other info:
 
 This repository contains several Python file, which in total create a complete data generation framework.
 * The `generation_parameters.py` is a separate script used for setting the parameters for the data generation process, including things such as audio dataset, number of folds, mixuture length, etc.
@@ -41,20 +69,14 @@ This repository contains several Python file, which in total create a complete d
 
 Moreover, an object file is included in case the database configuration via `db_config.py` takes too much time:
 * The `db_config_fsd.obj` is a DBConfig class containing information about the database and files for the FSD50K audioset.
-* you will need to run the `mat2dict.py` script to convert `matlab` files with RIR data into python pickles. 
+
+under the hood, the data synthesizer will load all the necessary data and metada by simply loading `prepare_fsd50k` as a python module.
 
 ```
-python mat2dict.py /path/to/TAU_DB/TAU-SRIR_DB/
-``` 
+from prepare_fsd50k import prepare_fsd50k
 
+fsd50k = prepare_fsd50k() # object embedding data and metadata paths
 
-The exemplary script is:
-* The `example_script_DCASE2022.py` is a script showing a pipeline to generate data similar to the current DCASE2022 dataset.
-
-### Using the generated dataset to train the DCASE 2023 Task 3 audio-only baseline you should get results similar to these:
-
-
-| Dataset | ER<sub>20°</sub> | F<sub>20°</sub> | LE<sub>CD</sub> | LR<sub>CD</sub> |
-| ----| --- | --- | --- | --- |
-| Ambisonic (FOA + Multi-ACCDOA) | 0.60 | 28.7 % | 23.2&deg; | 48.8 % |
-| Microphone Array (MIC-GCC + Multi-ACCDOA) | 0.64 | 26.9 % | 23.8&deg; | 46.2 % |
+# e.g.: to retrive 'train' DCASE filenames into FSD50K filepaths
+filenames = fsd50k.get_filenames('train')
+```

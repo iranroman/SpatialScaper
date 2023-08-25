@@ -3,6 +3,9 @@ from utils import cart2sph
 import os
 import csv
 from room_scaper import sofa_utils
+import librosa
+
+from prepare_fsd50k import prepare_fsd50k
 
 class MetadataSynthesizer(object):
     def __init__(
@@ -16,11 +19,9 @@ class MetadataSynthesizer(object):
         self._nb_active_classes = len(self._active_classes)
         self._class2activeClassmap = []
         for cl in range(len(self._db_config._classes)):
-            if cl in self._active_classes:
-                self._class2activeClassmap.append(cl)
-            else:
-                self._class2activeClassmap.append(0)
-        
+            self._class2activeClassmap.append(cl)
+        self._classname_dict = params['classname_dict']
+
         self._class_mobility = db_config._class_mobility
         self._mixture_setup = {}
         self._mixture_setup['scenario'] = scenario_name
@@ -33,6 +34,7 @@ class MetadataSynthesizer(object):
         self._mixture_setup['fs_mix'] = 24000 #fs of RIRs
         self._mixture_setup['mixture_duration'] = params['mixture_duration']
         self._nb_mixtures_per_fold = params['nb_mixtures_per_fold']
+        self._foldnames = params['foldnames']
         self._nb_mixtures = self._mixture_setup['nb_folds'] * self._nb_mixtures_per_fold if np.isscalar(self._nb_mixtures_per_fold) else np.sum(self._nb_mixtures_per_fold)
         self._mixture_setup['total_duration'] = self._nb_mixtures * self._mixture_setup['mixture_duration']
         self._mixture_setup['speed_set'] =  [10., 20., 40.]
@@ -64,15 +66,37 @@ class MetadataSynthesizer(object):
             nb_rooms_nf = len(rooms_nf)
             
             
-            idx_active = np.array([])
-            for na in range(self._nb_active_classes):
-                idx_active = np.append(idx_active, np.nonzero(self._db_config._samplelist[nfold]['class'] == self._active_classes[na]))
-            idx_active = idx_active.astype('int')
 
-            foldlist_nff['class'] = self._db_config._samplelist[nfold]['class'][idx_active]
-            foldlist_nff['audiofile'] = self._db_config._samplelist[nfold]['audiofile'][idx_active]
-            foldlist_nff['duration'] = self._db_config._samplelist[nfold]['duration'][idx_active]
-            foldlist_nff['onoffset'] = self._db_config._samplelist[nfold]['onoffset'][idx_active]
+            # Load fsd50k object containing dcase to fsd50k paths
+            fsd50k = prepare_fsd50k()
+            foldname = self._foldnames[nfold]
+            files_per_class = fsd50k.get_filenames(foldname)
+            audiofiles = []
+            audioclasses = []
+            durations = []
+            onoffsets = []
+            for k,v in self._classname_dict.items():
+                vv = files_per_class[k]
+                audiofiles.extend(list(vv.values()))
+                audioclasses.extend([v]*len(vv))
+            audiofiles_ = []
+            for audiof in audiofiles:
+                if type(audiof) == list:
+                    durations.append(librosa.get_duration(path=audiof[0]))
+                    onoffsets.append([0,durations[-1]])
+                    audiofiles_.append(audiof[0])
+                else:
+                    durations.append(librosa.get_duration(path=audiof))
+                    onoffsets.append([0,durations[-1]])
+                    audiofiles_.append(audiof)
+            foldlist_nff['class'] = np.array(audioclasses)
+            foldlist_nff['audiofile'] = np.array(audiofiles_)
+            foldlist_nff['duration'] = np.array(durations)
+            foldlist_nff['onoffset'] = np.array(onoffsets)
+            # standardize the durations to a fixed precision
+            for i in range(len(durations)): 
+                foldlist_nff['duration'][i] = np.floor(foldlist_nff['duration'][i]*100)/100 
+                foldlist_nff['onoffset'][i][1] = np.floor(foldlist_nff['onoffset'][i][1]*100)/100 
             nb_samples_nf = len(foldlist_nff['duration'])
             
             # shuffle randomly the samples in the target list to avoid samples of the same class coming consecutively
