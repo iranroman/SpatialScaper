@@ -36,6 +36,7 @@ setup(
         'mat73>=0.60',
         'fvcore>=0.1.5',
         'pysofaconventions',
+        'pyroomacoustics',
     ],
 )
 
