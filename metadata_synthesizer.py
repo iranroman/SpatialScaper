@@ -2,6 +2,10 @@ import numpy as np
 from utils import cart2sph
 import os
 import csv
+from room_scaper import sofa_utils
+import librosa
+
+from prepare_fsd50k import prepare_fsd50k
 
 class MetadataSynthesizer(object):
     def __init__(
@@ -15,11 +19,9 @@ class MetadataSynthesizer(object):
         self._nb_active_classes = len(self._active_classes)
         self._class2activeClassmap = []
         for cl in range(len(self._db_config._classes)):
-            if cl in self._active_classes:
-                self._class2activeClassmap.append(cl)
-            else:
-                self._class2activeClassmap.append(0)
-        
+            self._class2activeClassmap.append(cl)
+        self._classname_dict = params['classname_dict']
+
         self._class_mobility = db_config._class_mobility
         self._mixture_setup = {}
         self._mixture_setup['scenario'] = scenario_name
@@ -32,6 +34,7 @@ class MetadataSynthesizer(object):
         self._mixture_setup['fs_mix'] = 24000 #fs of RIRs
         self._mixture_setup['mixture_duration'] = params['mixture_duration']
         self._nb_mixtures_per_fold = params['nb_mixtures_per_fold']
+        self._foldnames = params['foldnames']
         self._nb_mixtures = self._mixture_setup['nb_folds'] * self._nb_mixtures_per_fold if np.isscalar(self._nb_mixtures_per_fold) else np.sum(self._nb_mixtures_per_fold)
         self._mixture_setup['total_duration'] = self._nb_mixtures * self._mixture_setup['mixture_duration']
         self._mixture_setup['speed_set'] =  [10., 20., 40.]
@@ -40,8 +43,7 @@ class MetadataSynthesizer(object):
         self._mixture_setup['nOverlap'] = params['max_polyphony']
         self._nb_frames = len(self._mixture_setup['time_idx_100ms'])
         self._rnd_generator = np.random.default_rng()
-        
-        self._rirdata = db_config._rirdata
+        self._rirpath_sofa = params['rirpath_sofa']
         self._nb_classes = len(self._classnames)
         self._nb_speeds = len(self._mixture_setup['speed_set'])
         self._nb_snrs = len(self._mixture_setup['snr_set'])
@@ -64,15 +66,37 @@ class MetadataSynthesizer(object):
             nb_rooms_nf = len(rooms_nf)
             
             
-            idx_active = np.array([])
-            for na in range(self._nb_active_classes):
-                idx_active = np.append(idx_active, np.nonzero(self._db_config._samplelist[nfold]['class'] == self._active_classes[na]))
-            idx_active = idx_active.astype('int')
 
-            foldlist_nff['class'] = self._db_config._samplelist[nfold]['class'][idx_active]
-            foldlist_nff['audiofile'] = self._db_config._samplelist[nfold]['audiofile'][idx_active]
-            foldlist_nff['duration'] = self._db_config._samplelist[nfold]['duration'][idx_active]
-            foldlist_nff['onoffset'] = self._db_config._samplelist[nfold]['onoffset'][idx_active]
+            # Load fsd50k object containing dcase to fsd50k paths
+            fsd50k = prepare_fsd50k()
+            foldname = self._foldnames[nfold]
+            files_per_class = fsd50k.get_filenames(foldname)
+            audiofiles = []
+            audioclasses = []
+            durations = []
+            onoffsets = []
+            for k,v in self._classname_dict.items():
+                vv = files_per_class[k]
+                audiofiles.extend(list(vv.values()))
+                audioclasses.extend([v]*len(vv))
+            audiofiles_ = []
+            for audiof in audiofiles:
+                if type(audiof) == list:
+                    durations.append(librosa.get_duration(path=audiof[0]))
+                    onoffsets.append([0,durations[-1]])
+                    audiofiles_.append(audiof[0])
+                else:
+                    durations.append(librosa.get_duration(path=audiof))
+                    onoffsets.append([0,durations[-1]])
+                    audiofiles_.append(audiof)
+            foldlist_nff['class'] = np.array(audioclasses)
+            foldlist_nff['audiofile'] = np.array(audiofiles_)
+            foldlist_nff['duration'] = np.array(durations)
+            foldlist_nff['onoffset'] = np.array(onoffsets)
+            # standardize the durations to a fixed precision
+            for i in range(len(durations)): 
+                foldlist_nff['duration'][i] = np.floor(foldlist_nff['duration'][i]*100)/100 
+                foldlist_nff['onoffset'][i][1] = np.floor(foldlist_nff['onoffset'][i][1]*100)/100 
             nb_samples_nf = len(foldlist_nff['duration'])
             
             # shuffle randomly the samples in the target list to avoid samples of the same class coming consecutively
@@ -92,33 +116,13 @@ class MetadataSynthesizer(object):
                 fold_mixture['roomidx'] = rooms_nf
                 nroom = nr
                 print('Room {} \n'.format(nroom)) 
-                n_traj = len(self._rirdata[nroom]['doa_xyz'])
+                room_sofas = sorted([self._rirpath_sofa+'/'+'mic'+'/'+nroom+'/'+f for f in os.listdir(self._rirpath_sofa+'/'+'mic'+'/'+nroom)]) # hacky improve path
+                n_traj = len(room_sofas)
                 traj_doas = []
                 
-                for ntraj in self._rirdata[nroom]['doa_xyz']:
-                    n_rirs = np.sum([len(subtr) for subtr in ntraj])
-                    n_heights = len(ntraj)
-                    all_doas = np.zeros((n_rirs, 3))
-                    n_rirs_accum = 0
-                    flip = 0
-                    
-                    for nheight in range(n_heights):
-                        n_rirs_nh = len(ntraj[nheight])
-                        doa_xyz = ntraj[nheight]
-                        #   stack all doas of trajectory together
-                        #   flip the direction of each second height, so that a
-                        #   movement can jump from the lower to the higher smoothly and
-                        #   continue moving the opposite direction
-                        if flip:
-                            nb_doas = np.shape(doa_xyz)[0]
-                            all_doas[n_rirs_accum + np.arange(n_rirs_nh), :] = doa_xyz[np.flip(np.arange(nb_doas)), :]
-                        else:
-                            all_doas[n_rirs_accum + np.arange(n_rirs_nh), :] = doa_xyz
-                        
-                        n_rirs_accum += n_rirs_nh
-                        flip = not flip
-                        
-                    traj_doas.append(all_doas)
+                for itraj in range(n_traj):
+                    sofa_rirs = sofa_utils.load_pos(room_sofas[itraj])
+                    traj_doas.append(sofa_rirs)
             
                 # start layering the mixtures for the specific room
                 sample_counter = 0
@@ -254,7 +258,7 @@ class MetadataSynthesizer(object):
                                     
                             # trajectory
                             ev_traj = self._rnd_generator.integers(0, n_traj)
-                            nRirs = np.sum([len(subtr) for subtr in self._rirdata[nroom]['doa_xyz'][ev_traj]])
+                            nRirs = len(sofa_utils.load_pos(room_sofas[ev_traj]))
                             
                             #if event is less than move_threshold long, make it static by default
                             if event_duration_nl <= self._move_threshold*10:
