@@ -142,7 +142,7 @@ for room_idx, room_name in enumerate(room_list):
     #check for outputdir (create if doesn't exist)
     room_rir_dir = os.path.join(args.output_dir, 'mic', room_name)
     if not os.path.exists(room_rir_dir):
-        os.mkdir(room_rir_dir)
+        os.makedirs(room_rir_dir)
 
     #iterating through paths and simulating (one at a time)
     print("Computing rirs...")
