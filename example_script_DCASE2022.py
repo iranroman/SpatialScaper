@@ -16,7 +16,7 @@ from generation_parameters import get_params
 
 
 # use parameter set defined by user
-task_id = '2' 
+task_id = '1' 
 
 params = get_params(task_id)
     
@@ -24,14 +24,13 @@ params = get_params(task_id)
 #db_config = DBConfig(params)
     
     # LOAD DB-config which is already done
-db_handler = open('db_config_fsd.obj','rb')
+db_handler = open('db_configs/db_config_fsd.obj','rb')
 db_config = pickle.load(db_handler)
 db_handler.close()
 
-<<<<<<< HEAD
-file = open("rirdata_dict.pkl",'rb')
-db_config._rirdata = pickle.load(file)
-file.close()
+#file = open("rirdata_dict.pkl",'rb')
+#db_config._rirdata = pickle.load(file)
+#file.close()
 
 # fix the music files (assuming orchset)
 all_music_files = [f for f in os.listdir(params['db_path']) if 'ex' in f]
@@ -61,8 +60,6 @@ db_config._samplelist[1]['audiofile'] = np.array(sample_list)
 
 
 
-=======
->>>>>>> 20e5963 (removes rirdata pkl and changes paths for generation)
 #create mixture synthesizer class
 noiselessSynth = MetadataSynthesizer(db_config, params, 'target_noiseless')
     

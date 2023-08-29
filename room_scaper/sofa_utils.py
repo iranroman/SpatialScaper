@@ -1,18 +1,18 @@
 import os
 import mat73
 import sys
-sys.path.append('../room_simulation') #we should move stuff around to avoid this
-import tau_loading
+from room_scaper import tau_loading
 import numpy as np
 import pysofaconventions as pysofa
 
 from netCDF4 import Dataset
 import time
 
-def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt='foa', flip=True):
+def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt='mic', traj=None, flip=True):
     rooms = ['bomb_shelter', 'gym', 'pb132', 'pc226', 'sa203', 'sc203', 'se203', 'tb103', 'tc352']
     room = rooms[room_idx]
-    rir_file = [file for file in os.listdir(tau_db_dir) if room in file][0]
+    files = os.listdir(tau_db_dir)
+    rir_file = [file for file in files if room in file][0]
     rirs = mat73.loadmat(os.path.join(tau_db_dir, rir_file))['rirs']
     output_paths, path_metadata, room_metadata = tau_loading.load_paths(room_idx, tau_db_dir)
     n_traj, n_heights = output_paths.shape
@@ -20,21 +20,28 @@ def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt='foa', flip=True):
     path_stack = np.empty((0, 3))
     rir_stack = np.empty((N, R, 0))
     M = 0
-    for i in range(n_traj):
+    if traj is None:
+        traj_iter = np.arange(n_traj)
+    else:
+        traj_iter = [traj]
+    for i in traj_iter:
         for j in range(n_heights):
-            path_ij = output_paths[i,j]
-            rir_ij = rirs[aud_fmt][i][j]
+            path = output_paths[i,j]
+            path_rirs = rirs[aud_fmt][i][j]
             if flip:
                 if j%2==1:
                     #flip every other height, as in DCASE
-                    path_ij = path_ij[::-1]
-                    rir_ij = rir_ij[::-1]
-            path_stack = np.concatenate((path_stack, path_ij), axis=0)
-            rir_stack = np.concatenate((rir_stack, rir_ij), axis=2) 
+                    path_rirs = path_rirs[:,:,::-1]
+                    path = path[::-1]
+            path_stack = np.concatenate((path_stack, path), axis=0)
+            rir_stack = np.concatenate((rir_stack, path_rirs), axis=2)
             M += output_paths[i,j].shape[0]
-            
-    rirs = np.reshape(rir_stack, (M,R,N))
-    source_pos = np.reshape(path_stack, (M,3))
+        
+    rirs = np.moveaxis(rir_stack, [0,2],[2,0])
+    source_pos = path_stack
+    
+    assert rirs.shape == (M,R,N)
+    assert source_pos.shape == (M,3)
     mic_pos = np.repeat([room_metadata['microphone_position']], M, axis=0) 
 
     return rirs, source_pos, mic_pos, room
@@ -156,7 +163,7 @@ def load_rir_pos(filepath, doas=True):
     rirs = sofa.getVariableValue('Data.IR')
     source_pos = sofa.getVariableValue('SourcePosition')
     if doas:
-        source_pos = source_pos * (1/np.sum(source_pos, axis=1))[:, np.newaxis] #normalize
+        source_pos = source_pos * (1/np.sqrt(np.sum(source_pos**2, axis=1)))[:, np.newaxis] #normalize
     sofa.close()
     return rirs, source_pos
 
@@ -172,7 +179,7 @@ def load_pos(filepath, doas=True):
     assert sofa.isValid()
     source_pos = sofa.getVariableValue('SourcePosition')
     if doas:
-        source_pos = source_pos * (1/np.sum(source_pos, axis=1))[:, np.newaxis] #normalize
+        source_pos = source_pos * (1/np.sqrt(np.sum(source_pos**2, axis=1)))[:, np.newaxis] #normalize
     sofa.close()
     return source_pos
 

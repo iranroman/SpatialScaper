@@ -7,10 +7,7 @@ def get_params(argv='1'):
     params = dict(
         db_name = 'nigens',  # name of the audio dataset used for data generation
         rirpath = '/home/iran/SELD-data-generator/TAU_DB/TAU-SRIR_DB',   # path containing Room Impulse Responses (RIRs)
-<<<<<<< HEAD
-=======
         rirpath_sofa = '/home/iran/SELD-data-generator/TAU_DB/TAU_SRIR_DB_SOFA_SIM', 
->>>>>>> 20e5963 (removes rirdata pkl and changes paths for generation)
         mixturepath = 'E:/DCASE2022/TAU_Spatial_RIR_Database_2021/Dataset-NIGENS',  # output path for the generated dataset
         noisepath = '/home/iran/SELD-data-generator/TAU_DB/TAU-SNoise_DB',  # path containing background noise recordings
         nb_folds = 2,  # number of folds (default 2 - training and testing)
@@ -18,8 +15,25 @@ def get_params(argv='1'):
                                  ['tb103','sa203','gym']],
         db_path = 'E:/DCASE2022/TAU_Spatial_RIR_Database_2021/Code/NIGENS',  # path containing audio events to be utilized during data generation
         max_polyphony = 3,  # maximum number of overlapping sound events
-        active_classes = [0, 1, 2, 3, 5, 6, 8, 9, 10, 11, 12, 13],  # list of sound classes to be used for data generation
+        active_classes = [0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13],  # list of sound classes to be used for data generation
+        classname_dict = {
+		    'femaleSpeech':     0,
+		    'maleSpeech':       1,
+		    'clapping':         2,
+		    'telephone':        3,
+		    'laughter':         4,
+		    'domesticSounds':   5,
+		    'footsteps':        6,
+		    'doorCupboard':     7,
+		    'music':            8,
+		    'musicInstrument':  9,
+		    'waterTap':         10,
+		    'bell':             11,
+		    'knock':            12,
+        },
         nb_mixtures_per_fold = [900, 300], # if scalar, same number of mixtures for each fold
+        foldnames = ['train','test'],
+        fs = 44100,
         mixture_duration = 60., #in seconds
         event_time_per_layer = 40., #in seconds (should be less than mixture_duration)
         audio_format = 'both', # 'foa' (First Order Ambisonics) or 'mic' (four microphones) or 'both'
@@ -33,11 +47,7 @@ def get_params(argv='1'):
     elif argv == '2': ###### FSD50k DATA
         params['db_name'] = 'fsd50k'
         params['db_path']= '/home/iran/datasets/FSD50K'
-<<<<<<< HEAD
-        params['mixturepath'] = '/datasets/SELD-dataset'
-=======
         params['mixturepath'] = '/datasets/SELD-dataset-sofa-sim'
->>>>>>> 20e5963 (removes rirdata pkl and changes paths for generation)
         params['active_classes'] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
         params['max_polyphony'] = 2
 

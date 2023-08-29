@@ -1,17 +1,14 @@
 import numpy as np
-from scipy.io import loadmat
 import os
-import h5py
 import pickle
 
 import pyroomacoustics as pra
 from pyroomacoustics import directivities as dr
 from pyroomacoustics.experimental.rt60 import measure_rt60
 import argparse
-import tau_loading
-import sys
-sys.path.append('../data')
-import sofa_utils
+from room_scaper import sofa_utils, tau_loading, room_sim
+
+
 
 tau_room_list = ["bomb_shelter",
              "gym",
@@ -44,93 +41,17 @@ tau_dim_list = [[50,50,12],
                  [20,15,6],
                  [6,5,3]]
 
-def get_y(angle,x):
-    angle2 = np.pi-angle-np.pi/2 
-    return x * np.sin(angle) / np.sin(angle2)
-
-def deg2rad(deg):
-    return deg * 2 * np.pi / 360
-
-def rad2deg(rad):
-    return rad * 360 / (2*np.pi)
-
-def plot_energy_db(ax, rir, fs=24000):
-
-    # The power of the impulse response in dB
-    power = rir**2
-    energy = np.cumsum(power[::-1])[::-1]  # Integration according to Schroeder
-
-    # remove the possibly all zero tail
-    i_nz = np.max(np.where(energy > 0)[0])
-    energy = energy[:i_nz]
-    energy_db = 10 * np.log10(energy)
-    energy_db -= energy_db[0]
-    ax.plot(energy_db)
-
-def get_tetra_mics():
-    #return geometry of standard tetrahedral mic config as in TAU-SRIR dataset
-    
-    #coordinates stored in radius (m), azimuth (deg) and elevation (deg)
-    m1_coords = [.042, 45, 35]
-    m2_coords = [.042, -45, -35]
-    m3_coords = [.042, 135, -35]
-    m4_coords = [.042, -135, 35]
-    
-    mic_coords = [m1_coords, m2_coords, m3_coords, m4_coords]
-    mic_dirs = [dr.CardioidFamily(orientation=dr.DirectionVector(azimuth=coord[1],
-                                                                 colatitude=90-coord[2],
-                                                                 degrees=True),
-                                  pattern_enum=dr.DirectivityPattern.HYPERCARDIOID,)
-                for coord in mic_coords]
-    
-    return mic_coords, mic_dirs
-
-def center_mic_coords(mic_coords, mic_center):
-    mic_locs = np.empty((0,3))
-    for coord in mic_coords:
-        rad, azi, ele = coord
-        azi = deg2rad(azi)
-        ele = deg2rad(ele)
-        x_offset = rad * np.cos(azi) * np.cos(ele)
-        y_offset = rad * np.sin(azi) * np.cos(ele)
-        z_offset = rad * np.sin(ele)
-        mic_loc = mic_center + np.array([x_offset, y_offset, z_offset])
-        mic_locs = np.vstack([mic_locs,mic_loc])
-    return mic_locs
-
-def unitvec_to_cartesian(path_unitvec, height, dist):
-    if type(dist) == np.ndarray:
-        z_offset = height
-        rad = np.sqrt(dist[0]**2 + (dist[2]+z_offset)**2)
-        scaled_path = map_to_cylinder(path_unitvec, rad, axis=1)
-    else:    
-        scaled_path = map_to_cylinder(path_unitvec, dist, axis=2)
-    return scaled_path
-
-def map_to_cylinder(path, rad, axis=2):
-    #maps points (unit vecs) to cylinder of known radius along axis (default z/2)
-    scaled_path = np.empty(path.shape)
-    rad_axes = [0,1,2]
-    rad_axes.remove(axis)
-    for i in range(path.shape[0]):
-        vec = path[i]
-        scale_rad = np.sqrt(np.sum([vec[j]**2 for j in rad_axes]))
-        scale = rad / scale_rad
-        scaled_path[i] = vec * scale
-    return scaled_path
-
 parser = argparse.ArgumentParser()
 
-parser.add_argument("room_name", type=str,
-                    help="name of room")
+parser.add_argument("tau_db_dir", type=str,
+                    help="directory for TAU-SRIR-DB")
 
-parser.add_argument("--output", dest="output_dir", type=str, 
-                    help="directory for file output", required=False,
-                    default='/scratch/ci411/SRIR_DATASETS/TAU-SIM-SOFA')
+parser.add_argument("output_dir", type=str, 
+                    help="directory for file output")
 
-parser.add_argument("--tau-db-dir", dest="tau_db_dir", type=str,
-                    help="directory for TAU-SRIR-DB", required=False,
-                    default="/scratch/ci411/SRIR_DATASETS/TAU_SRIR_DB/TAU-SRIR_DB")
+parser.add_argument("--room", dest="room", type=str, 
+                    help="room to simulate", required=False,
+                    default=None)
 
 parser.add_argument("--decay-db", dest="decay_db", type=int,
                     help="decay db for estimating rt60", required=False,
@@ -160,35 +81,42 @@ parser.add_argument("--mic-center", dest="mic_center", type=list, required=False
                     help="center of microphone array (in meters)", default=[0.05, 0.05, 0.05])
 
 parser.add_argument("--db-name", dest="db_name", type=str, required=False,
-                    help="name of database creating",
+                    help="name of database created in script",
                     default="TAU-SIM-SOFA")
 
 parser.add_argument("--flip", dest="flip", type=bool, required=False,
                     help="flip every other height, as in DCASE generator",
                     default=True)
 
+parser.add_argument("--density-scale", dest="density_scale", type=int, required=False,
+                    help="inverse of sampling density (e.g. 2 = half density)", default=1)
 
-if __name__ == "__main__":
 
-    args = parser.parse_args()
 
-    #microphone array definitions
-    print("Defining mics...")
-    mic_coords, mic_dirs = get_tetra_mics() #this can be subbed for other mic configs
-    n_mics = len(mic_coords)
+args = parser.parse_args()
+
+#microphone array definitions
+print("Defining mics...")
+mic_coords, mic_dirs = room_sim.get_tetra_mics() #this can be subbed for other mic configs
+n_mics = len(mic_coords)
+
+mic_loc_center = np.array(args.mic_center)
+mic_locs = room_sim.center_mic_coords(mic_coords, mic_loc_center)
+
+if args.room is None:
+    room_list = tau_room_list
+else:
+    room_list = [args.room]
     
-    mic_loc_center = np.array(args.mic_center)
-    mic_locs = center_mic_coords(mic_coords, mic_loc_center)
 
-    #load room info
-    print("Loading room info...")
-    room_idx = tau_room_list.index(args.room_name)
+for room_idx, room_name in enumerate(room_list):
+    print(f"Loading room info for {room_name}...")
     #load paths
     paths, paths_meta, room_meta = tau_loading.load_paths(room_idx, args.tau_db_dir)
     t_type = room_meta['trajectory_type']
-    
+
     #sample rirs for rt60 to calculate MAC
-    rir_file = [filename for filename in os.listdir(args.tau_db_dir) if args.room_name in filename][0]
+    rir_file = [filename for filename in os.listdir(args.tau_db_dir) if room_name in filename][0]
     rir_path = os.path.join(args.tau_db_dir, rir_file)
     samples = tau_loading.load_rir_sample(rir_path, t_type=t_type)
     rt = []
@@ -210,23 +138,26 @@ if __name__ == "__main__":
     path_len = len(paths[0,0])
 
     if args.single_path:
+        print("Simulating only a single path")
         n_traj = 1
         n_heights = 1
 
     #check for outputdir (create if doesn't exist)
-    room_rir_dir = os.path.join(args.output_dir, 'mic')
+    room_rir_dir = os.path.join(args.output_dir, 'mic', room_name)
     if not os.path.exists(room_rir_dir):
         os.makedirs(room_rir_dir)
 
     #iterating through paths and simulating (one at a time)
     print("Computing rirs...")
-    path_stack = np.empty((0, 3))
-    rir_stack = np.empty((0, n_mics, args.rir_len))
-    
+    path_stack_all = np.empty((0, 3))
+    rir_stack_all = np.empty((0, n_mics, args.rir_len))
+
     for i in range(n_traj):
         mic_array_list = []
+        path_stack_traj = np.empty((0, 3))
+        rir_stack_traj = np.empty((0, n_mics, args.rir_len))
+        
         for j in range(n_heights):
-
             room = pra.ShoeBox(room_dim, fs=args.sr, 
                              materials=pra.Material(e_absorption),
                              max_order=args.max_order, 
@@ -236,28 +167,46 @@ if __name__ == "__main__":
             path = paths[i,j]
             centered_path = path + mic_center
             path_rirs = np.empty((n_mics, len(path), args.rir_len))
-            for source in centered_path:
-                try:
-                    room.add_source(np.maximum(source,0)) #force source in room
-                except ValueError:
-                    print("Source at {} is not inside room of dimensions {}".format(source, room_dim))
+            for k, source in enumerate(centered_path):
+                if k%args.density_scale==0:
+                    try:
+                        room.add_source(np.maximum(source,0)) #force source in room
+                    except ValueError:
+                        print("Source at {} is not inside room of dimensions {}".format(source, room_dim))
+                else:
+                    continue
+                    
             room.compute_rir()
-            for k in range(n_mics):
-                for l in range(len(path)):
-                    path_rirs[k,l] = room.rir[k][l][:args.rir_len]
             
+            for k in range(n_mics):
+                for l in range(len(path)//args.density_scale):
+                    path_rirs[k,l] = room.rir[k][l][:args.rir_len]
+
             if args.flip:
                 if j%2==1:
                     #flip every other height, as in DCASE
-                    path_rirs = path_rirs[::-1]
+                    path_rirs = path_rirs[:,::-1]
                     path = path[::-1]
-            
-            path_rirs = np.moveaxis(path_rirs, [0,1,2], [1,0,2])
-            rir_stack = np.concatenate((rir_stack, path_rirs), axis=0)
-            path_stack = np.concatenate((path_stack, path), axis=0)
 
-    sofa_path = os.path.join(room_rir_dir, f'{args.room_name}.sofa')
+            path_rirs = np.moveaxis(path_rirs, [0,1,2], [1,0,2])
+            
+            rir_stack_traj = np.concatenate((rir_stack_traj, path_rirs), axis=0)
+            path_stack_traj = np.concatenate((path_stack_traj, path), axis=0)
+            
+        
+        sofa_path = os.path.join(room_rir_dir, f'{room_name}_t{i}.sofa')
+        print(f"Storing result to {sofa_path}")
+
+        sofa_utils.create_srir_sofa(sofa_path, rir_stack_traj, path_stack_traj, room_meta['microphone_position'],\
+                         db_name=args.db_name, room_name=room_name, listener_name='mic')
+        
+        
+        rir_stack_all = np.concatenate((rir_stack_all, rir_stack_traj), axis=0)
+        path_stack_all = np.concatenate((path_stack_all, path_stack_traj), axis=0)
+            
+
+    sofa_path = os.path.join(args.output_dir, 'mic', f'{room_name}.sofa')
     print(f"Storing result to {sofa_path}")
-    
-    sofa_utils.create_srir_sofa(sofa_path, rir_stack, path_stack, room_meta['microphone_position'],\
-                     db_name=args.db_name, room_name=args.room_name, listener_name='mic')
+
+    sofa_utils.create_srir_sofa(sofa_path, rir_stack_all, path_stack_all, room_meta['microphone_position'],\
+                     db_name=args.db_name, room_name=room_name, listener_name='mic')
