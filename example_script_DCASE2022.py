@@ -28,10 +28,6 @@ db_handler = open('db_config_fsd.obj','rb')
 db_config = pickle.load(db_handler)
 db_handler.close()
 
-file = open("rirdata_dict.pkl",'rb')
-db_config._rirdata = pickle.load(file)
-file.close()
-
 #create mixture synthesizer class
 noiselessSynth = MetadataSynthesizer(db_config, params, 'target_noiseless')
     
