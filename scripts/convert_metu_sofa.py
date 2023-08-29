@@ -71,6 +71,9 @@ def create_single_sofa_file(aud_fmt, metu_db_dir, sofa_db_dir, room="METU"):
             irdata_resamp = librosa.resample(irdata, orig_sr=sr, target_sr=24000)
             rirs.append(irdata_resamp)
     
+    rirs = np.array(rirs)
+    source_pos = np.array(source_pos)
+
     # Create .sofa files with flattened rirs/paths + metadata
     sofa_utils.create_srir_sofa(
         filepath,
@@ -83,8 +86,8 @@ def create_single_sofa_file(aud_fmt, metu_db_dir, sofa_db_dir, room="METU"):
         comment=comment
     )
 
-metu_db_dir = "/scratch/data/RIR_datasets/spargair/em32"
+metu_db_dir = "/home/iran/datasets/spargair/em32"
 sofa_db_dir = 'TAU_DB/METU_SRIR_DB_SOFA'
 aud_fmt='mic'
-rint(f"Starting .sofa creation for the METU dataset.")
+print(f"Starting .sofa creation for the METU dataset.")
 create_single_sofa_file(aud_fmt, metu_db_dir, sofa_db_dir, room="METU")

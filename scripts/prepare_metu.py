@@ -1,7 +1,7 @@
 import os
 import argparse
 
-METU_PATH = "/scratch/data/RIR_datasets/spargair/em32/"
+METU_PATH = "/home/iran/datasets/spargair/em32/"
 
 def main():
     parser = argparse.ArgumentParser(description='Description of your program')
