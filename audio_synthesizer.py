@@ -120,12 +120,13 @@ class AudioSynthesizer(object):
                             ir_times = self._time_idx100[np.arange(0,nRirs_moving)]
                             mixeventsig = 481.6989*utils.ctf_ltv_direct(eventsig, channel_rirs[:, :, riridx, ntraj], ir_times, self._fs_mix, self._stft_winsize_moving) / float(len(eventsig))
                         else:
-                            mixeventsig0 = scipy.signal.convolve(eventsig, np.squeeze(channel_rirs[:, 0, riridx, ntraj]), mode='full', method='fft')
-                            mixeventsig1 = scipy.signal.convolve(eventsig, np.squeeze(channel_rirs[:, 1, riridx, ntraj]), mode='full', method='fft')
-                            mixeventsig2 = scipy.signal.convolve(eventsig, np.squeeze(channel_rirs[:, 2, riridx, ntraj]), mode='full', method='fft')
-                            mixeventsig3 = scipy.signal.convolve(eventsig, np.squeeze(channel_rirs[:, 3, riridx, ntraj]), mode='full', method='fft')
-
-                            mixeventsig = np.stack((mixeventsig0,mixeventsig1,mixeventsig2,mixeventsig3),axis=1)
+                            mixeventsig_list = []  # List to store individual mixeventsig arrays
+                            nCh = 32
+                            for channel_idx in range(nCh):#[6, 10, 26, 22]:
+                                channel_rir = np.squeeze(channel_rirs[:, channel_idx, riridx, ntraj])
+                                mixeventsig_channel = signal.convolve(eventsig, channel_rir, mode='full', method='fft')
+                                mixeventsig_list.append(mixeventsig_channel)
+                            mixeventsig = np.stack(mixeventsig_list, axis=1)
                         if self._apply_event_gains:
                             # apply random gain to each event based on class gain, distribution given externally
                             K=1000
