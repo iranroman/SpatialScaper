@@ -24,6 +24,7 @@ setup(
             "License :: Creative Commons Attribution 4.0",
             "Programming Language :: Python",
             "Development Status :: 3 - Alpha",
+
             "Intended Audience :: Developers",
             "Intended Audience :: Science/Research",
             "Topic :: Multimedia :: Sound/Audio :: Analysis",
@@ -35,6 +36,5 @@ setup(
         'librosa>=0.10.0',
         'mat73>=0.60',
         'fvcore>=0.1.5',
-    ],
+         ],
 )
-
