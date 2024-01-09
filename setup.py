@@ -10,11 +10,11 @@ version = imp.load_source('room_scaper.version', 'room_scaper/version.py')
 setup(
     name='room_scaper',
     version=version.version,
-    description='',
-    author='',
+    description='A library for soundscape synthesis and augmentation using spatial impulse responses inside specific rooms',
+    author='Iran R. Roman',
     author_email='iran@ccrma.stanford.edu',
     url='',
-    download_url='',
+    download_url='http://github.com/iranroman/SELD-data-generator/releases',
     packages=['room_scaper'],
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -23,7 +23,8 @@ setup(
     classifiers=[
             "License :: Creative Commons Attribution 4.0",
             "Programming Language :: Python",
-            "Development Status :: 2 - NOT READY",
+            "Development Status :: 3 - Alpha",
+
             "Intended Audience :: Developers",
             "Intended Audience :: Science/Research",
             "Topic :: Multimedia :: Sound/Audio :: Analysis",
@@ -38,6 +39,5 @@ setup(
         'pysofaconventions',
         'pyroomacoustics',
     ],
+
 )
-
-
