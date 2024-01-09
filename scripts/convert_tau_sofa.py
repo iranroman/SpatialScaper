@@ -1,5 +1,5 @@
 import os
-from room_scaper import sofa_utils, tau_loading
+from spatial_scaper.data import sofa_utils, tau_loading
 
 rooms = ['bomb_shelter', 'gym', 'pb132', 'pc226', 'sa203', 'sc203', 'se203', 'tb103', 'tc352']
 

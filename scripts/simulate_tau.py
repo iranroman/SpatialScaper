@@ -6,8 +6,8 @@ import pyroomacoustics as pra
 from pyroomacoustics import directivities as dr
 from pyroomacoustics.experimental.rt60 import measure_rt60
 import argparse
-from room_scaper import sofa_utils, tau_loading, room_sim
-
+from spatial_scaper.data import sofa_utils, tau_loading
+import spatial_scaper.room_sim as room_sim
 
 
 tau_room_list = ["bomb_shelter",

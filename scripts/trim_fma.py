@@ -10,7 +10,7 @@ def trim_audio(input_path, output_path, start_time, end_time):
     sf.write(output_path, audio, sr)
 
 def main():
-    root_dir = '/datasets/fma'
+    root_dir = '/datasets/fma' #FIX THIS
     output_dir = '/datasets/fma_10sec'
     start_time = 10.0  # Start trimming from 10 seconds
     end_time = 20.0   # End trimming at 20 seconds (adjust as needed)

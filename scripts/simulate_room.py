@@ -5,7 +5,8 @@ import pickle
 import pyroomacoustics as pra
 from pyroomacoustics import directivities as dr
 import argparse
-from room_scaper import sofa_utils, room_sim
+from spatial_scaper.data import sofa_utils
+import spatial_scaper.room_sim as room_sim
 
 parser = argparse.ArgumentParser()
 

@@ -1,5 +1,4 @@
-from room_scaper.data.utils import get_path_to_room_files
-from room_scaper.prepare_fsd50k import prepare_fsd50k
+from prepare_fsd50k import prepare_fsd50k
 import yaml
 import argparse
 import sys
@@ -8,6 +7,7 @@ import os
 import numpy as np
 import librosa
 import random
+import glob
 
 MOVE_THRESHOLD = 3
 
@@ -472,6 +472,16 @@ def write_metadata(self):
                             elev = int(metadata_nm['eventdoatimetracks'][nf,1,active_events][na][0])
                             metadata_writer.writerow([nf,classidx,trackidx,azim,elev])
                 file_id.close()
+
+#moved from room_sim.data.utils
+CODE_DIR = os.path.dirname(__file__)
+PATH_TO_RIRS = os.path.join(CODE_DIR, 'rir_databases')
+
+def get_path_to_room_files(room_name):
+    all_room_filenames = glob.glob(os.path.join(PATH_TO_RIRS, '*/*'), recursive=True)
+    room_files_path = [rname for rname in all_room_filenames if room_name==rname.split(os.sep)[-1]]
+    assert len(room_files_path) == 1
+    return room_files_path[0]
 
 def DCASE_main():
 
