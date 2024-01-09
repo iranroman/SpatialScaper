@@ -36,5 +36,8 @@ setup(
         'librosa>=0.10.0',
         'mat73>=0.60',
         'fvcore>=0.1.5',
-         ],
+        'pysofaconventions',
+        'pyroomacoustics',
+    ],
+
 )
