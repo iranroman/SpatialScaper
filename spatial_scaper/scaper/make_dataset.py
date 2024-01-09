@@ -1,12 +1,11 @@
 import sys
 import os
 import numpy as np
-from db_config import DBConfig
 from metadata_synthesizer import MetadataSynthesizer
 from audio_synthesizer import AudioSynthesizer
 from audio_mixer import AudioMixer
 import pickle
-from generation_parameters import get_params
+from spatial_scaper.generation_parameters import get_params
 
 
 
@@ -41,7 +40,7 @@ def main(argv):
             db_config = pickle.load(f)
     else:
         ### Create database config based on params (e.g. filelist name etc.)
-        db_config = DBConfig(params)
+        print("No DBConfig!")
     
     #create mixture synthesizer class
     noiselessSynth = MetadataSynthesizer(db_config, params, 'target_noiseless')

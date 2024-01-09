@@ -1,11 +1,29 @@
 import numpy as np
-from utils import cart2sph
 import os
 import csv
 from room_scaper import sofa_utils
 import librosa
 
 from prepare_fsd50k import prepare_fsd50k
+
+def cart2sph(xyz):
+    return_list = False
+    if len(np.shape(xyz)) == 2:
+        return_list = True
+        x = xyz[:, 0]
+        y = xyz[:, 1]
+        z = xyz[:, 2]
+    else:
+        x = xyz[0]
+        y = xyz[1]
+        z = xyz[2]
+    
+    azimuth = np.arctan2(y, x) * 180. / np.pi
+    elevation = np.arctan2(z, np.sqrt(x**2 + y**2)) * 180. / np.pi
+    if return_list:
+        return np.stack((azimuth,elevation),axis=0)
+    else:
+        return np.array([azimuth, elevation])
 
 class MetadataSynthesizer(object):
     def __init__(
@@ -70,7 +88,7 @@ class MetadataSynthesizer(object):
             # Load fsd50k object containing dcase to fsd50k paths
             fsd50k = prepare_fsd50k()
             foldname = self._foldnames[nfold]
-            files_per_class = fsd50k.get_filenames(foldname)
+            files_per_class = fsd50k.get_filenames(foldname) #should we store this somewhere instead of re-doing this setup set?
             audiofiles = []
             audioclasses = []
             durations = []

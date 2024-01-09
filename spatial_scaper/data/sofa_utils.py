@@ -1,7 +1,7 @@
 import os
 import mat73
 import sys
-from room_scaper import tau_loading
+from spatial_scaper.data import tau_loading
 import numpy as np
 import pysofaconventions as pysofa
 
