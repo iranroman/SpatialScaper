@@ -5,17 +5,17 @@ import imp
 with open('README.md') as file:
     long_description = file.read()
 
-version = imp.load_source('room_scaper.version', 'room_scaper/version.py')
+version = imp.load_source('spatial_scaper.version', 'spatial_scaper/version.py')
 
 setup(
-    name='room_scaper',
+    name='spatial_scaper',
     version=version.version,
     description='A library for soundscape synthesis and augmentation using spatial impulse responses inside specific rooms',
     author='Iran R. Roman',
     author_email='iran@ccrma.stanford.edu',
     url='',
     download_url='http://github.com/iranroman/SELD-data-generator/releases',
-    packages=['room_scaper'],
+    packages=['spatial_scaper'],
     long_description=long_description,
     long_description_content_type='text/markdown',
     keywords='audio sound soundscape environmental ambisonics microphone array sound event detection localization',
