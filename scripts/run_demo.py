@@ -1,7 +1,8 @@
-from room_scaper.utils.parser import parse_args, load_config
 from room_scaper.data.utils import get_path_to_room_files
 from room_scaper.prepare_fsd50k import prepare_fsd50k
 import yaml
+import argparse
+import sys
 import pickle
 import os
 import numpy as np
@@ -9,6 +10,49 @@ import librosa
 import random
 
 MOVE_THRESHOLD = 3
+
+
+def parse_args():
+    """
+    Parse the following arguments for a default parser RoomScaper users.
+    Args:
+        cfg (str): path to the config file.
+    """
+    parser = argparse.ArgumentParser(
+        description="Provide RoomScaper data synthesis pipeline."
+    )
+    parser.add_argument(
+        "--config",
+        dest="path_to_config",
+        help="Path to the config files",
+        default="configs/RoomScaper/ICASSP_2024.yaml",
+    )
+    if len(sys.argv) == 1:
+        parser.print_help()
+    return parser.parse_args()
+
+
+def load_config(args, path_to_config=None):
+    """
+    Given the arguemnts, load and initialize the configs.
+    Args:
+        args (argument): 
+            `args`
+            `path_to_config`
+    """
+    with open(path_to_config, "r") as stream:
+        try:
+            cfg = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+
+    return dotdict(cfg)
+
+class dotdict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
 
 def cart2sph(xyz):
     return_list = False
