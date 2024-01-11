@@ -5,7 +5,7 @@ import imp
 with open('README.md') as file:
     long_description = file.read()
 
-version = imp.load_source('spatial_scaper.version', 'spatial_scaper/version.py')
+version = imp.load_source('spatial_scaper.version', 'version.py')
 
 setup(
     name='spatial_scaper',
@@ -32,7 +32,7 @@ setup(
         ],
     install_requires=[
         'numpy>=1.24.4',
-        'scipy>=1.11.1',
+        'scipy>=1.10.1',
         'librosa>=0.10.0',
         'mat73>=0.60',
         'fvcore>=0.1.5',
