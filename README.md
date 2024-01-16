@@ -1,9 +1,72 @@
-# DCASE2022-data-generator
-Data generator for creating synthetic audio mixtures suitable for DCASE Challenge Task 3
+# SpatialScaper
+
+A python library to create synthetic audio mixtures suitable for DCASE Challenge Task 3
+
+Install SpatialScaper
+```
+pip install -e .
+```
+
+To start using SpatialScaper using the default FSD50K dataset used by the [DCASE data generator](https://github.com/danielkrause/DCASE2022-data-generator):
+
+1. download and unzip the FSD50K dataset
+```
+zenodo_get -r 4060432 -o path/to/datasets
+zip -s 0 path/to/datasets/FSD50K.dev_audio.zip --out path/to/datasets/unsplit.zip
+unzip path/to/datasets/unsplit.zip -d path/to/datasets
+zip -s 0 path/to/datasets/FSD50K.eval_audio.zip --out path/to/datasets/unsplit.zip
+unzip path/to/datasets/unsplit.zip -d path/to/datasets
+```
+
+2. re-structure FSD50K to be consistent with the structure expected by the [DCASE data generator](https://github.com/danielkrause/DCASE2022-data-generator)
+```
+python scripts/fsd50k_to_dcase_format.py path/to/datasets/FSD50K path/to/datasets/FSD50K_DCASE
+```
+[comment]: <> (TODO: add steps to clean up redundant files after preparing FSD50K)
+
+### METU ROOM
+Download and prepare
+```
+zenodo_get -r 2635758 -o path/to/datasets
+unzip path/to/datasets/spargair.zip -d path/to/datasets
+rm path/to/datasets/spargair.zip
+rm -r path/to/datasets/__MACOSX
+python scripts/prepare_metu.py
+```
+
+### Example script to generate soundscapes
+Spatialize
+```
+python mvp.py
+```
+
+```
+requirements.txt
+    zenodo_get
+    librosa
+    soundfile
+    pysofaconventions
+    netCDF4
+    scipy
+    matplotlib
+    scaper
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 ### Prerequisites
 
-The provided code was tested with Python 3.8 and the following libraries:
+The provided code was tested with Python 3.10 and the following libraries:
 SoundFile 0.10.3, mat73 0.58, numpy 1.20.1, scipy 1.6.2, librosa 0.8.1. 
 
 Must download these RIR databases:
