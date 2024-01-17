@@ -6,6 +6,7 @@ import soundfile as sf
 from scipy.spatial import KDTree
 from scipy.interpolate import interp1d
 
+
 def cartesian_to_polar(cartesian_coords, include_radius=True):
     """
     Converts Cartesian coordinates to polar coordinates (azimuth, elevation, and optionally radius).
@@ -55,8 +56,8 @@ def cartesian_to_polar(cartesian_coords, include_radius=True):
 
 def sort_matrix_by_columns(matrix, primary_col=0, secondary_col=2):
     """
-    Sort the matrix based on two columns. 
-    First, sort by the primary column in ascending order. 
+    Sort the matrix based on two columns.
+    First, sort by the primary column in ascending order.
     Then, within each group of identical values in the primary column, sort by the secondary column in ascending order.
 
     :param matrix: NumPy array to be sorted.
@@ -65,8 +66,11 @@ def sort_matrix_by_columns(matrix, primary_col=0, secondary_col=2):
     :return: Sorted NumPy array.
     """
     # First, sort by the secondary column, then by the primary column
-    sorted_matrix = matrix[np.lexsort((matrix[:, secondary_col], matrix[:, primary_col]))]
+    sorted_matrix = matrix[
+        np.lexsort((matrix[:, secondary_col], matrix[:, primary_col]))
+    ]
     return sorted_matrix
+
 
 def get_timegrid(nSamps, sr, ir_times, time_grid_resolution=0.1):
     """
@@ -135,7 +139,7 @@ def get_labels(ir_times, time_grid, IR_XYZs, class_id=None, source_id=0, polar=T
     nFrames = len(IR_XYZ_interp)
     if polar:
         coords = cartesian_to_polar(IR_XYZ_interp)[1:]
-        coords[:,:2] = np.round(coords[:,:2],3)
+        coords[:, :2] = np.round(coords[:, :2], 3)
     else:
         coords = IR_XYZ_interp[1:]
     labels = np.hstack(
@@ -174,7 +178,11 @@ def save_output(audiofile, labelfile, x, sr, labels, fmt="mic"):
     sf.write(wavpath, x, sr)
     os.makedirs(os.path.dirname(labelfile), exist_ok=True)
     labelspath = f"{labelfile}.csv"
-    np.savetxt(labelspath, labels, delimiter=",", fmt=["%i","%i","%i","%i","%i","%.3f"])
+    np.savetxt(
+        labelspath, labels, delimiter=",", fmt=["%i", "%i", "%i", "%i", "%i", "%.3f"]
+    )
+
+
 def spatialize(sig, irs, ir_times, win_size=512, sr=24000, s=1.0):
     """
     Spatializes a mono audio signal using convolution with multiple impulse responses.
@@ -479,6 +487,7 @@ def ctf_ltv_direct(sig, irs, ir_times, fs, win_size):
 
     return convsig
 
+
 def IR_normalizer(IRs):
     """
     Normalizes impulse responses based on their energy.
@@ -501,25 +510,26 @@ def IR_normalizer(IRs):
     E = np.sqrt(np.sum(np.power(IRs, 2), axis=-1, keepdims=True))
     return IRs / np.mean(E, axis=-2, keepdims=True)
 
+
 def find_indices_of_change(arr):
     """
     Identifies and returns the indices in an array where consecutive elements differ.
 
-    This function processes an array and finds the indices at which the value of the array changes 
-    compared to the previous element. It is particularly useful for identifying changes in a sequence 
+    This function processes an array and finds the indices at which the value of the array changes
+    compared to the previous element. It is particularly useful for identifying changes in a sequence
     of spatial coordinates or any other sequence of values where changes need to be detected.
 
     Args:
-        arr (numpy.ndarray): An array of values. The array can be multidimensional, but it is 
-                             typically used with 2D arrays where each row represents a distinct item 
+        arr (numpy.ndarray): An array of values. The array can be multidimensional, but it is
+                             typically used with 2D arrays where each row represents a distinct item
                              (e.g., XYZ coordinates).
 
     Returns:
-        list: A list of indices where a change occurs in the array. The first index (0) is always included, 
+        list: A list of indices where a change occurs in the array. The first index (0) is always included,
               as the first element is considered a 'change' from a non-existent previous element.
 
-    The function converts each row of the array into a tuple for easy comparison, then iterates through 
-    these tuples to detect changes. An index is added to the result list if the current tuple is different 
+    The function converts each row of the array into a tuple for easy comparison, then iterates through
+    these tuples to detect changes. An index is added to the result list if the current tuple is different
     from the previous one.
     """
     # Convert the array to a list of tuples for easy comparison
@@ -536,7 +546,8 @@ def find_indices_of_change(arr):
 
     return change_indices
 
-def traj_2_ir_idx(XYZs,trajectory):
+
+def traj_2_ir_idx(XYZs, trajectory):
     """
     Maps a set of trajectory points to their nearest neighbors in a given set of coordinates using a k-d tree.
 
@@ -575,8 +586,8 @@ def db2scale(db):
     """
     Converts a value in decibels (dB) to a linear scale factor.
 
-    This function is commonly used in audio signal processing to convert dB values, which represent a logarithmic 
-    measure of relative amplitude, to a linear scale. This linear scale is often needed for direct manipulation of 
+    This function is commonly used in audio signal processing to convert dB values, which represent a logarithmic
+    measure of relative amplitude, to a linear scale. This linear scale is often needed for direct manipulation of
     audio signal amplitudes.
 
     Args:
@@ -585,10 +596,11 @@ def db2scale(db):
     Returns:
         float: The corresponding linear scale factor.
 
-    The conversion is based on the formula: 10^(db/20), which is derived from the decibel definition 
+    The conversion is based on the formula: 10^(db/20), which is derived from the decibel definition
     for power ratios and the relationship between power and amplitude.
     """
-    return 10**(db/20) 
+    return 10 ** (db / 20)
+
 
 def generate_trajectory(xyz_start, xyz_end, npoints, shape):
     """
@@ -603,9 +615,13 @@ def generate_trajectory(xyz_start, xyz_end, npoints, shape):
     Returns:
     list of lists: Trajectory points [[x, y, z], [x, y, z], ...].
     """
+
     def linear_trajectory():
         # Linear interpolation between start and end points
-        return [list(np.linspace(np.array(xyz_start), np.array(xyz_end), npoints)[i]) for i in range(npoints)]
+        return [
+            list(np.linspace(np.array(xyz_start), np.array(xyz_end), npoints)[i])
+            for i in range(npoints)
+        ]
 
     def circular_trajectory():
         # Vector from start to end
@@ -640,36 +656,36 @@ def generate_trajectory(xyz_start, xyz_end, npoints, shape):
         return circle_points
 
     # Select trajectory type
-    if shape == 'linear':
+    if shape == "linear":
         return linear_trajectory()
-    elif shape == 'circular':
+    elif shape == "circular":
         return circular_trajectory()
     else:
         raise ValueError("Shape must be 'linear' or 'circular'.")
 
 
 def get_label_list(folder_path):
-    '''
+    """
     modified from
     github.com/justinsalamon/scaper/master/scaper/util.py
-    '''
+    """
 
     label_list = []
     folder_names = os.listdir(folder_path)
     for fname in folder_names:
-        if (os.path.isdir(os.path.join(folder_path, fname)) and
-                fname[0] != '.'):
+        if os.path.isdir(os.path.join(folder_path, fname)) and fname[0] != ".":
             label_list.append(fname)
     # ensure consistent ordering of labels
     label_list.sort()
     return label_list
 
-def get_files_list(path,split):
+
+def get_files_list(path, split):
     """
     Retrieves a list of file paths from a specified directory, optionally filtering by a subdirectory (split).
 
     This function searches for all files in a given directory and its subdirectories. If a 'split' is specified,
-    it further narrows down the search to include files only from that particular subdirectory. This is particularly 
+    it further narrows down the search to include files only from that particular subdirectory. This is particularly
     useful when dealing with datasets divided into splits like 'train', 'test', etc.
 
     Args:
@@ -680,28 +696,31 @@ def get_files_list(path,split):
     Returns:
         list: A list of file paths (strings) that are found in the specified directory (and subdirectory, if specified).
 
-    The function uses 'glob' to search recursively within the given directory. It filters out directories, 
+    The function uses 'glob' to search recursively within the given directory. It filters out directories,
     ensuring only file paths are returned. If a 'split' is provided, the search is limited to that subdirectory.
     """
     if split:
-        subfiles = glob.glob(os.path.join(path,split, "**"),recursive=True)
+        subfiles = glob.glob(os.path.join(path, split, "**"), recursive=True)
     else:
-        subfiles = glob.glob(os.path.join(path, "**"),recursive=True)
+        subfiles = glob.glob(os.path.join(path, "**"), recursive=True)
     subfiles = [f for f in subfiles if os.path.isfile(f)]
     return subfiles
 
-def new_event_exceeds_max_overlap(new_event_time, new_event_duration, other_events, max_overlap, increment):
+
+def new_event_exceeds_max_overlap(
+    new_event_time, new_event_duration, other_events, max_overlap, increment
+):
     """
     Checks if a new event overlaps with existing events more than a specified maximum amount.
 
-    This function iterates through each time increment of the new event's duration and checks 
-    if it overlaps with other existing events. If the number of overlaps at any point exceeds 
+    This function iterates through each time increment of the new event's duration and checks
+    if it overlaps with other existing events. If the number of overlaps at any point exceeds
     'max_overlap', it indicates too much overlap.
 
     Args:
         new_event_time (float): The start time of the new event.
         new_event_duration (float): The duration of the new event.
-        other_events (list): A list of other events to check for overlap. Each event in the list is expected to have 
+        other_events (list): A list of other events to check for overlap. Each event in the list is expected to have
                              'event_time' and 'event_duration' attributes.
         max_overlap (int): The maximum number of events that can overlap at any time.
         increment (float): The time increment to check for overlap.
@@ -709,7 +728,7 @@ def new_event_exceeds_max_overlap(new_event_time, new_event_duration, other_even
     Returns:
         bool: True if the new event overlaps with more than 'max_overlap' events at any point, False otherwise.
 
-    The function is useful in scenarios where overlapping events are permissible to some extent, 
+    The function is useful in scenarios where overlapping events are permissible to some extent,
     but excessive overlap needs to be avoided.
     """
 
@@ -717,7 +736,10 @@ def new_event_exceeds_max_overlap(new_event_time, new_event_duration, other_even
     for t in np.arange(new_event_time, new_event_time + new_event_duration, increment):
         current_overlap = 0
         for event in other_events:
-            if t >= event.event_time - increment and t <= event.event_time + event.event_duration + increment:
+            if (
+                t >= event.event_time - increment
+                and t <= event.event_time + event.event_duration + increment
+            ):
                 current_overlap += 1
             if current_overlap > max_overlap:
                 return True  # Overlaps with more than max_overlap events
@@ -728,7 +750,7 @@ def count_leading_zeros_in_period(frequency_hz):
     """
     Counts the number of leading zeros in the decimal representation of the period of a frequency.
 
-    This function is useful for determining the precision needed to represent the period of a frequency 
+    This function is useful for determining the precision needed to represent the period of a frequency
     accurately in decimal form.
 
     Args:
@@ -737,7 +759,7 @@ def count_leading_zeros_in_period(frequency_hz):
     Returns:
         int: The number of leading zeros in the period of the given frequency.
 
-    The function calculates the period as the reciprocal of the frequency, then converts it to a string format 
+    The function calculates the period as the reciprocal of the frequency, then converts it to a string format
     to count the leading zeros in its fractional part. The count stops at the first non-zero digit.
     """
     # Calculate the period
@@ -747,8 +769,11 @@ def count_leading_zeros_in_period(frequency_hz):
     period_str = f"{period_seconds:.10f}"
 
     # Split the string at the decimal point and work with the fractional part
-    fractional_part = period_str.split('.')[1]
+    fractional_part = period_str.split(".")[1]
 
     # Count leading zeros using a generator expression with a condition to stop after first non-zero digit
-    return sum(1 for i, digit in enumerate(fractional_part) if digit == '0' and '1' not in fractional_part[:i+1])
-
+    return sum(
+        1
+        for i, digit in enumerate(fractional_part)
+        if digit == "0" and "1" not in fractional_part[: i + 1]
+    )
