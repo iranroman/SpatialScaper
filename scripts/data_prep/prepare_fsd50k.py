@@ -8,15 +8,55 @@ import pandas as pd
 import requests
 import tarfile
 import zipfile
+import argparse
 from tqdm import tqdm
 
 PARENT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-class BaseDataLoad:
-    def __init__(self, dataset_home=None, metadata_path=None):
-        self.dataset_home = dataset_home
-        self.metadata_path = metadata_path
+default_paths = {"dataset_home":"datasets/FSD50K/",
+                 "metadata_path":"dcase_datagen/metadata/",
+                 "dcase_sound_events_txt":"dcase_datagen/metadata/sound_event_fsd50k_filenames.txt",
+                 "music_home":"datasets/fma_10sec/"}
 
+parser = argparse.ArgumentParser()
+
+
+parser.add_argument("root_dir", type=str,
+                    help="root directory for all default paths")
+
+parser.add_argument("--dataset-home", dest="dataset_home", type=str, required=False,
+                    help="path to directory containing FSD50k",
+                    default=None)
+
+parser.add_argument("--metadata-path", dest="metadata_path", type=str, required=False,
+                    help="path to directory containing dataset metadata",
+                    default=None)
+
+parser.add_argument("--sound-events", dest="dcase_sound_events_txt", type=str, required=False,
+                    help="path to .txt containing sound event file names for dcase",
+                    default=None)
+
+parser.add_argument("--download", dest="download", type=bool, required=False,
+                    help="option to download datasets",
+                    default=False)
+
+parser.add_argument("--music-home", dest="music_home", type=str, required=False,
+                    help="path to directory containing FMA",
+                    default=None)
+
+parser.add_argument("--ntracks-genre", dest="ntracks_genre", type=int, required=False,
+                    help="number of tracks per-genre",
+                    default=40)
+
+parser.add_argument("--split-prob", dest="split_prob", type=float, required=False,
+                    help="probability of a track being placed in train split (as opposed to test)",
+                    default=0.6)
+
+parser.add_argument("--seed", dest="seed", type=int, required=False,
+                    help="sets numpy random seed for reproducibility",
+                    default=520938203)
+
+           
 FMA_REMOTES = {
     "name": "fma_small",
     "filename": "fma_small.zip",
@@ -25,6 +65,11 @@ FMA_REMOTES = {
 }
 
 CORRUPT_FMA_TRACKS = ["098565", "098567", "098569", "099134", "108925", "133297"]
+
+class BaseDataLoad:
+    def __init__(self, dataset_home=None, metadata_path=None):
+        self.dataset_home = dataset_home
+        self.metadata_path = metadata_path
 
 def extract_tar(tar_path, destination):
     print(f"Extracting tar: {tar_path}...")
@@ -126,14 +171,15 @@ class FMADataLoad(BaseDataLoad):
     
 
 class FSD50KDataLoad(BaseDataLoad):
-    def __init__(self, dataset_name="fsd50k", download=False, music_home=None,
-                music_metadata=None, dcase_sound_events_txt=None,
+    def __init__(self, dataset_name="fsd50k", dataset_home = None, download=False, music_home=None,
+                metadata_path=None, dcase_sound_events_txt=None,
                 ntracks_genre=10, split_prob=0.6, **kwargs):
         super().__init__(**kwargs)
         self.dataset_name = dataset_name
         self.download = download
+        self.dataset_home = dataset_home
         self.music_home = music_home
-        self.music_metadata = music_metadata
+        self.metadata_path = metadata_path
         self.dcase_sound_events_txt = dcase_sound_events_txt
         self.url_fsd_selected_txt = "https://zenodo.org/record/6406873/files/FSD50K_selected.txt"
         self.fsd_to_dcase_dict = {} # Dict containing FSD50K to DCASE file mappings
@@ -141,9 +187,10 @@ class FSD50KDataLoad(BaseDataLoad):
         # Remove 'dataset_home' from kwargs before passing to FMADataLoad
         if 'dataset_home' in kwargs:
             del kwargs['dataset_home']
-            del kwargs['metadata_path']
+            if 'metadata_path' in kwargs:
+                del kwargs['metadata_path']
 
-        self.music = FMADataLoad(dataset_home=self.music_home, metadata_path=self.music_metadata,
+        self.music = FMADataLoad(dataset_home=self.music_home, metadata_path=self.metadata_path,
                                 ntracks_genre=ntracks_genre, split_prob=split_prob)
         
     def download_dataset(self):
@@ -195,18 +242,7 @@ class FSD50KDataLoad(BaseDataLoad):
         self.fsd_to_dcase_dict['train'].update(self.music.fma_to_dcase_dict['train'])
         self.fsd_to_dcase_dict['test'].update(self.music.fma_to_dcase_dict['test'])
 
-PARAM_CONFIG = {
-    "dataset_home": "/datasets/FSD50K", # add /path/to (not path/to/dir)
-    "metadata_path": "dcase_datagen/metadata", # add /path/to (not path/to/dir)
-    "dcase_sound_events_txt": "dcase_datagen/metadata/sound_event_fsd50k_filenames.txt",
-    "download": False,
-    "music_home": "/datasets/fma_10sec", # add /path/to (not path/to/dir)
-    "music_metadata": "dcase_datagen/metadata", # add /path/to (not path/to/dir)
-    "ntracks_genre": 40,
-    "split_prob": 0.6
-}
-
-def prepare_fsd50k(config=PARAM_CONFIG):
+def prepare_fsd50k(config):
     fsd50k = FSD50KDataLoad(**config)
     fsd50k.load_dataset()
     print("Saved JSON FSD50K to DCASE data format")
@@ -214,4 +250,18 @@ def prepare_fsd50k(config=PARAM_CONFIG):
     return fsd50k
 
 if __name__ == "__main__":
-    prepare_fsd50k()
+    args = parser.parse_args()
+    np.random.seed(seed=args.seed)
+    arg_dict = args.__dict__
+    for key in default_paths.keys():
+        if arg_dict[key] is None:
+            arg_dict[key] = os.path.join(args.root_dir, default_paths[key])
+    print(f"Storing data at {args.root_dir}")
+    if args.download:
+        print("Downloading FMA")
+    else:
+        print(f"Using FMA stored at {args.dataset_home}")
+    
+    arg_dict.pop('root_dir')
+    arg_dict.pop('seed')
+    prepare_fsd50k(arg_dict)
