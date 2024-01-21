@@ -1,165 +1,160 @@
 import argparse
-
 import os
-import soundata
-import requests
 import shutil
+import requests
 import zipfile
-from tqdm import tqdm
-import pandas as pd
-#import yaml
-#import json
-import librosa
-#import soundata
 import numpy as np
-#import pandas as pd
-#from prepare_utils import *
+import pandas as pd
+import librosa
+import soundata
+from tqdm import tqdm
 
+
+# Constants
 SOUND_EVENT_DATASETS_SUBDIR = 'sound_event_datasets'
+FMA_REMOTES = {
+    'name': 'fma_small',
+    'filename': 'fma_small.zip',
+    'base_url': 'https://os.unil.cloud.switch.ch/fma/fma_small.zip',
+    'metadata_url': 'https://os.unil.cloud.switch.ch/fma/fma_metadata.zip',
+}
+CORRUPT_FMA_TRACKS = ['098565', '098567', '098569', '099134', '108925', '133297']
+SKIP_GENRES = ['Electronic','Experimental','Instrumental']
 
+
+# Utility functions
+def extract_zip(zip_path, destination):
+    '''Extracts a zip file to the given destination.'''
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(destination)
+    except zipfile.BadZipFile:
+        raise ValueError('The provided file is not a valid zip file.')
+
+
+def download_file(url, local_dest_path):
+    '''Downloads a file from a URL to a local destination.'''
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        total_size = int(response.headers.get('content-length', 0))
+        block_size = 1024
+        progress_bar = tqdm(total=total_size, unit='B', unit_scale=True)
+        with open(local_dest_path, 'wb') as file:
+            for data in response.iter_content(block_size):
+                progress_bar.update(len(data))
+                file.write(data)
+        progress_bar.close()
+    except requests.RequestException as e:
+        raise RuntimeError(f'Failed to download file: {e}')
+
+
+# Base class for dataset setup
 class BaseDataSetup:
     def __init__(self, dataset_home=None, metadata_path=None):
         self.dataset_home = dataset_home
         self.metadata_path = metadata_path
 
 
-FMA_REMOTES = {
-    "name": "fma_small",
-    "filename": "fma_small.zip",
-    "base_url": "https://os.unil.cloud.switch.ch/fma/fma_small.zip",
-    "metadata_url": "https://os.unil.cloud.switch.ch/fma/fma_metadata.zip",
-}
-
-CORRUPT_FMA_TRACKS = ["098565", "098567", "098569", "099134", "108925", "133297"]
-
-
-def extract_zip(zip_path, destination):
-    print(f"Extracting zip: {zip_path}...")
-    with zipfile.ZipFile(zip_path, "r") as zip_ref:
-        zip_ref.extractall(destination)
-
-def download_file(url, local_dest_path):
-    response = requests.get(url, stream=True)
-
-    total_size = int(response.headers.get("content-length", 0))
-    block_size = 1024  # Adjust the block size as per your requirement
-
-    progress_bar = tqdm(total=total_size, unit="B", unit_scale=True)
-
-    with open(local_dest_path, "wb") as file:
-        for data in response.iter_content(block_size):
-            progress_bar.update(len(data))
-            file.write(data)
-    progress_bar.close()
-
-def check_dataset_exists(dataset_dir):
-    return os.path.exists(dataset_dir) and os.listdir(dataset_dir)
-
+# FMA dataset setup class
 class FMADataSetup(BaseDataSetup):
-    def __init__(self, ntracks_genre=10, split_prob=0.6, **kwargs):
+    def __init__(self, ntracks_genre=20, split_prob=0.6, **kwargs):
         super().__init__(**kwargs)
         self.ntracks_genre = ntracks_genre
         self.split_prob = split_prob
-        self.dataset_name = FMA_REMOTES["name"]
-        self.base_url = FMA_REMOTES["base_url"]
-        self.metadata_url = FMA_REMOTES["metadata_url"]
-        self.zip_name = FMA_REMOTES["filename"]
+        self.dataset_name = FMA_REMOTES['name']
+        self.base_url = FMA_REMOTES['base_url']
+        self.metadata_url = FMA_REMOTES['metadata_url']
+        self.zip_name = FMA_REMOTES['filename']
         self.fma_to_dcase_dict = {}
 
+
     def prepare_dataset(self):
-        # Check if fma_small exists, else create it
-        if not check_dataset_exists(os.path.join(self.dataset_home, self.dataset_name)):
-            print("Downloading FMA small dataset...")
+        '''Prepares the FMA dataset by downloading and extracting it.'''
+        dataset_path = os.path.join(self.dataset_home, self.dataset_name)
+        if not os.path.exists(dataset_path):
+            print('Downloading FMA small dataset...')
             self.download_dataset()
         else:
-            print("FMA small dataset already exists. Skipping download.")
+            print('FMA small dataset already exists. Skipping download.')
         self.gen_dataset_splits()
 
+
     def download_dataset(self):
+        '''Downloads and extracts the FMA dataset.'''
         os.makedirs(self.dataset_home, exist_ok=True)
-        # download fma_small zip
         download_file(self.base_url, os.path.join(self.dataset_home, self.zip_name))
         extract_zip(os.path.join(self.dataset_home, self.zip_name), self.dataset_home)
-        print("Done unzipping")
-        # download fma metadata
-        print("Downloading fma_small metadata...")
+        print('Done unzipping')
+        # Download and extract metadata
+        print('Downloading FMA small metadata...')
         download_file(
             self.metadata_url, os.path.join(self.dataset_home, 'meta_'+self.zip_name)
         )
         extract_zip(os.path.join(self.dataset_home, 'meta_'+self.zip_name), self.dataset_home)
-        print("Done unzipping")
+        print('Done unzipping metadata')
 
-    def gen_dataset_splits(self):
-        path_to_fsd50k_dcase = os.path.join(self.dataset_home, 'FSD50K_FMA_DCASE')
+    def gen_dataset_splits(self,target_subdir='FSD50K_FMA'):
+        '''Generates dataset splits for training and testing.'''
+        path_to_fsd50k_dcase = os.path.join(self.dataset_home, target_subdir)
         tracks = pd.read_csv(
-            os.path.join(self.dataset_home, "fma_metadata/tracks.csv"),
+            os.path.join(self.dataset_home, 'fma_metadata/tracks.csv'),
             header=[0, 1],
             index_col=0,
         )
-        genres = tracks["track"]["genre_top"].unique()
-        # Loop through the genre 8 classes
+        genres = tracks['track']['genre_top'].unique()
         for genre in genres:
-            if genre != genre:
+            if genre in SKIP_GENRES:
                 continue
-            os.makedirs(os.path.join(path_to_fsd50k_dcase,'music','train',genre),exist_ok=True)
-            os.makedirs(os.path.join(path_to_fsd50k_dcase,'music','test',genre),exist_ok=True)
-            # Get tracks by genre, consider only set from "small" tracks
+            if pd.isna(genre):
+                continue
             genre_tracks = tracks[
-                (tracks["track", "genre_top"] == genre)
-                & (tracks["set", "subset"] == "small")
+                (tracks['track', 'genre_top'] == genre) & (tracks['set', 'subset'] == 'small')
             ]
-            # Get ntracks_genre from the current genre
-            tracks = genre_tracks[: self.ntracks_genre]
-            for track_id, track in tracks.iterrows():
-                if (
-                    f"{track_id:06}" in CORRUPT_FMA_TRACKS
-                ):  
-                    # skip cor
-                    # see: https://github.com/mdeff/fma/wiki#known-issues-errata, https://github.com/mdeff/fma/issues/49rupt tracks from fma_small
-                    continue  
-
-                # get track name by id
-                subdir = f"{track_id:06}"[:3]
+            selected_tracks = genre_tracks[:self.ntracks_genre]
+            if not genre_tracks.empty:
+                genre_dir_train = os.path.join(path_to_fsd50k_dcase, 'music', 'train', genre)
+                genre_dir_test = os.path.join(path_to_fsd50k_dcase, 'music', 'test', genre)
+                os.makedirs(genre_dir_train, exist_ok=True)
+                os.makedirs(genre_dir_test, exist_ok=True)
+            for track_id, track in selected_tracks.iterrows():
+                if str(track_id).zfill(6) in CORRUPT_FMA_TRACKS:
+                    continue
                 fma_track_path = os.path.join(
-                    self.dataset_home, self.dataset_name, subdir, f"{track_id:06}.mp3"
+                        self.dataset_home, self.dataset_name, str(track_id).zfill(6)[:3], f'{track_id:06}.mp3'
                 )
-                # Define DCASE path format variables
-                super_class = "music"
-                fold = "train" if np.random.rand() < self.split_prob else "test"
-                class_name = str(genre)
+                fold = 'train' if np.random.rand() < self.split_prob else 'test'
                 dcase_path = os.path.join(
-                    path_to_fsd50k_dcase, super_class, fold, str(genre), f"{track_id:06}.mp3"
+                    path_to_fsd50k_dcase, 'music', fold, genre, f'{track_id:06}.mp3'
                 )
-                shutil.copyfile(fma_track_path,dcase_path)
-
+                shutil.copyfile(fma_track_path, dcase_path)
+    # Additional methods for FMADataSetup can be added here, Cleanup, for example
 
 
 class FSD50KDataSetup(BaseDataSetup):
-    def __init__(
-        self,
-        dataset_name="fsd50k",
-        download=False,
-        **kwargs,
-    ):
+    def __init__(self, dataset_name='fsd50k', download=False, **kwargs):
+        '''Initializes the FSD50K dataset setup.'''
         super().__init__(**kwargs)
         self.dataset_name = dataset_name
         self.download = download
-        self.url_fsd_selected_txt = "https://zenodo.org/record/6406873/files/FSD50K_selected.txt"
+        self.url_fsd_selected_txt = 'https://zenodo.org/record/6406873/files/FSD50K_selected.txt'
 
-        # Remove 'dataset_home' from kwargs before passing to FMADataLoad
-        if "dataset_home" in kwargs:
-            del kwargs["dataset_home"]
 
     def download_dataset(self):
-        self.fsd50k.download()
+        '''Downloads the FSD50K dataset.'''
+        if self.download:
+            try:
+                self.fsd50k.download()
+            except Exception as e:
+                raise RuntimeError(f'Failed to download FSD50K dataset: {e}')
+
 
     def prepare_dataset(self):
-        assert (
-            self.dataset_home is not None or not self.download
-        ), "Dataset home path must be provided when download is enabled."
+        '''Prepares the FSD50K dataset by initializing and possibly downloading it.'''
+        if self.dataset_home is None and self.download:
+            raise ValueError('Dataset home path must be provided when download is enabled.')
         self.fsd50k = soundata.initialize(self.dataset_name, self.dataset_home)
-        if self.download:
-            self.download_dataset()  # download fsd50k
+        self.download_dataset()
 
     def download_txt(self,url):
         """Download file from a given URL"""
@@ -167,7 +162,7 @@ class FSD50KDataSetup(BaseDataSetup):
         response.raise_for_status()  # Check if the download was successful
         return response.text.splitlines()
 
-    def to_DCASE_format(self):
+    def to_DCASE_format(self,target_subdir='FSD50K_FMA'):
         # Download the lines from the URL
         lines = self.download_txt(self.url_fsd_selected_txt)
 
@@ -185,12 +180,12 @@ class FSD50KDataSetup(BaseDataSetup):
             # Full path of the source file
             src_file = os.path.join(source, filename)
             # New directory, check if it doesn't exist
-            dest_path = os.path.join(self.dataset_home,'FSD50K_FMA_DCASE')
+            dest_path = os.path.join(self.dataset_home,target_subdir)
             os.makedirs(os.path.join(dest_path, new_dir), exist_ok=True)
             # Copy file to new directory
             shutil.copy(src_file, os.path.join(dest_path, new_dir, filename))
 
-    def cleanup(self,target_subdir='FSD50K_FMA_DCASE'):
+    def cleanup(self,target_subdir='FSD50K_FMA'):
         for subdir in os.listdir(self.dataset_home):
             # Construct the full path to the subdirectory
             full_path = os.path.join(self.dataset_home, subdir)
@@ -208,52 +203,39 @@ class FSD50KDataSetup(BaseDataSetup):
                 os.remove(full_path)
                 print(f"Deleted file: {full_path}")
 
+
+
+# Function to prepare the FSD50K dataset
 def prepare_fsd50k(args):
+    '''Prepares the FSD50K dataset based on provided arguments.'''
     fsd50k = FSD50KDataSetup(
-        dataset_name="fsd50k",
+        dataset_name='fsd50k',
         download=args.download_FSD,
-        dataset_home=os.path.join(args.data_dir,SOUND_EVENT_DATASETS_SUBDIR)
-        )
+        dataset_home=os.path.join(args.data_dir, SOUND_EVENT_DATASETS_SUBDIR)
+    )
     fsd50k.prepare_dataset()
     fsd50k.to_DCASE_format()
     if args.cleanup:
         fsd50k.cleanup()
-    return fsd50k
 
+# Function to prepare the FMA dataset
 def prepare_fma(args):
+    '''Prepares the FMA dataset based on provided arguments.'''
     fma = FMADataSetup(
-        dataset_home=os.path.join(args.data_dir,SOUND_EVENT_DATASETS_SUBDIR)
+        dataset_home=os.path.join(args.data_dir, SOUND_EVENT_DATASETS_SUBDIR)
     )
     fma.prepare_dataset()
 
 
-if __name__ == "__main__":
-
-    # Create an argument parser
+# Main execution logic
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process the data_dir argument.')
-
-    # Add a data_dir argument
-    parser.add_argument('--data_dir', type=str, default='datasets',help='Path to the data directory')
-    parser.add_argument('--download_FSD', type=str, default='True', help='Whether to download the FSD50K dataset')
-    parser.add_argument('--download_FMA', type=str, default='True', help='Whether to download the FMA dataset')
-    parser.add_argument('--cleanup', type=str, default='False', help='Whether to download the FMA dataset')
-
-
-    # Parse the arguments
+    parser.add_argument('--data_dir', type=str, default='datasets', help='Path to the data directory')
+    parser.add_argument('--download_FSD', action='store_true', help='Whether to download the FSD50K dataset')
+    parser.add_argument('--download_FMA', action='store_true', help='Whether to download the FMA dataset')
+    parser.add_argument('--cleanup', action='store_true', help='Whether to cleanup after download')
     args = parser.parse_args()
-    if args.download_FSD == 'True':
-        args.download_FSD = True
-    else:
-        args.download_FSD = False
-    if args.download_FMA == 'True':
-        args.download_FMA = True
-    else:
-        args.download_FMA = False
-    if args.cleanup == 'True':
-        args.cleanup = True
-    else:
-        args.cleanup = False
-
-    #prepare_fsd50k(args)
-
+    print(args)
+    input()
+    prepare_fsd50k(args)
     prepare_fma(args)

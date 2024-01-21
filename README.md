@@ -7,24 +7,23 @@ Install SpatialScaper
 pip install -e .
 ```
 
-To start using SpatialScaper using the default FSD50K dataset used by the [DCASE data generator](https://github.com/danielkrause/DCASE2022-data-generator):
+### Prerequisites
 
-1. download and unzip the FSD50K dataset
+The provided code was tested with Python 3.10 and the following libraries:
+SoundFile 0.10.3, mat73 0.58, numpy 1.20.1, scipy 1.6.2, librosa 0.8.1. 
+
+### Prepare sound event files for soundscape synthesis
+
+SpatialScaper works with any sound files that you wish to spatialize. You can get started using sound events from the [FSD50K](https://zenodo.org/record/4060432#.ZE7ely2B0Ts) and [FMA](https://github.com/mdeff/fma) (music) dataset by using.
+
 ```
-zenodo_get -r 4060432 -o path/to/datasets
-zip -s 0 path/to/datasets/FSD50K.dev_audio.zip --out path/to/datasets/unsplit.zip
-unzip path/to/datasets/unsplit.zip -d path/to/datasets
-zip -s 0 path/to/datasets/FSD50K.eval_audio.zip --out path/to/datasets/unsplit.zip
-unzip path/to/datasets/unsplit.zip -d path/to/datasets
+python scripts/prepare_fsd50k_fma.py --download_FSD --dowmload_FMA --data_dir datasets
 ```
 
-2. re-structure FSD50K to be consistent with the structure expected by the [DCASE data generator](https://github.com/danielkrause/DCASE2022-data-generator)
-```
-python scripts/fsd50k_to_dcase_format.py path/to/datasets/FSD50K path/to/datasets/FSD50K_DCASE
-```
-[comment]: <> (TODO: add steps to clean up redundant files after preparing FSD50K)
+This creates a `datasets/sound_event_datasets/FSD50K_FMA` directory with a structure of sound event categories and files. 
 
-### METU ROOM
+### Prepare RIR databases
+
 Download and prepare
 ```
 zenodo_get -r 2635758 -o path/to/datasets
@@ -37,7 +36,7 @@ python scripts/prepare_metu.py
 ### Example script to generate soundscapes
 Spatialize
 ```
-python mvp.py
+python example_generation.py
 ```
 
 ```
@@ -64,17 +63,6 @@ requirements.txt
 
 
 
-### Prerequisites
-
-The provided code was tested with Python 3.10 and the following libraries:
-SoundFile 0.10.3, mat73 0.58, numpy 1.20.1, scipy 1.6.2, librosa 0.8.1. 
-
-Must download these RIR databases:
-* TAU SRIR DB: https://zenodo.org/record/6408611
-
-### One-time setup
-
-This data synthesizer uses sound events from the [FSD50K](https://zenodo.org/record/4060432#.ZE7ely2B0Ts) dataset. To download the dataset for first time and to also include music tracks (from the the [FMA dataset](https://github.com/mdeff/fma) dataset) as part of the data synthesizer sound events, do the following under `prepare_fsd50k.py`:
 
 - Change the dataset parameter configuration paths and select `"download": True` to download the FSD50K dataset along with the music FMA dataset:
 
