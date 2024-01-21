@@ -3,10 +3,10 @@ import spatialscaper as ss
 import os
 
 # Constants
-NSCAPES = 10
-FOREGROUND_DIR = "datasets/FSD50K_DCASE"
+NSCAPES = 25
+FOREGROUND_DIR = "datasets/sound_event_datasets/FSD50K_FMA"
 BACKGROUND_DIR = ""
-SOFA_DIR = "datasets"
+RIR_DIR = "datasets/rir_datasets"
 ROOM = "metu"
 FORMAT = "mic"
 MIN_EVENTS = 3
@@ -21,7 +21,7 @@ REF_DB = -65  # Reference decibel level
 def generate_soundscape(index):
     track_name = f"fold5_room1_mix00{index + 1}"
     ssc = ss.Scaper(
-        DURATION, FOREGROUND_DIR, BACKGROUND_DIR, SOFA_DIR, ROOM, FORMAT, SR
+        DURATION, FOREGROUND_DIR, BACKGROUND_DIR, RIR_DIR, ROOM, FORMAT, SR
     )
     ssc.ref_db = REF_DB
 
