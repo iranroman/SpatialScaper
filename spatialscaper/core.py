@@ -42,11 +42,6 @@ __DCASE_SOUND_EVENT_CLASSES__ = {
     "knock": 12,
 }
 
-# Paths for room SOFA files
-SPARGAIR_DIR = "spargair"
-__ROOM_SOFA_PATH__ = {"metu": os.path.join(SPARGAIR_DIR, "metu_sparg.sofa")}
-
-
 Event = namedtuple(
     "Event",
     [
@@ -63,6 +58,8 @@ Event = namedtuple(
     ],
 )
 
+# Paths for room SOFA files
+__ROOM_RIR_FILE__ = {"metu": "metu_sparg.sofa"}
 
 class Scaper:
     def __init__(
@@ -70,7 +67,7 @@ class Scaper:
         duration=60,
         foreground_dir="",
         background_dir="",
-        sofa_dir="",
+        rir_dir="",
         room="metu",
         fmt="mic",
         sr=24000,
@@ -100,7 +97,7 @@ class Scaper:
         self.duration = duration
         self.foreground_dir = foreground_dir
         self.background_dir = background_dir
-        self.sofa_dir = sofa_dir
+        self.rir_dir = rir_dir
         self.room = room
         self.format = fmt
         self.sr = sr
@@ -347,7 +344,7 @@ class Scaper:
         Returns:
             numpy.ndarray: An array of XYZ coordinates for the impulse response positions.
         """
-        room_sofa_path = os.path.join(self.sofa_dir, __ROOM_SOFA_PATH__[self.room])
+        room_sofa_path = os.path.join(self.rir_dir, __ROOM_RIR_FILE__[self.room])
         return load_pos(room_sofa_path, doas=False)
 
     def get_room_irs_wav_xyz(self, wav=True, pos=True):
@@ -361,7 +358,7 @@ class Scaper:
         Returns:
             tuple: A tuple containing the impulse responses, their sampling rate, and their XYZ positions.
         """
-        room_sofa_path = os.path.join(self.sofa_dir, __ROOM_SOFA_PATH__[self.room])
+        room_sofa_path = os.path.join(self.rir_dir, __ROOM_RIR_FILE__[self.room])
         all_irs, ir_sr, all_ir_xyzs = load_rir_pos(room_sofa_path, doas=False)
         if ir_sr != self.sr:
             all_irs = librosa.resample(all_irs, orig_sr=ir_sr, target_sr=self.sr)

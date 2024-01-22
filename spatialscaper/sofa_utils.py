@@ -59,7 +59,6 @@ def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt="mic", traj=None, flip=True
 
     return rirs, source_pos, mic_pos, room
 
-
 def create_srir_sofa(
     filepath,
     rirs,
@@ -69,8 +68,28 @@ def create_srir_sofa(
     room_name="Room_name",
     listener_name="foa",
     sr=24000,
-    comment="na",
+    comment="N/A",
 ):
+    """
+    Creates a SOFA file with spatial room impulse response data.
+
+    This function generates a SOFA (Spatially Oriented Format for Acoustics) file to store spatial room impulse responses (SRIRs).
+    It includes metadata about the recording environment, such as source and microphone positions, room characteristics, and listener details.
+
+    Parameters:
+        filepath (str): The path where the SOFA file will be created or overwritten.
+        rirs (numpy.array): A 3D array of room impulse responses (measurements x receivers x samples).
+        source_pos (numpy.array): The positions of the sound sources (measurements x coordinates).
+        mic_pos (numpy.array): The positions of the microphones/listeners (measurements x coordinates).
+        db_name (str, optional): Name of the database. Default is "Default_db".
+        room_name (str, optional): Name of the room. Default is "Room_name".
+        listener_name (str, optional): Name of the listener. Default is "foa".
+        sr (int, optional): Sampling rate of the impulse responses. Default is 24000 Hz.
+        comment (str, optional): Additional comments. Default is "N/A".
+
+    Returns:
+        None: The function does not return a value. It creates or overwrites a SOFA file at the specified filepath.
+    """
     M = rirs.shape[0]
     R = rirs.shape[1]
     N = rirs.shape[2]
