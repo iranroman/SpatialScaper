@@ -1,0 +1,8 @@
+
+.idea/
+
+datasets/
+
+spatialscaper/__pycache__/
+
+spatialscaper.egg-info/

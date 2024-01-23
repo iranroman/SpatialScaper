@@ -196,7 +196,7 @@ class Scaper:
         if source_time[0] == "const":
             source_time = source_time[1]
 
-        event_duration = librosa.get_duration(path=source_file)
+        event_duration = librosa.get_duration(filename=source_file)
         event_time = self.define_event_onset_time(
             event_time,
             event_duration,
@@ -363,6 +363,9 @@ class Scaper:
         """
         room_sofa_path = os.path.join(self.sofa_dir, __ROOM_SOFA_PATH__[self.room])
         all_irs, ir_sr, all_ir_xyzs = load_rir_pos(room_sofa_path, doas=False)
+        ir_sr = ir_sr.data[0]
+        all_irs = all_irs.data
+        all_ir_xyzs = all_ir_xyzs.data
         if ir_sr != self.sr:
             all_irs = librosa.resample(all_irs, orig_sr=ir_sr, target_sr=self.sr)
             ir_sr = self.sr
