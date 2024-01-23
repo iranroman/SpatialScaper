@@ -53,7 +53,7 @@ def prepare_metu(dataset_path):
             X.append(x)
         IRs.append(np.array(X))
 
-    filepath = Path(dataset_path) / "spargair" / "metu_sparg.sofa"
+    filepath = Path(dataset_path) / "metu_sparg.sofa"
     rirs = np.array(IRs)
     source_pos = np.array(xyzs)
     mic_pos = np.array([[0, 0, 0]])
