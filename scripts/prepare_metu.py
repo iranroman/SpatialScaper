@@ -9,25 +9,34 @@ import soundfile as sf
 from spatialscaper.sofa_utils import create_srir_sofa
 from pathlib import Path
 
-from .utils import download_file, extract_zip
+from utils import download_file, extract_zip
 
 METU_URL = "https://zenodo.org/record/2635758/files/spargair.zip"
+
+TAU_REMOTES = {
+    'TAU-SRIR_DB.z01':'https://zenodo.org/records/6408611/files/TAU-SRIR_DB.z01?download=1',
+    'TAU-SRIR_DB.z02':'https://zenodo.org/records/6408611/files/TAU-SRIR_DB.z02?download=1',
+    'TAU-SRIR_DB.z03':'https://zenodo.org/records/6408611/files/TAU-SRIR_DB.z03?download=1',
+    'TAU-SRIR_DB.zip':'https://zenodo.org/records/6408611/files/TAU-SRIR_DB.zip?download=1',
+    'TAU-SNoise_DB.z01':'https://zenodo.org/records/6408611/files/TAU-SNoise_DB.z01?download=1',
+    'TAU-SNoise_DB.zip':'https://zenodo.org/records/6408611/files/TAU-SNoise_DB.zip?download=1',
+    }
 
 
 def download_and_extract(url, extract_to):
     # Download the file
     local_filename = url.split("/")[-1]
-    download_file(url, extract_to)
+    download_file(url, extract_to/local_filename)
 
     # Extract the file
-    extract_zip(local_filename, extract_to)
+    extract_zip(extract_to/local_filename,extract_to)
 
     # Remove the zip file
-    os.remove(local_filename)
+    os.remove(extract_to/local_filename)
 
 
 def prepare_metu(dataset_path):
-    spargpath = Path(dataset_path) / "spargair" / "em32"
+    spargpath = Path(dataset_path) / "raw_RIRs"/"spargair" / "em32"
     nEMchans = 32
     XYZs = os.listdir(spargpath)
 
@@ -52,7 +61,7 @@ def prepare_metu(dataset_path):
             X.append(x)
         IRs.append(np.array(X))
 
-    filepath = Path(dataset_path) / "spargair" / "metu_sparg.sofa"
+    filepath = Path(dataset_path) / "sofa_RIRs" / "metu_sparg.sofa"
     rirs = np.array(IRs)
     source_pos = np.array(xyzs)
     mic_pos = np.array([[0, 0, 0]])
@@ -80,5 +89,18 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    download_and_extract(METU_URL, args.path)
-    prepare_metu(args.path)
+    os.makedirs(Path(args.path)/'raw_RIRs', exist_ok=True)
+    os.makedirs(Path(args.path)/'sofa_RIRs', exist_ok=True)
+
+    # METU
+    download_and_extract(METU_URL, Path(args.path)/'raw_RIRs')
+    prepare_metu(Path(args.path))
+
+    # TAU
+    dest_path = Path(args.path)/'raw_RIRs'
+    for filename,url in TAU_REMOTES.items():
+        download_file(url, dest_path/filename)
+    subprocess.run(["zip", "-s", "0", dest_path/'TAU-SRIR_DB.zip', "--out", dest_path/'single.zip'], shell=True)
+    extract_zip(dest_path/'single.zip',dest_path)
+    subprocess.run(["zip", "-s", "0", dext_path/'TAU-SNoise_DB.zip', "--out", dest_path/'single.zip'], shell=True)
+    extract_zip(dest_path/'single.zip',dest_path)
