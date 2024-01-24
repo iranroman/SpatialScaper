@@ -11,21 +11,23 @@ from pathlib import Path
 
 METU_URL = "https://zenodo.org/record/2635758/files/spargair.zip"
 
+
 def download_and_extract(url, extract_to):
     # Download the file
-    local_filename = url.split('/')[-1]
+    local_filename = url.split("/")[-1]
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
-        with open(local_filename, 'wb') as f:
+        with open(local_filename, "wb") as f:
             for chunk in r.iter_content(chunk_size=8192):
                 f.write(chunk)
 
     # Extract the file
-    with zipfile.ZipFile(local_filename, 'r') as zip_ref:
+    with zipfile.ZipFile(local_filename, "r") as zip_ref:
         zip_ref.extractall(extract_to)
 
     # Remove the zip file
     os.remove(local_filename)
+
 
 def prepare_metu(dataset_path):
     spargpath = Path(dataset_path) / "spargair" / "em32"
@@ -69,10 +71,17 @@ def prepare_metu(dataset_path):
         sr=sr,
     )
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Download and prepare METU SPARG dataset.")
-    parser.add_argument("--path", default="datasets/rir_datasets", help="Path to store and process the dataset.")
+    parser = argparse.ArgumentParser(
+        description="Download and prepare METU SPARG dataset."
+    )
+    parser.add_argument(
+        "--path",
+        default="datasets/rir_datasets",
+        help="Path to store and process the dataset.",
+    )
     args = parser.parse_args()
 
-    #download_and_extract(METU_URL, args.path)
+    # download_and_extract(METU_URL, args.path)
     prepare_metu(args.path)
