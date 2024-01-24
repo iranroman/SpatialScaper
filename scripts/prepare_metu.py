@@ -13,13 +13,14 @@ from .utils import download_file, extract_zip
 
 METU_URL = "https://zenodo.org/record/2635758/files/spargair.zip"
 
+
 def download_and_extract(url, extract_to):
     # Download the file
     local_filename = url.split("/")[-1]
     download_file(url, extract_to)
 
     # Extract the file
-    extract_zip(local_filename,extract_to)
+    extract_zip(local_filename, extract_to)
 
     # Remove the zip file
     os.remove(local_filename)
