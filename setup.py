@@ -40,6 +40,9 @@ setup(
         'pyroomacoustics',
         'pandas',
         'soundata',
+        'tqdm',
+        'coverage',
+        'pytest',
     ],
 
 )
