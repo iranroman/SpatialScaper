@@ -9,21 +9,17 @@ import soundfile as sf
 from spatialscaper.sofa_utils import create_srir_sofa
 from pathlib import Path
 
-METU_URL = "https://zenodo.org/record/2635758/files/spargair.zip"
+from .utils import download_file, extract_zip
 
+METU_URL = "https://zenodo.org/record/2635758/files/spargair.zip"
 
 def download_and_extract(url, extract_to):
     # Download the file
     local_filename = url.split("/")[-1]
-    with requests.get(url, stream=True) as r:
-        r.raise_for_status()
-        with open(local_filename, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
+    download_file(url, extract_to)
 
     # Extract the file
-    with zipfile.ZipFile(local_filename, "r") as zip_ref:
-        zip_ref.extractall(extract_to)
+    extract_zip(local_filename,extract_to)
 
     # Remove the zip file
     os.remove(local_filename)
@@ -83,5 +79,5 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # download_and_extract(METU_URL, args.path)
+    download_and_extract(METU_URL, args.path)
     prepare_metu(args.path)
