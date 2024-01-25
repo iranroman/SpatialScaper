@@ -59,7 +59,6 @@ def create_single_sofa_file(aud_fmt, tau_db_dir, sofa_db_dir, db_name):
         )
 
 
-
 def download_and_extract(url, extract_to):
     # Download the file
     local_filename = url.split("/")[-1]
@@ -124,7 +123,8 @@ def download_tau(dest_path):
     combine_multizip(f"{dest_path/'TAU-SNoise_DB.zip'}", f"{dest_path/'single.zip'}")
     extract_zip(dest_path / "single.zip", dest_path)
 
-def prepare_tau(path_raw, path_sofa, formats=['foa','mic']):
+
+def prepare_tau(path_raw, path_sofa, formats=["foa", "mic"]):
     # generate Sofa files
     tau_db_dir = f"{path_raw/'TAU-SRIR_DB'}"
     sofa_db_dir = path_sofa
@@ -156,4 +156,4 @@ if __name__ == "__main__":
     dest_path = Path(args.path) / "raw_RIRs"
     download_tau(dest_path)
     dest_path_sofa = Path(args.path) / "sofa_RIRs"
-    prepare_tau(dest_path,dest_path_sofa)
+    prepare_tau(dest_path, dest_path_sofa)
