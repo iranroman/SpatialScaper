@@ -29,7 +29,7 @@ def load_config(args, path_to_config=None):
     """
     Given the arguemnts, load and initialize the configs.
     Args:
-        args (argument): 
+        args (argument):
             `args`
             `path_to_config`
     """
@@ -41,8 +41,10 @@ def load_config(args, path_to_config=None):
 
     return dotdict(cfg)
 
+
 class dotdict(dict):
     """dot.notation access to dictionary attributes"""
+
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
