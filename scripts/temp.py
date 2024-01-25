@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import os
 from room_scaper import sofa_utils, tau_loading
 
@@ -99,7 +98,7 @@ for aud_fmt in ["foa", "mic"]:
     print(f"Starting .sofa creation for {aud_fmt} format.")
     create_single_sofa_file(aud_fmt, tau_db_dir, sofa_db_dir, db_name)
     print(f"Finished .sofa creation for {aud_fmt} format.")
-=======
+
 import argparse
 import os
 import shutil
