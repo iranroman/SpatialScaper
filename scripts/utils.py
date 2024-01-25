@@ -4,6 +4,7 @@ import tarfile
 import zipfile
 import argparse
 import sys
+import subprocess
 import numpy as np
 from tqdm import tqdm
 
@@ -38,6 +39,13 @@ def download_file(url, local_dest_path):
         progress_bar.close()
     except requests.RequestException as e:
         raise RuntimeError(f"Failed to download file: {e}")
+
+
+def combine_multizip(filename, destination, shell=True):
+    subprocess.run(
+        f"zip -s 0 {filename} --out {destination}",
+        shell=shell,
+    )
 
 
 def map_to_cylinder(path, rad, axis=2):

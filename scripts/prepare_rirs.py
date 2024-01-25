@@ -3,14 +3,13 @@ import os
 import shutil
 import requests
 import zipfile
-import subprocess
 import librosa
 import numpy as np
 import soundfile as sf
 from spatialscaper.sofa_utils import create_srir_sofa
 from pathlib import Path
 
-from utils import download_file, extract_zip
+from utils import download_file, extract_zip, combine_multizip
 
 METU_URL = "https://zenodo.org/record/2635758/files/spargair.zip"
 
@@ -80,18 +79,15 @@ def prepare_metu(dataset_path):
 
 
 def prepare_tau(dest_path):
+    # Download combine and extract zip files
     for filename, url in TAU_REMOTES.items():
         download_file(url, dest_path / filename)
-    subprocess.run(
-        f"zip -s 0 {dest_path/'TAU-SRIR_DB.zip'} --out {dest_path/'single.zip'}",
-        shell=True,
-    )
+    combine_multizip(f"{dest_path/'TAU-SRIR_DB.zip'}", f"{dest_path/'single.zip'}")
     extract_zip(dest_path / "single.zip", dest_path)
-    subprocess.run(
-        f"zip -s 0 {dest_path/'TAU-SNoise_DB.zip'} --out {dest_path/'single.zip'}",
-        shell=True,
-    )
+    combine_multizip(f"{dest_path/'TAU-SNoise_DB.zip'}", f"{dest_path/'single.zip'}")
     extract_zip(dest_path / "single.zip", dest_path)
+
+    # generate Sofa files
 
 
 if __name__ == "__main__":

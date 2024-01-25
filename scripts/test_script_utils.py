@@ -4,11 +4,13 @@ import tarfile
 import zipfile
 import requests
 import pytest
+import subprocess
 from unittest.mock import Mock, patch
 
 from .utils import extract_tar
 from .utils import extract_zip
 from .utils import download_file
+from .utils import combine_multizip
 
 
 def create_test_tar(tar_path, content):
@@ -128,3 +130,29 @@ def test_file_writing_error(tmp_path, monkeypatch):
 
     with pytest.raises(RuntimeError):
         download_file(url, str(local_dest_path))
+
+
+@patch("subprocess.run")
+def test_combine_multizip(mock_run):
+    filename = "multi-part.zip"
+    destination = "combined.zip"
+
+    combine_multizip(filename, destination)
+
+    # Check if subprocess.run was called with the correct command
+    mock_run.assert_called_once_with(
+        f"zip -s 0 {filename} --out {destination}", shell=True
+    )
+
+
+@patch("subprocess.run")
+def test_combine_multizip_with_shell_false(mock_run):
+    filename = "multi-part.zip"
+    destination = "combined.zip"
+
+    combine_multizip(filename, destination, shell=False)
+
+    # Check if subprocess.run was called with the correct command and shell=False
+    mock_run.assert_called_once_with(
+        f"zip -s 0 {filename} --out {destination}", shell=False
+    )
