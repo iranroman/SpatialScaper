@@ -8,9 +8,9 @@ FOREGROUND_DIR = "datasets/sound_event_datasets/FSD50K_FMA"
 BACKGROUND_DIR = ""
 RIR_DIR = "datasets/rir_datasets"
 ROOM = "metu"
-FORMAT = "mic"
-MIN_EVENTS = 3
-MAX_EVENTS = 8
+FORMAT = "mic" 
+N_EVENTS_MEAN = 15
+N_EVENTS_STD = 6
 DURATION = 60.0  # Duration in seconds
 SR = 24000  # Sampling rate
 OUTPUT_DIR = "output"
@@ -29,7 +29,7 @@ def generate_soundscape(index):
     ssc.add_background()
 
     # Add a random number of foreground events
-    n_events = np.random.randint(MIN_EVENTS, MAX_EVENTS + 1)
+    n_events = int(np.random.normal(N_EVENTS_MEAN, N_EVENTS_STD))
     for _ in range(n_events):
         ssc.add_event(event_position=("moving", ("uniform", None, None)))
 
