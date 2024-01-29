@@ -17,7 +17,7 @@ SoundFile 0.10.3, mat73 0.58, numpy 1.20.1, scipy 1.6.2, librosa 0.8.1.
 SpatialScaper works with any sound files that you wish to spatialize. You can get started using sound events from the [FSD50K](https://zenodo.org/record/4060432#.ZE7ely2B0Ts) and [FMA](https://github.com/mdeff/fma) (music) dataset by using.
 
 ```
-python scripts/prepare_fsd50k_fma.py --download_FSD --dowmload_FMA --data_dir datasets
+python scripts/prepare_fsd50k_fma.py --download_FSD --download_FMA --data_dir datasets
 ```
 
 This creates a `datasets/sound_event_datasets/FSD50K_FMA` directory with a structure of sound event categories and files. 

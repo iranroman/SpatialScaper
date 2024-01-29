@@ -74,5 +74,5 @@ if __name__ == "__main__":
     parser.add_argument("--path", default="datasets/rir_datasets", help="Path to store and process the dataset.")
     args = parser.parse_args()
 
-    #download_and_extract(METU_URL, args.path)
+    download_and_extract(METU_URL, args.path)
     prepare_metu(args.path)
