@@ -8,9 +8,12 @@ import librosa
 import numpy as np
 import soundfile as sf
 from pathlib import Path
+import pysofaconventions as pysofa
 
 from utils import download_file, extract_zip, combine_multizip
 from spatialscaper import sofa_utils, tau_utils
+
+FS = 24000
 
 METU_URL = "https://zenodo.org/record/2635758/files/spargair.zip"
 
@@ -22,6 +25,8 @@ TAU_REMOTES = {
     "TAU-SNoise_DB.z01": "https://zenodo.org/records/6408611/files/TAU-SNoise_DB.z01?download=1",
     "TAU-SNoise_DB.zip": "https://zenodo.org/records/6408611/files/TAU-SNoise_DB.zip?download=1",
 }
+
+ARNI_URL = "https://zenodo.org/records/5720724/files/6dof_SRIRs_eigenmike_raw.zip"
 
 NTAU_ROOMS = 9
 
@@ -54,25 +59,33 @@ def create_single_sofa_file(aud_fmt, tau_db_dir, sofa_db_dir, db_name):
             db_name=db_name,
             room_name=room,
             listener_name=aud_fmt,
-            sr=24000,
+            sr=FS,
             comment=comment,
         )
 
 
 def download_and_extract(url, extract_to):
-    # Download the file
+    # Ensure the extract_to directory exists
+    extract_to = Path(extract_to)
+    extract_to.mkdir(parents=True, exist_ok=True)
+
+    # Extract the filename from the URL
     local_filename = url.split("/")[-1]
-    download_file(url, extract_to / local_filename)
+    zip_path = extract_to / local_filename
+    # Check if the extracted directory already exists
+    extracted_dir = extract_to / local_filename.replace(".zip", "")
+    if extracted_dir.is_dir() or zip_path.is_file():
+        print(f"Data already present in {extracted_dir}. Skipping download and extraction.")
+    else:
+        # Download and extract the file
+        download_file(url, zip_path)
+        extract_zip(zip_path, extract_to)
 
-    # Extract the file
-    extract_zip(extract_to / local_filename, extract_to)
-
-    # Remove the zip file
-    os.remove(extract_to / local_filename)
-
+        # remove the zip file after extraction
+        os.remove(zip_path)
 
 def prepare_metu(dataset_path):
-    spargpath = Path(dataset_path) / "raw_RIRs" / "spargair" / "em32"
+    spargpath = Path(dataset_path) / "original_RIRs" / "spargair" / "em32"
     nEMchans = 32
     XYZs = os.listdir(spargpath)
 
@@ -97,7 +110,7 @@ def prepare_metu(dataset_path):
             X.append(x)
         IRs.append(np.array(X))
 
-    filepath = Path(dataset_path) / "sofa_RIRs" / "metu_sparg_em32.sofa"
+    filepath = Path(dataset_path) / "spatialscaper_RIRs" / "metu_sparg_em32.sofa"
     rirs = np.array(IRs)
     source_pos = np.array(xyzs)
     mic_pos = np.array([[0, 0, 0]])
@@ -177,7 +190,7 @@ def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI")
     source_pos, mic_pos, rirs = [], [], [] 
     for abs_idx, sofa_abs_file in enumerate(sorted_sofa_files):
         # Load flattened (and flipped) rirs/paths from TAU-SRIR database
-        sofa = SOFAFile(os.path.join(arni_db_dir, sofa_abs_file),'r')
+        sofa = pysofa.SOFAFile(os.path.join(arni_db_dir, sofa_abs_file),'r')
         print(f"Creating .sofa file for {aud_fmt}, Room: {room} (Progress: {abs_idx + 1}/{len(sofa_files_absorption)})")
         if not sofa.isValid():
             print("Error: the file is invalid")
@@ -198,7 +211,7 @@ def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI")
         for meas in meas_sorted_ord: # for each meas in decreasing order
             # add impulse response
             irdata = rirdata[meas, :, :]
-            irdata_resamp = librosa.resample(irdata, orig_sr=FS, target_sr=NEW_FS)
+            irdata_resamp = librosa.resample(irdata, orig_sr=48000, target_sr=FS)
             rir.append(irdata_resamp[[5,9,25,21], :]) # add em32 rir data w/ hard-coded chans for tetra mic
             cent_receiv, trans_source = center_and_translate_arni(listenerPosition[meas], sourcePositions[meas])
             mic_loc.append(cent_receiv) # add mic coordinate position (centered at zero)
@@ -219,22 +232,20 @@ def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI")
         mic_pos,
         room_name=room,
         listener_name=aud_fmt,
-        sr=24000,
+        sr=FS,
         comment=comment
     )
 
 
 def prepare_arni(path_raw, path_sofa, formats=["mic"]):
     # generate Sofa files
-    arni_db_dir = f"{path_raw/'ARNI-SRIR_DB'}"
+    arni_db_dir = f"{path_raw/'6dof_SRIRs_eigenmike_raw'}"
     sofa_db_dir = path_sofa
     for aud_fmt in formats:
         print(f"Starting .sofa creation for {aud_fmt} format.")
         create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, ARNI_DB_NAME)
         print(f"Finished .sofa creation for {aud_fmt} format.")
 
-def download_arni(dest_path):
-    pass # TODO
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -247,21 +258,21 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    os.makedirs(Path(args.path) / "raw_RIRs", exist_ok=True)
-    os.makedirs(Path(args.path) / "sofa_RIRs", exist_ok=True)
+    os.makedirs(Path(args.path) / "original_RIRs", exist_ok=True)
+    os.makedirs(Path(args.path) / "spatialscaper_RIRs", exist_ok=True)
 
     # METU
-    download_and_extract(METU_URL, Path(args.path) / "raw_RIRs")
+    download_and_extract(METU_URL, Path(args.path) / "original_RIRs")
     prepare_metu(Path(args.path))
 
     # TAU
-    dest_path = Path(args.path) / "raw_RIRs"
+    dest_path = Path(args.path) / "original_RIRs"
     download_tau(dest_path)
-    dest_path_sofa = Path(args.path) / "sofa_RIRs"
+    dest_path_sofa = Path(args.path) / "spatialscaper_RIRs"
     prepare_tau(dest_path, dest_path_sofa)
 
     # ARNI
-    dest_path = Path(args.path) / "raw_RIRs"
-    download_arni(dest_path)
-    dest_path_sofa = Path(args.path) / "sofa_RIRs"
+    dest_path = Path(args.path) / "original_RIRs"
+    download_and_extract(ARNI_URL, Path(args.path) / "original_RIRs")
+    dest_path_sofa = Path(args.path) / "spatialscaper_RIRs"
     prepare_arni(dest_path, dest_path_sofa)
