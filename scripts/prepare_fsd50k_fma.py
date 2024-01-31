@@ -9,8 +9,8 @@ import librosa
 import soundata
 from tqdm import tqdm
 
-from .utils import extract_zip
-from .utils import download_file
+from utils import extract_zip
+from utils import download_file
 
 # Constants
 SOUND_EVENT_DATASETS_SUBDIR = "sound_event_datasets"
