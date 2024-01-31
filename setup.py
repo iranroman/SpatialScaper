@@ -33,7 +33,7 @@ setup(
     install_requires=[
         'numpy>=1.20',
         'scipy>=1.10.1',
-        'librosa>=0.9.2',
+        'librosa>=0.10.0',
         'mat73>=0.60',
         'fvcore>=0.1.5',
         'pysofaconventions',
