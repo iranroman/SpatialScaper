@@ -29,7 +29,8 @@ python scripts/prepare_metu.py
 ```
 
 ### Example script to generate soundscapes
-Spatialize
 ```
 python example_generation.py
 ```
+
+NOTE: this version is functional but still has many rough edges. Please contribute by commenting on existing issues or creating new ones as appropriate.
