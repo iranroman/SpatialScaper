@@ -1,7 +1,7 @@
 import os
 import mat73
 import sys
-from spatialscaper import tau_loading
+from spatialscaper import tau_utils
 import numpy as np
 import pysofaconventions as pysofa
 
@@ -25,7 +25,7 @@ def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt="mic", traj=None, flip=True
     files = os.listdir(tau_db_dir)
     rir_file = [file for file in files if room in file][0]
     rirs = mat73.loadmat(os.path.join(tau_db_dir, rir_file))["rirs"]
-    output_paths, path_metadata, room_metadata = tau_loading.load_paths(
+    output_paths, path_metadata, room_metadata = tau_utils.load_paths(
         room_idx, tau_db_dir
     )
     n_traj, n_heights = output_paths.shape
