@@ -10,7 +10,7 @@ pip install -e .
 ### Prerequisites
 
 The provided code was tested with Python 3.8 and the following libraries:
-SoundFile 0.10.3, mat73 0.58, numpy 1.20.1, scipy 1.6.2, librosa 0.8.1. 
+SoundFile 0.10.3, mat73 0.58, numpy 1.20.1, scipy 1.6.2, librosa 0.10.1. 
 
 ### Prepare sound event files for soundscape synthesis
 
