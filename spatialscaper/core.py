@@ -61,8 +61,11 @@ Event = namedtuple(
 )
 
 # Paths for room SOFA files
-__SPATIAL_SCAPER_RIRS_DIR__ = 'spatialscaper_RIRs'
-__ROOM_RIR_FILE__ = {"metu": "metu_sparg_em32.sofa"}
+__SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
+__ROOM_RIR_FILE__ = {
+    "metu": "metu_sparg_em32.sofa",
+    "bomb_shelter": "bomb_shelter_mic.sofa",
+}
 
 
 class Scaper:
@@ -93,7 +96,7 @@ class Scaper:
             sr (int): Sampling rate for the audio.
             DCASE_format (bool): Whether to format output labels for DCASE challenges.
             max_event_overlap (int): Maximum allowed overlap between events.
-            max_event_dur (float): maximum sound event duration in seconds 
+            max_event_dur (float): maximum sound event duration in seconds
             ref_db (float): Reference decibel level.
 
         """
@@ -188,7 +191,7 @@ class Scaper:
             label = random.choice(label[1])
         elif label[0] == "choose":
             label = random.choice(list(self.fg_labels.keys()))
-        elif label[0] == 'const':
+        elif label[0] == "const":
             label = label[1]
 
         if source_file[0] == "choose" and source_file[1]:
@@ -213,17 +216,19 @@ class Scaper:
         )
         if self.DCASE_format:
             # round down to one decimal value
-            event_time = (self.label_rate*event_time // 1) / self.label_rate
+            event_time = (self.label_rate * event_time // 1) / self.label_rate
 
         if event_position[0] == "choose":
             moving = bool(random.getrandbits(1))
         else:
             moving = True if event_position[0] == "moving" else False
-        if moving: # currently the trajectory shape is randomly selected
+        if moving:  # currently the trajectory shape is randomly selected
             shape = "circular" if bool(random.getrandbits(1)) else "linear"
             if event_position[1][0] == "uniform" and moving:
                 event_position = self.define_trajectory(
-                    event_position[1], int(event_duration / (1 / self.label_rate)), shape
+                    event_position[1],
+                    int(event_duration / (1 / self.label_rate)),
+                    shape,
                 )
         else:
             xyz_min, xyz_max = self._get_room_min_max()
@@ -270,7 +275,7 @@ class Scaper:
         if event_time[0] == "uniform":
             _, start_range, end_range = event_time
             random_start_time = random.uniform(start_range, end_range - event_duration)
-        elif event_time[0] == 'const':
+        elif event_time[0] == "const":
             return event_time[1]
 
         # Check if the selected time overlaps with more than max_overlap events
@@ -358,7 +363,9 @@ class Scaper:
         Returns:
             numpy.ndarray: An array of XYZ coordinates for the impulse response positions.
         """
-        room_sofa_path = os.path.join(self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__ , __ROOM_RIR_FILE__[self.room])
+        room_sofa_path = os.path.join(
+            self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__, __ROOM_RIR_FILE__[self.room]
+        )
         return load_pos(room_sofa_path, doas=False)
 
     def get_room_irs_wav_xyz(self, wav=True, pos=True):
@@ -372,7 +379,9 @@ class Scaper:
         Returns:
             tuple: A tuple containing the impulse responses, their sampling rate, and their XYZ positions.
         """
-        room_sofa_path = os.path.join(self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__ , __ROOM_RIR_FILE__[self.room])
+        room_sofa_path = os.path.join(
+            self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__, __ROOM_RIR_FILE__[self.room]
+        )
         all_irs, ir_sr, all_ir_xyzs = load_rir_pos(room_sofa_path, doas=False)
         ir_sr = ir_sr.data[0]
         all_irs = all_irs.data
@@ -463,7 +472,7 @@ class Scaper:
 
             # load and normalize audio signal by its norm
             x, _ = librosa.load(event.source_file, sr=self.sr)
-            x = x[:int(event.event_duration*self.sr)]
+            x = x[: int(event.event_duration * self.sr)]
             x = x / np.max(np.abs(x))
 
             # normalize irs to have unit energy
@@ -475,14 +484,16 @@ class Scaper:
                 ir_times = np.linspace(0, event.event_duration, len(irs))
                 xS = spatialize(x, norm_irs, ir_times, sr=self.sr, s=event.snr)
             else:
-                ir_times = np.linspace(0, event.event_duration, len(irs)+1)
-                ir_xyzs = np.concatenate([ir_xyzs,ir_xyzs])
+                ir_times = np.linspace(0, event.event_duration, len(irs) + 1)
+                ir_xyzs = np.concatenate([ir_xyzs, ir_xyzs])
                 xS = []
                 for i in range(norm_irs.shape[1]):
-                    _x = scipy.signal.convolve(x, np.squeeze(norm_irs[:, i]), mode='full', method='fft')
+                    _x = scipy.signal.convolve(
+                        x, np.squeeze(norm_irs[:, i]), mode="full", method="fft"
+                    )
                     xS.append(_x)
                 xS = np.array(xS).T
-                xS = xS[:len(x)]
+                xS = xS[: len(x)]
 
             # standardize the spatialized audio
             event_scale = db2scale(self.ref_db + event.snr)

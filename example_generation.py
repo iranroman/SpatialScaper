@@ -9,8 +9,8 @@ NSCAPES = 25
 FOREGROUND_DIR = "datasets/sound_event_datasets/FSD50K_FMA"
 BACKGROUND_DIR = ""
 RIR_DIR = "datasets/rir_datasets"
-ROOM = "metu"
-FORMAT = "mic" 
+ROOM = "bomb_shelter"
+FORMAT = "mic"
 N_EVENTS_MEAN = 15
 N_EVENTS_STD = 6
 DURATION = 60.0  # Duration in seconds
@@ -22,9 +22,7 @@ REF_DB = -65  # Reference decibel level
 # Function to generate a soundscape
 def generate_soundscape(index):
     track_name = f"fold5_room1_mix00{index + 1}"
-    ssc = ss.Scaper(
-        DURATION, FOREGROUND_DIR, BACKGROUND_DIR, RIR_DIR, ROOM, FORMAT, SR
-    )
+    ssc = ss.Scaper(DURATION, FOREGROUND_DIR, BACKGROUND_DIR, RIR_DIR, ROOM, FORMAT, SR)
     ssc.ref_db = REF_DB
 
     # Add background (static white noise for now)

@@ -59,6 +59,7 @@ def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt="mic", traj=None, flip=True
 
     return rirs, source_pos, mic_pos, room
 
+
 def create_srir_sofa(
     filepath,
     rirs,
