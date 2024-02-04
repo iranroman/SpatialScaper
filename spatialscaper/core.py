@@ -65,6 +65,14 @@ __SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
 __ROOM_RIR_FILE__ = {
     "metu": "metu_sparg_em32.sofa",
     "bomb_shelter": "bomb_shelter_mic.sofa",
+    "gym": "gym_mic.sofa",
+    "pb132": "pb132_mic.sofa",
+    "pc226": "pc226_mic.sofa",
+    "sa203": "sa203_mic.sofa",
+    "sc203": "sc203_mic.sofa",
+    "se203": "se203_mic.sofa",
+    "tb103": "tb103_mic.sofa",
+    "tc352": "tc352_mic.sofa",
 }
 
 
