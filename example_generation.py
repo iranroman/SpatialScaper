@@ -2,6 +2,8 @@ import numpy as np
 import spatialscaper as ss
 import os
 
+# currently only DCASE Task 3 (SELD) format supported
+
 # Constants
 NSCAPES = 25
 FOREGROUND_DIR = "datasets/sound_event_datasets/FSD50K_FMA"
@@ -25,13 +27,15 @@ def generate_soundscape(index):
     )
     ssc.ref_db = REF_DB
 
-    # Add background
+    # Add background (static white noise for now)
     ssc.add_background()
 
     # Add a random number of foreground events
     n_events = int(np.random.normal(N_EVENTS_MEAN, N_EVENTS_STD))
+    # for this duration and n_events distribution, more than 25 breaks recursion
+    n_events = n_events if 0 < n_events < 25 else N_EVENTS_MEAN
     for _ in range(n_events):
-        ssc.add_event(event_position=("moving", ("uniform", None, None)))
+        ssc.add_event()
 
     audiofile = os.path.join(OUTPUT_DIR, FORMAT, track_name)
     labelfile = os.path.join(OUTPUT_DIR, "labels", track_name)

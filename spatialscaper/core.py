@@ -3,6 +3,7 @@ import random
 from collections import namedtuple
 
 import librosa
+import scipy
 import numpy as np
 
 # Local application/library specific imports
@@ -41,6 +42,7 @@ __DCASE_SOUND_EVENT_CLASSES__ = {
     "bell": 11,
     "knock": 12,
 }
+__DCASE_LABEL_RATE__ = 10
 
 Event = namedtuple(
     "Event",
@@ -59,7 +61,9 @@ Event = namedtuple(
 )
 
 # Paths for room SOFA files
-__ROOM_RIR_FILE__ = {"metu": "metu_sparg.sofa"}
+__SPATIAL_SCAPER_RIRS_DIR__ = 'spatialscaper_RIRs'
+__ROOM_RIR_FILE__ = {"metu": "metu_sparg_em32.sofa"}
+
 
 class Scaper:
     def __init__(
@@ -72,9 +76,9 @@ class Scaper:
         fmt="mic",
         sr=24000,
         DCASE_format=True,
-        label_rate=10,
         max_event_overlap=2,
-        ref_db=-12,
+        max_event_dur=10.0,
+        ref_db=-60,
     ):
         """
         Initializes a Scaper object for generating soundscapes.
@@ -87,9 +91,9 @@ class Scaper:
             room (str): The name of the room for which the soundscape is being generated.
             fmt (str): Format of the output (e.g., 'mic' for microphone format).
             sr (int): Sampling rate for the audio.
-            DCASE_format (bool): Whether to format output for DCASE challenges.
-            label_rate (int): The rate at which labels are generated.
+            DCASE_format (bool): Whether to format output labels for DCASE challenges.
             max_event_overlap (int): Maximum allowed overlap between events.
+            max_event_dur (float): maximum sound event duration in seconds 
             ref_db (float): Reference decibel level.
 
         """
@@ -102,8 +106,10 @@ class Scaper:
         self.format = fmt
         self.sr = sr
         self.DCASE_format = DCASE_format
-        self.label_rate = label_rate
+        if self.DCASE_format:
+            self.label_rate = __DCASE_LABEL_RATE__
         self.max_event_overlap = max_event_overlap
+        self.max_event_dur = max_event_dur
         self.ref_db = ref_db
 
         self.fg_events = []
@@ -173,7 +179,7 @@ class Scaper:
         """
         # TODO: pitch_shift=(pitch_dist, pitch_min, pitch_max),
         # TODO: time_stretch=(time_stretch_dist, time_stretch_min, time_stretch_max))
-        DEFAULT_SNR_RANGE = (5, 30)
+        _DEFAULT_SNR_RANGE = (5, 30)
 
         if event_time is None:
             event_time = ("uniform", 0, self.duration)
@@ -182,6 +188,8 @@ class Scaper:
             label = random.choice(label[1])
         elif label[0] == "choose":
             label = random.choice(list(self.fg_labels.keys()))
+        elif label[0] == 'const':
+            label = label[1]
 
         if source_file[0] == "choose" and source_file[1]:
             source_file = random.choice(source_file[1])
@@ -193,7 +201,9 @@ class Scaper:
         if source_time[0] == "const":
             source_time = source_time[1]
 
-        event_duration = librosa.get_duration(filename=source_file)
+        event_duration = librosa.get_duration(path=source_file)
+        if event_duration - source_time > self.max_event_dur:
+            event_duration = self.max_event_dur
         event_time = self.define_event_onset_time(
             event_time,
             event_duration,
@@ -202,25 +212,27 @@ class Scaper:
             1 / self.label_rate,
         )
         if self.DCASE_format:
-            event_time = round(
-                event_time, count_leading_zeros_in_period(self.label_rate) + 1
-            )
+            # round down to one decimal value
+            event_time = (self.label_rate*event_time // 1) / self.label_rate
 
         if event_position[0] == "choose":
             moving = bool(random.getrandbits(1))
         else:
             moving = True if event_position[0] == "moving" else False
-        if moving:
+        if moving: # currently the trajectory shape is randomly selected
             shape = "circular" if bool(random.getrandbits(1)) else "linear"
-        if event_position[1][0] == "uniform" and moving:
-            event_position = self.define_trajectory(
-                event_position[1], int(event_duration / (1 / self.label_rate)), shape
-            )
+            if event_position[1][0] == "uniform" and moving:
+                event_position = self.define_trajectory(
+                    event_position[1], int(event_duration / (1 / self.label_rate)), shape
+                )
+        else:
+            xyz_min, xyz_max = self._get_room_min_max()
+            event_position = [self._gen_xyz(xyz_min, xyz_max)]
 
         if snr[0] == "uniform" and len(snr) == 3:
             snr = random.uniform(*snr[1:])
         else:
-            snr = random.uniform(*DEFAULT_SNR_RANGE)  # default SNR range
+            snr = random.uniform(*_DEFAULT_SNR_RANGE)
 
         self.fg_events.append(
             Event(
@@ -258,6 +270,8 @@ class Scaper:
         if event_time[0] == "uniform":
             _, start_range, end_range = event_time
             random_start_time = random.uniform(start_range, end_range - event_duration)
+        elif event_time[0] == 'const':
+            return event_time[1]
 
         # Check if the selected time overlaps with more than max_overlap events
         if new_event_exceeds_max_overlap(
@@ -344,7 +358,7 @@ class Scaper:
         Returns:
             numpy.ndarray: An array of XYZ coordinates for the impulse response positions.
         """
-        room_sofa_path = os.path.join(self.rir_dir, __ROOM_RIR_FILE__[self.room])
+        room_sofa_path = os.path.join(self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__ , __ROOM_RIR_FILE__[self.room])
         return load_pos(room_sofa_path, doas=False)
 
     def get_room_irs_wav_xyz(self, wav=True, pos=True):
@@ -358,7 +372,7 @@ class Scaper:
         Returns:
             tuple: A tuple containing the impulse responses, their sampling rate, and their XYZ positions.
         """
-        room_sofa_path = os.path.join(self.rir_dir, __ROOM_RIR_FILE__[self.room])
+        room_sofa_path = os.path.join(self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__ , __ROOM_RIR_FILE__[self.room])
         all_irs, ir_sr, all_ir_xyzs = load_rir_pos(room_sofa_path, doas=False)
         ir_sr = ir_sr.data[0]
         all_irs = all_irs.data
@@ -449,6 +463,7 @@ class Scaper:
 
             # load and normalize audio signal by its norm
             x, _ = librosa.load(event.source_file, sr=self.sr)
+            x = x[:int(event.event_duration*self.sr)]
             x = x / np.max(np.abs(x))
 
             # normalize irs to have unit energy
@@ -460,8 +475,14 @@ class Scaper:
                 ir_times = np.linspace(0, event.event_duration, len(irs))
                 xS = spatialize(x, norm_irs, ir_times, sr=self.sr, s=event.snr)
             else:
-                # TODO: implement static
-                continue
+                ir_times = np.linspace(0, event.event_duration, len(irs)+1)
+                ir_xyzs = np.concatenate([ir_xyzs,ir_xyzs])
+                xS = []
+                for i in range(norm_irs.shape[1]):
+                    _x = scipy.signal.convolve(x, np.squeeze(norm_irs[:, i]), mode='full', method='fft')
+                    xS.append(_x)
+                xS = np.array(xS).T
+                xS = xS[:len(x)]
 
             # standardize the spatialized audio
             event_scale = db2scale(self.ref_db + event.snr)
