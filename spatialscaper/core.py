@@ -8,6 +8,7 @@ import scipy
 import soundfile as sf
 
 # Local application/library specific imports
+from .sofa_utils import load_rir_pos, load_pos
 from .utils import (
     get_label_list,
     get_files_list,
@@ -22,9 +23,10 @@ from .utils import (
     get_labels,
     save_output,
     sort_matrix_by_columns,
+    swap_label,
+    swap_foa,
+    swap_mic,
 )
-from .sofa_utils import load_rir_pos, load_pos
-
 
 # Sound event classes for DCASE Challenge
 __DCASE_SOUND_EVENT_CLASSES__ = {
@@ -659,100 +661,16 @@ class ScaperAug:
 
         """
         if self.format == 'mic':
-            data_aug = self.swap_mic(data)
+            data_aug = swap_mic(data)
         elif self.format == 'foa':
-            data_aug = self.swap_foa(data)
+            data_aug = swap_foa(data)
         else:
             raise NotImplementedError("Format not supported.")
 
-        label_aug = self.swap_label(label)
+        label_aug = swap_label(label)
         fs_aug = [fs] * 7
 
         return data_aug, fs_aug, label_aug
-
-    def swap_mic(self, audio):
-        """
-
-        Args:
-            audio: multichannel mic format audio
-        Returns:
-            A list of 7 types of mic channel swapping.
-
-        """
-        # separate channels
-        chan_1 = audio[:, 0]
-        chan_2 = audio[:, 1]
-        chan_3 = audio[:, 2]
-        chan_4 = audio[:, 3]
-
-        # swapping columns
-        audio_aug = []
-        audio_aug.append(np.dstack((chan_2, chan_4, chan_1, chan_3)).squeeze())
-        audio_aug.append(np.dstack((chan_4, chan_2, chan_3, chan_1)).squeeze())
-        audio_aug.append(np.dstack((chan_2, chan_1, chan_4, chan_3)).squeeze())
-        audio_aug.append(np.dstack((chan_3, chan_1, chan_4, chan_2)).squeeze())
-        audio_aug.append(np.dstack((chan_1, chan_3, chan_2, chan_4)).squeeze())
-        audio_aug.append(np.dstack((chan_4, chan_3, chan_2, chan_1)).squeeze())
-        audio_aug.append(np.dstack((chan_3, chan_4, chan_1, chan_2)).squeeze())
-
-        return audio_aug
-
-    def swap_foa(self, audio):
-        """
-
-        Args:
-            audio: multichannel foa format audio
-
-        Returns:
-            a list of 7 types of channel swapping foa audio
-
-        """
-        # separate channels
-        chan_1 = audio[:, 0]
-        chan_2 = audio[:, 1]
-        chan_3 = audio[:, 2]
-        chan_4 = audio[:, 3]
-
-        # swapping columns
-        audio_aug = []
-        audio_aug.append(np.dstack((chan_1, -chan_4, -chan_3, chan_2)).squeeze())
-        audio_aug.append(np.dstack((chan_1, -chan_4, chan_3, -chan_2)).squeeze())
-        audio_aug.append(np.dstack((chan_1, -chan_2, -chan_3, chan_4)).squeeze())
-        audio_aug.append(np.dstack((chan_1, chan_4, -chan_3, chan_2)).squeeze())
-        audio_aug.append(np.dstack((chan_1, chan_4, chan_3, chan_2)).squeeze())
-        audio_aug.append(np.dstack((chan_1, -chan_2, chan_3, -chan_4)).squeeze())
-        audio_aug.append(np.dstack((chan_1, chan_2, -chan_3, -chan_4)).squeeze())
-
-        return audio_aug
-
-    def swap_label(self, label):
-        """
-
-        Args:
-            label: original label
-
-        Returns:
-            labels after channel swapping
-
-        """
-        frame = label[:, 0]
-        id = label[:, 1]
-        source = label[:, 2]
-        azimuth = label[:, 3]
-        elevation = label[:, 4]
-        distance = label[:, 5] if label.shape[1] > 5 else np.full(data.shape[0], None)
-
-        # transform azimuth and elevation
-        label_aug = []
-        label_aug.append(np.dstack((frame, id, source, azimuth - 90, -elevation, distance)).squeeze())
-        label_aug.append(np.dstack((frame, id, source, -azimuth - 90, elevation, distance)).squeeze())
-        label_aug.append(np.dstack((frame, id, source, -azimuth, -elevation, distance)).squeeze())
-        label_aug.append(np.dstack((frame, id, source, azimuth + 90, -elevation, distance)).squeeze())
-        label_aug.append(np.dstack((frame, id, source, -azimuth + 90, elevation, distance)).squeeze())
-        label_aug.append(np.dstack((frame, id, source, azimuth + 180, elevation, distance)).squeeze())
-        label_aug.append(np.dstack((frame, id, source, -azimuth + 180, -elevation, distance)).squeeze())
-
-        return label_aug
 
     def rotation(self, data, fs, label):
         pass

@@ -777,3 +777,89 @@ def count_leading_zeros_in_period(frequency_hz):
         for i, digit in enumerate(fractional_part)
         if digit == "0" and "1" not in fractional_part[: i + 1]
     )
+
+
+def swap_mic(audio):
+    """
+
+    Args:
+        audio: multichannel mic format audio
+    Returns:
+        A list of 7 types of mic channel swapping.
+
+    """
+    # separate channels
+    chan_1 = audio[:, 0]
+    chan_2 = audio[:, 1]
+    chan_3 = audio[:, 2]
+    chan_4 = audio[:, 3]
+
+    # swapping columns
+    audio_aug = []
+    audio_aug.append(np.dstack((chan_2, chan_4, chan_1, chan_3)).squeeze())
+    audio_aug.append(np.dstack((chan_4, chan_2, chan_3, chan_1)).squeeze())
+    audio_aug.append(np.dstack((chan_2, chan_1, chan_4, chan_3)).squeeze())
+    audio_aug.append(np.dstack((chan_3, chan_1, chan_4, chan_2)).squeeze())
+    audio_aug.append(np.dstack((chan_1, chan_3, chan_2, chan_4)).squeeze())
+    audio_aug.append(np.dstack((chan_4, chan_3, chan_2, chan_1)).squeeze())
+    audio_aug.append(np.dstack((chan_3, chan_4, chan_1, chan_2)).squeeze())
+
+    return audio_aug
+
+
+def swap_foa(audio):
+    """
+
+    Args:
+        audio: multichannel foa format audio
+
+    Returns:
+        a list of 7 types of channel swapping foa audio
+
+    """
+    # separate channels
+    chan_1 = audio[:, 0]
+    chan_2 = audio[:, 1]
+    chan_3 = audio[:, 2]
+    chan_4 = audio[:, 3]
+
+    # swapping columns
+    audio_aug = []
+    audio_aug.append(np.dstack((chan_1, -chan_4, -chan_3, chan_2)).squeeze())
+    audio_aug.append(np.dstack((chan_1, -chan_4, chan_3, -chan_2)).squeeze())
+    audio_aug.append(np.dstack((chan_1, -chan_2, -chan_3, chan_4)).squeeze())
+    audio_aug.append(np.dstack((chan_1, chan_4, -chan_3, chan_2)).squeeze())
+    audio_aug.append(np.dstack((chan_1, chan_4, chan_3, chan_2)).squeeze())
+    audio_aug.append(np.dstack((chan_1, -chan_2, chan_3, -chan_4)).squeeze())
+    audio_aug.append(np.dstack((chan_1, chan_2, -chan_3, -chan_4)).squeeze())
+
+    return audio_aug
+
+def swap_label(label):
+    """
+
+    Args:
+        label: original label
+
+    Returns:
+        labels after channel swapping
+
+    """
+    frame = label[:, 0]
+    id = label[:, 1]
+    source = label[:, 2]
+    azimuth = label[:, 3]
+    elevation = label[:, 4]
+    distance = label[:, 5] if label.shape[1] > 5 else np.full(data.shape[0], None)
+
+    # transform azimuth and elevation
+    label_aug = []
+    label_aug.append(np.dstack((frame, id, source, azimuth - 90, -elevation, distance)).squeeze())
+    label_aug.append(np.dstack((frame, id, source, -azimuth - 90, elevation, distance)).squeeze())
+    label_aug.append(np.dstack((frame, id, source, -azimuth, -elevation, distance)).squeeze())
+    label_aug.append(np.dstack((frame, id, source, azimuth + 90, -elevation, distance)).squeeze())
+    label_aug.append(np.dstack((frame, id, source, -azimuth + 90, elevation, distance)).squeeze())
+    label_aug.append(np.dstack((frame, id, source, azimuth + 180, elevation, distance)).squeeze())
+    label_aug.append(np.dstack((frame, id, source, -azimuth + 180, -elevation, distance)).squeeze())
+
+    return label_aug
