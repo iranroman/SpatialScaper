@@ -25,6 +25,17 @@ git clone https://github.com/iranroman/SpatialScaper.git
 cd SpatialScaper
 pip install --editable ./
 ```
+<details>
+<summary>Click for more details</summary>
+### Conda Enviroment with Python==3.8
+```shell
+conda create -n "ssenv" python=3.8
+```
+
+### Python Virtual Enviroment with Python==3.8
+```shell
+python3.8 -m venv "ssenv"
+```
 
 ## Preparing Sound Event Assets
 
