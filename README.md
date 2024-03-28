@@ -1,5 +1,5 @@
 <!-- omit in toc -->
-# SpatialScaper: A python library to create synthetic audio mixtures suitable for DCASE Challenge Task 3
+# Spatial scaper: a library to simulate and augment soundscapes for sound event localization and detection in realistic rooms.
 [![Platform](https://img.shields.io/badge/Platform-linux-lightgrey?logo=linux)](https://www.linux.org/)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-orange?logo=python)](https://www.python.org/)	
 [![arXiv](https://img.shields.io/badge/Arxiv-2401.03497-blueviolet?logo=arxiv)](https://arxiv.org/abs/2401.12238)
@@ -9,6 +9,10 @@
 - [Preparing Sound Event Assets](#preparing-sound-event-assets)
 - [Preparing RIR Datasets](#preparing-rir-datasets)
 - [Quick Examples for New Users](#quick-examples-for-new-users)
+
+<!-- omit in toc -->
+## Introduction
+SpatialScaper is a python library to create synthetic audio mixtures suitable for DCASE Challenge Task 3
 
 ## Requirements and Installation
 To run the SpatialScaper library, manually setup your environment as follows.
