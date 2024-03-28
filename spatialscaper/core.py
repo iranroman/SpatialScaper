@@ -64,6 +64,7 @@ Event = namedtuple(
 __SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
 __ROOM_RIR_FILE__ = {
     "metu": "metu_sparg_em32.sofa",
+    "arni": "arni_mic.sofa",
     "bomb_shelter": "bomb_shelter_mic.sofa",
     "gym": "gym_mic.sofa",
     "pb132": "pb132_mic.sofa",
