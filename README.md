@@ -3,7 +3,6 @@
 [![Platform](https://img.shields.io/badge/Platform-linux-lightgrey?logo=linux)](https://www.linux.org/)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-orange?logo=python)](https://www.python.org/)	
 [![arXiv](https://img.shields.io/badge/Arxiv-2401.03497-blueviolet?logo=arxiv)](https://arxiv.org/abs/2401.12238)
-[![Contributing][contributing-image]][contributing-url]
 
 **Guides**
 - [Requirements and Installation](#requirements-and-installation)
