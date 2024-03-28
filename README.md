@@ -27,6 +27,7 @@ pip install --editable ./
 ```
 <details>
 <summary>Click for more details</summary>
+
 ### Conda Enviroment with Python==3.8
 
 ```
