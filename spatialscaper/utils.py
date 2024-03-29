@@ -741,7 +741,7 @@ def new_event_exceeds_max_overlap(
                 and t <= event.event_time + event.event_duration + increment
             ):
                 current_overlap += 1
-            if current_overlap > max_overlap:
+            if current_overlap > max_overlap - 1:
                 return True  # Overlaps with more than max_overlap events
     return False  # Suitable time found
 
