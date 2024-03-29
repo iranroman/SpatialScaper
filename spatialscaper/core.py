@@ -188,6 +188,8 @@ class Scaper:
             split (str/None): Specification for the split of the dataset.
 
         Handles random selection and validation of event parameters, including label, source file, and event time.
+
+        returns None
         """
         # TODO: pitch_shift=(pitch_dist, pitch_min, pitch_max),
         # TODO: time_stretch=(time_stretch_dist, time_stretch_min, time_stretch_max))
