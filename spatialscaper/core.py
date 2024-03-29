@@ -137,7 +137,7 @@ class Scaper:
 
         self.max_recursion_depth = max_recursion_depth
 
-def add_background(self):
+    def add_background(self):
         """
         Adds a background event to the soundscape.
         This method sets fixed values for event time, duration, and
