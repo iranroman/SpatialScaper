@@ -30,6 +30,7 @@ def generate_soundscape(index):
 
     # Add a random number of foreground events
     n_events = int(np.random.normal(N_EVENTS_MEAN, N_EVENTS_STD))
+
     for _ in range(n_events):
         ssc.add_event()
 
