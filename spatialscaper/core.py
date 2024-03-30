@@ -5,6 +5,7 @@ from collections import namedtuple
 import librosa
 import scipy
 import numpy as np
+import warnings
 
 # Local application/library specific imports
 from .utils import (
@@ -90,7 +91,7 @@ class Scaper:
         max_event_overlap=2,
         max_event_dur=10.0,
         ref_db=-60,
-        max_recursion_depth=100,
+        max_sample_attempts=100,
     ):
         """
         Initializes a Scaper object for generating soundscapes.
@@ -135,7 +136,7 @@ class Scaper:
         else:
             self.fg_labels = {l: i for i, l in enumerate(fg_label_list)}
 
-        self.max_recursion_depth = max_recursion_depth
+        self.max_sample_attempts = max_sample_attempts
 
     def add_background(self):
         """
@@ -189,7 +190,8 @@ class Scaper:
 
         Handles random selection and validation of event parameters, including label, source file, and event time.
 
-        returns None
+        Returns:
+            None
         """
         # TODO: pitch_shift=(pitch_dist, pitch_min, pitch_max),
         # TODO: time_stretch=(time_stretch_dist, time_stretch_min, time_stretch_max))
@@ -226,7 +228,8 @@ class Scaper:
             1 / self.label_rate,
             recursion_count = 0,
         )
-        if not event_time_:
+        if event_time_ is None:
+            warnings.warn(f'Could not find a start time for sound event "{source_file_}" that satisfies max_event_overlap = {self.max_event_overlap}. Attempting a new sound event. If this continues happening, you may want to consider adding less sound events to the scape or increasing max_event_overlap.')
             self.add_event(label,source_file,source_time,event_time,event_position,snr,split)
             return None
         if self.DCASE_format:
@@ -289,25 +292,13 @@ class Scaper:
         # Select a random start time within the range
         if event_time[0] == "uniform":
             _, start_range, end_range = event_time
-            random_start_time = random.uniform(start_range, end_range - event_duration)
+            for _ in range(self.max_sample_attempts):
+                random_start_time = random.uniform(start_range, end_range - event_duration)
+                if not new_event_exceeds_max_overlap(random_start_time, event_duration, other_events, max_overlap, increment):
+                    return random_start_time
+            return None
         elif event_time[0] == "const":
             return event_time[1]
-
-        # Check if the selected time overlaps with more than max_overlap events
-        if new_event_exceeds_max_overlap(
-            random_start_time, event_duration, other_events, max_overlap, increment
-        ):
-            # If it does overlap, recursively try again
-            recursion_count += 1
-            if recursion_count < self.max_recursion_depth:
-                return self.define_event_onset_time(
-                    event_time, event_duration, other_events, max_overlap, increment, recursion_count
-                )
-            else:
-                return None
-        else:
-            # If it doesn't overlap, return the selected start time
-            return random_start_time
 
     def _gen_xyz(self, xyz_min, xyz_max):
         """
