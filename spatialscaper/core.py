@@ -226,12 +226,22 @@ class Scaper:
             self.fg_events,
             self.max_event_overlap,
             1 / self.label_rate,
-            recursion_count = 0,
+            recursion_count=0,
         )
         if event_time_ is None:
-            warnings.warn(f'Could not find a start time for sound event "{source_file_}" that satisfies max_event_overlap = {self.max_event_overlap}. Attempting a new sound event. If this continues happening, you may want to consider adding less sound events to the scape or increasing max_event_overlap.')
+            warnings.warn(
+                f'Could not find a start time for sound event "{source_file_}" that satisfies max_event_overlap = {self.max_event_overlap}. Attempting a new sound event. If this continues happening, you may want to consider adding less sound events to the scape or increasing max_event_overlap.'
+            )
             if source_file[0] == "choose":
-                self.add_event(label,source_file,source_time,event_time,event_position,snr,split)
+                self.add_event(
+                    label,
+                    source_file,
+                    source_time,
+                    event_time,
+                    event_position,
+                    snr,
+                    split,
+                )
             return None
         if self.DCASE_format:
             # round down to one decimal value
@@ -274,7 +284,13 @@ class Scaper:
         )
 
     def define_event_onset_time(
-        self, event_time, event_duration, other_events, max_overlap, increment, recursion_count,
+        self,
+        event_time,
+        event_duration,
+        other_events,
+        max_overlap,
+        increment,
+        recursion_count,
     ):
         """
         Recursively finds a start time for an event that doesn't exceed the maximum overlap with other events.
@@ -294,8 +310,16 @@ class Scaper:
         if event_time[0] == "uniform":
             _, start_range, end_range = event_time
             for _ in range(self.max_sample_attempts):
-                random_start_time = random.uniform(start_range, end_range - event_duration)
-                if not new_event_exceeds_max_overlap(random_start_time, event_duration, other_events, max_overlap, increment):
+                random_start_time = random.uniform(
+                    start_range, end_range - event_duration
+                )
+                if not new_event_exceeds_max_overlap(
+                    random_start_time,
+                    event_duration,
+                    other_events,
+                    max_overlap,
+                    increment,
+                ):
                     return random_start_time
             return None
         elif event_time[0] == "const":
