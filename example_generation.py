@@ -3,7 +3,7 @@ import spatialscaper as ss
 import os
 
 # Constants
-NSCAPES = 2  # Number of soundscapes to generate
+NSCAPES = 20  # Number of soundscapes to generate
 FOREGROUND_DIR = "datasets/sound_event_datasets/FSD50K_FMA"  # Directory with FSD50K foreground sound files
 BACKGROUND_DIR = ""  # Directory for background sound files, not used in this example
 RIR_DIR = "datasets/rir_datasets"  # Directory containing Room Impulse Response (RIR) files
@@ -29,7 +29,7 @@ REF_DB = -65  # Reference decibel level for normalization
 
 # Function to generate a soundscape
 def generate_soundscape(index):
-    track_name = f"fold5_room1_mix00{index + 1}"
+    track_name = f"fold5_room1_mix{index:03d}"
     # Initialize Scaper. 'max_event_overlap' controls the maximum number of overlapping sound events.
     ssc = ss.Scaper(DURATION, FOREGROUND_DIR, BACKGROUND_DIR, RIR_DIR, ROOM, FORMAT, SR, max_event_overlap=2)
     ssc.ref_db = REF_DB
