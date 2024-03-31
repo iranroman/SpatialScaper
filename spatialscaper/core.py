@@ -5,6 +5,7 @@ from collections import namedtuple
 import librosa
 import scipy
 import numpy as np
+import warnings
 
 # Local application/library specific imports
 from .utils import (
@@ -91,6 +92,7 @@ class Scaper:
         max_event_overlap=2,
         max_event_dur=10.0,
         ref_db=-60,
+        max_sample_attempts=100,
     ):
         """
         Initializes a Scaper object for generating soundscapes.
@@ -135,6 +137,8 @@ class Scaper:
         else:
             self.fg_labels = {l: i for i, l in enumerate(fg_label_list)}
 
+        self.max_sample_attempts = max_sample_attempts
+
     def add_background(self):
         """
         Adds a background event to the soundscape.
@@ -169,7 +173,6 @@ class Scaper:
         source_file=("choose", []),
         source_time=("const", 0),
         event_time=None,
-        event_duration=None,
         event_position=("choose", ("uniform", None, None)),
         snr=("uniform"),
         split=None,
@@ -182,12 +185,14 @@ class Scaper:
             source_file (tuple): Specification for selecting the source file of the event.
             source_time (tuple): Starting time of the event in the source file.
             event_time (tuple/None): Start time of the event in the soundscape.
-            event_duration (float/None): Duration of the event.
             event_position (tuple): Specification for the position of the event in space.
             snr (tuple): Specification for the signal-to-noise ratio of the event.
             split (str/None): Specification for the split of the dataset.
 
         Handles random selection and validation of event parameters, including label, source file, and event time.
+
+        Returns:
+            None
         """
         # TODO: pitch_shift=(pitch_dist, pitch_min, pitch_max),
         # TODO: time_stretch=(time_stretch_dist, time_stretch_min, time_stretch_max))
@@ -197,35 +202,52 @@ class Scaper:
             event_time = ("uniform", 0, self.duration)
 
         if label[0] == "choose" and label[1]:
-            label = random.choice(label[1])
+            label_ = random.choice(label[1])
         elif label[0] == "choose":
-            label = random.choice(list(self.fg_labels.keys()))
+            label_ = random.choice(list(self.fg_labels.keys()))
         elif label[0] == "const":
-            label = label[1]
+            label_ = label[1]
 
         if source_file[0] == "choose" and source_file[1]:
-            source_file = random.choice(source_file[1])
+            source_file_ = random.choice(source_file[1])
         elif source_file[0] == "choose":
-            source_file = random.choice(
-                get_files_list(os.path.join(self.foreground_dir, label), split)
+            source_file_ = random.choice(
+                get_files_list(os.path.join(self.foreground_dir, label_), split)
             )
 
         if source_time[0] == "const":
-            source_time = source_time[1]
+            source_time_ = source_time[1]
 
-        event_duration = librosa.get_duration(path=source_file)
-        if event_duration - source_time > self.max_event_dur:
-            event_duration = self.max_event_dur
-        event_time = self.define_event_onset_time(
+        event_duration_ = librosa.get_duration(path=source_file_)
+        if event_duration_ - source_time_ > self.max_event_dur:
+            event_duration_ = self.max_event_dur
+        event_time_ = self.define_event_onset_time(
             event_time,
-            event_duration,
+            event_duration_,
             self.fg_events,
             self.max_event_overlap,
             1 / self.label_rate,
+            recursion_count=0,
         )
+        if event_time_ is None:
+            warnings.warn(
+                f'Could not find a start time for sound event "{source_file_}" that satisfies max_event_overlap = {self.max_event_overlap}. If this continues happening, you may want to consider adding less sound events to the scape or increasing max_event_overlap.'
+            )
+            if source_file[0] == "choose":
+                warnings.warn('Randomly choosing a new sound event to try again.')
+                self.add_event(
+                    label,
+                    source_file,
+                    source_time,
+                    event_time,
+                    event_position,
+                    snr,
+                    split,
+                )
+            return None
         if self.DCASE_format:
             # round down to one decimal value
-            event_time = (self.label_rate * event_time // 1) / self.label_rate
+            event_time_ = (self.label_rate * event_time_ // 1) / self.label_rate
 
         if event_position[0] == "choose":
             moving = bool(random.getrandbits(1))
@@ -234,29 +256,29 @@ class Scaper:
         if moving:  # currently the trajectory shape is randomly selected
             shape = "circular" if bool(random.getrandbits(1)) else "linear"
             if event_position[1][0] == "uniform" and moving:
-                event_position = self.define_trajectory(
+                event_position_ = self.define_trajectory(
                     event_position[1],
-                    int(event_duration / (1 / self.label_rate)),
+                    int(event_duration_ / (1 / self.label_rate)),
                     shape,
                 )
         else:
             xyz_min, xyz_max = self._get_room_min_max()
-            event_position = [self._gen_xyz(xyz_min, xyz_max)]
+            event_position_ = [self._gen_xyz(xyz_min, xyz_max)]
 
         if snr[0] == "uniform" and len(snr) == 3:
-            snr = random.uniform(*snr[1:])
+            snr_ = random.uniform(*snr[1:])
         else:
-            snr = random.uniform(*_DEFAULT_SNR_RANGE)
+            snr_ = random.uniform(*_DEFAULT_SNR_RANGE)
 
         self.fg_events.append(
             Event(
-                label=label,
-                source_file=source_file,
-                source_time=source_time,
-                event_time=event_time,
-                event_duration=event_duration,
-                event_position=event_position,
-                snr=snr,
+                label=label_,
+                source_file=source_file_,
+                source_time=source_time_,
+                event_time=event_time_,
+                event_duration=event_duration_,
+                event_position=event_position_,
+                snr=snr_,
                 role="foreground",
                 pitch_shift=None,
                 time_stretch=None,
@@ -264,7 +286,13 @@ class Scaper:
         )
 
     def define_event_onset_time(
-        self, event_time, event_duration, other_events, max_overlap, increment
+        self,
+        event_time,
+        event_duration,
+        other_events,
+        max_overlap,
+        increment,
+        recursion_count,
     ):
         """
         Recursively finds a start time for an event that doesn't exceed the maximum overlap with other events.
@@ -283,21 +311,21 @@ class Scaper:
         # Select a random start time within the range
         if event_time[0] == "uniform":
             _, start_range, end_range = event_time
-            random_start_time = random.uniform(start_range, end_range - event_duration)
+            for _ in range(self.max_sample_attempts):
+                random_start_time = random.uniform(
+                    start_range, end_range - event_duration
+                )
+                if not new_event_exceeds_max_overlap(
+                    random_start_time,
+                    event_duration,
+                    other_events,
+                    max_overlap,
+                    increment,
+                ):
+                    return random_start_time
+            return None
         elif event_time[0] == "const":
             return event_time[1]
-
-        # Check if the selected time overlaps with more than max_overlap events
-        if new_event_exceeds_max_overlap(
-            random_start_time, event_duration, other_events, max_overlap, increment
-        ):
-            # If it does overlap, recursively try again
-            return self.define_event_onset_time(
-                event_time, event_duration, other_events, max_overlap, increment
-            )
-        else:
-            # If it doesn't overlap, return the selected start time
-            return random_start_time
 
     def _gen_xyz(self, xyz_min, xyz_max):
         """
