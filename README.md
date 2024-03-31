@@ -5,6 +5,9 @@
 [![arXiv](https://img.shields.io/badge/Arxiv-2401.03497-blueviolet?logo=arxiv)](https://arxiv.org/abs/2401.12238)
 [![CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
 
+> [!WARNING]
+> SpatialScaper is still undergoing active development. We have done our due diligence to test that  `example_script.py` works as expected. However, please open an issue and describe any errors you encounter. Also, make sure to check in often, as we are actively adding more features. 
+
 **Guides**
 - [Requirements and Installation](#requirements-and-installation)
 - [Preparing Sound Event Assets](#preparing-sound-event-assets)
