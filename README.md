@@ -92,6 +92,12 @@ Note that SRIR directions and distances differ with the room. Possible azimuths 
 
 Below we present the [example_generation.py](example_generation.py). The example generates 25 soundscapes, 1 minute long each, using audio clips from FSD50K, spatialized in the `bomb_shelter` room.
 
+Execute as:
+
+```shell
+python example_generation.py
+```
+
 ```python
 import numpy as np
 import spatialscaper as ss
