@@ -30,8 +30,7 @@ def generate_soundscape(index):
 
     # Add a random number of foreground events
     n_events = int(np.random.normal(N_EVENTS_MEAN, N_EVENTS_STD))
-    # for this duration and n_events distribution, more than 22 breaks recursion
-    n_events = n_events if 0 < n_events < 22 else N_EVENTS_MEAN
+
     for _ in range(n_events):
         ssc.add_event()
 
