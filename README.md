@@ -6,7 +6,7 @@
 [![CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
 
 > [!WARNING]
-> SpatialScaper is still undergoing active development. We have done our due diligence to test that  `example_script.py` works as expected. However, please open an issue and describe any errors you encounter. Also, make sure to check in often, as we are actively adding more features. 
+> SpatialScaper is still undergoing active development. We have done our due diligence to test that  `example_generation.py` works as expected. However, please open an issue and describe any errors you encounter. Also, make sure to check in often, as we are actively adding more features. 
 
 **Guides**
 - [Requirements and Installation](#requirements-and-installation)
@@ -16,7 +16,7 @@
 
 <!-- omit in toc -->
 ## Introduction
-SpatialScaper is a python library to create synthetic audio mixtures suitable for DCASE Challenge Task 3
+SpatialScaper is a python library to create synthetic audio mixtures suitable for DCASE Challenge Task 3.
 
 ## Requirements and Installation
 To run the SpatialScaper library, manually setup your environment as follows.
@@ -89,6 +89,15 @@ Note that SRIR directions and distances differ with the room. Possible azimuths 
 </details>
 
 ## Quick Examples for New Users
+
+Below we present the [example_generation.py](example_generation.py). The example generates 25 soundscapes, 1 minute long each, using audio clips from FSD50K, spatialized in the `bomb_shelter` room.
+
+Execute as:
+
+```shell
+python example_generation.py
+```
+
 ```python
 import numpy as np
 import spatialscaper as ss
