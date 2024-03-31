@@ -230,9 +230,10 @@ class Scaper:
         )
         if event_time_ is None:
             warnings.warn(
-                f'Could not find a start time for sound event "{source_file_}" that satisfies max_event_overlap = {self.max_event_overlap}. Attempting a new sound event. If this continues happening, you may want to consider adding less sound events to the scape or increasing max_event_overlap.'
+                f'Could not find a start time for sound event "{source_file_}" that satisfies max_event_overlap = {self.max_event_overlap}. If this continues happening, you may want to consider adding less sound events to the scape or increasing max_event_overlap.'
             )
             if source_file[0] == "choose":
+                warnings.warn('Randomly choosing a new sound event to try again.')
                 self.add_event(
                     label,
                     source_file,
