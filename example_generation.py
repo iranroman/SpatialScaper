@@ -6,7 +6,9 @@ import os
 NSCAPES = 20  # Number of soundscapes to generate
 FOREGROUND_DIR = "datasets/sound_event_datasets/FSD50K_FMA"  # Directory with FSD50K foreground sound files
 BACKGROUND_DIR = ""  # Directory for background sound files, not used in this example
-RIR_DIR = "datasets/rir_datasets"  # Directory containing Room Impulse Response (RIR) files
+RIR_DIR = (
+    "datasets/rir_datasets"  # Directory containing Room Impulse Response (RIR) files
+)
 ROOM = "se203"  # Initial room setting, change according to available rooms listed below
 FORMAT = "mic"  # Output format specifier
 N_EVENTS_MEAN = 15  # Mean number of foreground events in a soundscape
@@ -41,7 +43,7 @@ def generate_soundscape(index):
         FORMAT,
         SR,
         max_event_overlap=2,
-        speed_limit=2.0, # in meters per second
+        speed_limit=2.0,  # in meters per second
     )
     ssc.ref_db = REF_DB
 
@@ -50,10 +52,10 @@ def generate_soundscape(index):
 
     # Add a random number of foreground events, based on the specified mean and standard deviation.
     n_events = int(np.random.normal(N_EVENTS_MEAN, N_EVENTS_STD))
-    n_events = n_events if n_events > 0 else 1 # n_events should be greater than zero
+    n_events = n_events if n_events > 0 else 1  # n_events should be greater than zero
 
     for _ in range(n_events):
-        ssc.add_event() # randomly choosing and spatializing an FSD50K sound event
+        ssc.add_event()  # randomly choosing and spatializing an FSD50K sound event
 
     audiofile = os.path.join(OUTPUT_DIR, FORMAT, track_name)
     labelfile = os.path.join(OUTPUT_DIR, "labels", track_name)
