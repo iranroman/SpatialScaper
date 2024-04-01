@@ -1,4 +1,5 @@
 import os
+import math
 import random
 from collections import namedtuple
 
@@ -92,6 +93,7 @@ class Scaper:
         max_event_overlap=2,
         max_event_dur=10.0,
         ref_db=-60,
+        speed_limit = 1.5,
         max_sample_attempts=100,
     ):
         """
@@ -136,6 +138,8 @@ class Scaper:
             }
         else:
             self.fg_labels = {l: i for i, l in enumerate(fg_label_list)}
+
+        self.speed_limit = speed_limit
 
         self.max_sample_attempts = max_sample_attempts
 
@@ -260,6 +264,8 @@ class Scaper:
                     event_position[1],
                     int(event_duration_ / (1 / self.label_rate)),
                     shape,
+                    event_duration_,
+                    self.speed_limit,
                 )
         else:
             xyz_min, xyz_max = self._get_room_min_max()
@@ -355,7 +361,22 @@ class Scaper:
         xyz_max = all_xyz.max(axis=0)
         return xyz_min, xyz_max
 
-    def define_trajectory(self, trajectory_params, npoints, shape):
+    def generate_end_point(self, xyz_start, xyz_min, xyz_max, speed_limit, event_duration):
+        # Calculate the maximum distance possible
+        max_distance = speed_limit * event_duration
+        
+        # Helper function to calculate distance
+        def distance(point1, point2):
+            return math.sqrt(sum((p1 - p2) ** 2 for p1, p2 in zip(point1, point2)))
+        
+        # Generate a random end point within bounds that also complies with the speed limit
+        while True:
+            xyz_end = [random.uniform(min_val, max_val) for min_val, max_val in zip(xyz_min, xyz_max)]
+            if distance(xyz_start, xyz_end) <= max_distance:
+                return xyz_end
+
+
+    def define_trajectory(self, trajectory_params, npoints, shape, event_duration, speed_limit=1.5):
         """
         Defines a trajectory for a moving sound event.
 
@@ -373,7 +394,7 @@ class Scaper:
         else:
             xyz_min, xyz_max = self._get_room_min_max()
         xyz_start = self._gen_xyz(xyz_min, xyz_max)
-        xyz_end = self._gen_xyz(xyz_min, xyz_max)
+        xyz_end = self.generate_end_point(xyz_start, xyz_min, xyz_max, speed_limit, event_duration)
         return generate_trajectory(xyz_start, xyz_end, npoints, shape)
 
     def define_position(self, position_params):
