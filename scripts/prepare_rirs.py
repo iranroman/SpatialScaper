@@ -184,7 +184,7 @@ def center_and_translate_arni(receiver_pos, source_pos):
 
 
 def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI"):
-    db_dir = os.path.join(sofa_db_dir, aud_fmt)
+    db_dir = sofa_db_dir
     if not os.path.exists(db_dir):
         os.makedirs(db_dir)
 
@@ -199,7 +199,7 @@ def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI")
     # Sort the sofa_files based on increasing absorption levels
     sorted_sofa_files = sorted(sofa_files_absorption, key=get_absorption_level_arni)
 
-    filepath = os.path.join(db_dir, f"{room}.sofa")
+    filepath = os.path.join(db_dir, f"arni_mic.sofa")
     source_pos, mic_pos, rirs = [], [], []
     for abs_idx, sofa_abs_file in enumerate(sorted_sofa_files):
         # Load flattened (and flipped) rirs/paths from TAU-SRIR database
