@@ -108,7 +108,7 @@ NSCAPES = 20  # Number of soundscapes to generate
 FOREGROUND_DIR = "datasets/sound_event_datasets/FSD50K_FMA"  # Directory with FSD50K foreground sound files
 BACKGROUND_DIR = ""  # Directory for background sound files, not used in this example
 RIR_DIR = "datasets/rir_datasets"  # Directory containing Room Impulse Response (RIR) files
-ROOM = "gym"  # Initial room setting, change according to available rooms listed below
+ROOM = "bomb_shelter"  # Initial room setting, change according to available rooms listed below
 FORMAT = "mic"  # Output format specifier
 N_EVENTS_MEAN = 15  # Mean number of foreground events in a soundscape
 N_EVENTS_STD = 6  # Standard deviation of the number of foreground events
@@ -125,14 +125,24 @@ REF_DB = -65  # Reference decibel level for normalization
 # 'femaleSpeech', 'maleSpeech', 'clapping', 'telephone', 'laughter',
 # 'domesticSounds', 'footsteps', 'doorCupboard', 'music',
 # 'musicInstrument', 'waterTap', 'bell', 'knock'.
-# These classes are sourced from the FSD50K dataset, and 
+# These classes are sourced from the FSD50K dataset, and
 # are consistent with the DCASE SELD challenge classes.
+
 
 # Function to generate a soundscape
 def generate_soundscape(index):
-    track_name = f"fold5_room1_mix{index:03d}"
+    track_name = f"fold5_room1_mix{index+1:03d}"
     # Initialize Scaper. 'max_event_overlap' controls the maximum number of overlapping sound events.
-    ssc = ss.Scaper(DURATION, FOREGROUND_DIR, BACKGROUND_DIR, RIR_DIR, ROOM, FORMAT, SR, max_event_overlap=2)
+    ssc = ss.Scaper(
+        DURATION,
+        FOREGROUND_DIR,
+        BACKGROUND_DIR,
+        RIR_DIR,
+        ROOM,
+        FORMAT,
+        SR,
+        max_event_overlap=2,
+    )
     ssc.ref_db = REF_DB
 
     # static white noise in this example
@@ -149,11 +159,11 @@ def generate_soundscape(index):
 
     ssc.generate(audiofile, labelfile)
 
+
 # Main loop for generating soundscapes
 for iscape in range(NSCAPES):
     print(f"Generating soundscape: {iscape + 1}/{NSCAPES}")
     generate_soundscape(iscape)
-
 ```
 
 <!-- omit in toc -->
