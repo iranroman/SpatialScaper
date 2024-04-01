@@ -93,25 +93,42 @@ class Scaper:
         max_event_overlap=2,
         max_event_dur=10.0,
         ref_db=-60,
-        speed_limit = 1.5,
+        speed_limit=1.5,
         max_sample_attempts=100,
     ):
         """
-        Initializes a Scaper object for generating soundscapes.
+        Initializes a SpatialScaper object.
+
+        Soundscapes are synthesized audio scenes with user-defined foreground and background sounds.
+        TODO: support for user-defined background sounds still in progress.
+        This class allows for detailed configuration of the soundscape's auditory scene, including
+        spatial properties, acoustic characteristics, and compliance with DCASE challenge formats.
 
         Args:
-            duration (float): The duration of the soundscape in seconds.
-            foreground_dir (str): Path to the directory containing foreground sound files.
-            background_dir (str): Path to the directory containing background sound files.
-            sofa_dir (str): Path to the directory containing SOFA files for room impulse responses.
-            room (str): The name of the room for which the soundscape is being generated.
-            fmt (str): Format of the output (e.g., 'mic' for microphone format).
-            sr (int): Sampling rate for the audio.
-            DCASE_format (bool): Whether to format output labels for DCASE challenges.
-            max_event_overlap (int): Maximum allowed overlap between events.
-            max_event_dur (float): maximum sound event duration in seconds
-            ref_db (float): Reference decibel level.
+            duration (float): The duration of the soundscape in seconds. Default is 60 seconds.
+            foreground_dir (str): Directory path containing foreground sound files. Default is an empty string.
+            background_dir (str): Directory path containing background sound files. Default is an empty string.
+            rir_dir (str): Directory path containing Room Impulse Response (RIR) files to spatialize sound
+                events in rooms. Default is an empty string.
+            room (str): Identifier for the room where the scape will be simulated. Default is 'metu'.
+            fmt (str): Output format specification, e.g., 'mic' for tetrahedral microphone. Default is 'mic'.
+            sr (int): Sampling rate of the output audio in Hertz. Default is 24000 Hz.
+            DCASE_format (bool): Flag to enable formatting of output labels for DCASE challenges compatibility.
+                Default is True.
+            max_event_overlap (int): Maximum number of events allowed to overlap at any point in time. Default is 2.
+            max_event_dur (float): Maximum duration of any single sound event in seconds. Default is 10.0 seconds.
+            ref_db (float): Reference level in decibels for the soundscape's overall loudness normalization.
+                Default is -60 dB.
+            speed_limit (float): Approximates the average speed at which a moving sound can travel in the room
+                from a starting to an end point. Default is 1.5.
+            max_sample_attempts (int): Maximum attempts to place a sound event at a specific point in time
+                without exceeding max_event_overlap, before giving up . Default is 100.
 
+        Attributes:
+            fg_events (list): Initialized as an empty list to hold foreground event specifications.
+            bg_events (list): Initialized as an empty list to hold background event specifications.
+            fg_labels (dict): Maps foreground event labels to indices or DCASE class labels, based on DCASE_format.
+            label_rate (int): The label sampling rate, defined only if DCASE_format is True.
         """
 
         self.duration = duration
@@ -231,14 +248,14 @@ class Scaper:
             self.fg_events,
             self.max_event_overlap,
             1 / self.label_rate,
-            recursion_count=0,
         )
         if event_time_ is None:
             warnings.warn(
                 f'Could not find a start time for sound event "{source_file_}" that satisfies max_event_overlap = {self.max_event_overlap}. If this continues happening, you may want to consider adding less sound events to the scape or increasing max_event_overlap.'
             )
             if source_file[0] == "choose":
-                warnings.warn('Randomly choosing a new sound event to try again.')
+                # TODO: why does this warning only print once?
+                warnings.warn("Randomly choosing a new sound event to try again.")
                 self.add_event(
                     label,
                     source_file,
@@ -298,20 +315,29 @@ class Scaper:
         other_events,
         max_overlap,
         increment,
-        recursion_count,
     ):
         """
-        Recursively finds a start time for an event that doesn't exceed the maximum overlap with other events.
+        Finds a start time for an event ensuring it doesn't exceed a specified maximum overlap
+        with other events in the soundscape.
+
+        This method attempts to find an onset time for a new event, given its duration, such that the total overlap
+        with existing events does not surpass a predefined maximum. It utilizes a specified increment to adjust
+        the search granularity and a maximum number of attempts to find a suitable start time.
 
         Args:
-            event_time (tuple): Specification of the event's start time.
-            event_duration (float): Duration of the event.
-            other_events (list): List of other events in the soundscape.
-            max_overlap (int): Maximum allowed overlap with other events.
-            increment (float): Incremental step for checking overlap.
+            event_time (tuple): Specifies the method and range for selecting the event's start time.
+                                Format is ("uniform", start_range, end_range) for a uniformly distributed
+                                random selection, or ("const", value) for a fixed start time.
+            event_duration (float): The duration of the event in seconds.
+            other_events (list): A list of existing events in the soundscape, against which overlap is calculated.
+            max_overlap (int): The maximum number of other events that the new event is allowed to overlap
+                               with simultaneously.
+            increment (float): The step size in seconds used to incrementally check for potential start times
+                               within the specified range.
 
         Returns:
-            float: A start time for the event that satisfies the overlap constraint.
+            float or None: The calculated start time for the event that meets the overlap criteria, or None
+            if no suitable time could be found within the maximum number of attempts.
         """
 
         # Select a random start time within the range
@@ -361,32 +387,80 @@ class Scaper:
         xyz_max = all_xyz.max(axis=0)
         return xyz_min, xyz_max
 
-    def generate_end_point(self, xyz_start, xyz_min, xyz_max, speed_limit, event_duration):
+    def generate_end_point(
+        self, xyz_start, xyz_min, xyz_max, speed_limit, event_duration
+    ):
+        """
+        Generates a random end point for a moving sound event within specified spatial bounds,
+        ensuring the movement complies with a given speed limit.
+
+        This method calculates a random end point for an event, given its start point and duration,
+        ensuring that the distance between the start and end points does not imply a speed exceeding
+        the specified limit. The method accounts for three-dimensional space constraints by adhering
+        to minimum and maximum bounds for each coordinate.
+
+        Args:
+                xyz_start (list or tuple): The starting coordinates (x, y, z) of the event.
+                xyz_min (list or tuple): The minimum allowable coordinates (x, y, z) for the event's end point.
+                xyz_max (list or tuple): The maximum allowable coordinates (x, y, z) for the event's end point.
+                speed_limit (float): The maximum speed at which the event can move, in units per second.
+                event_duration (float): The duration of the event, in seconds.
+
+        Returns:
+                list: The calculated end coordinates (x, y, z) of the event that adhere to the specified speed
+          limit and spatial bounds.
+
+        """
         # Calculate the maximum distance possible
         max_distance = speed_limit * event_duration
-        
+
         # Helper function to calculate distance
         def distance(point1, point2):
             return math.sqrt(sum((p1 - p2) ** 2 for p1, p2 in zip(point1, point2)))
-        
+
         # Generate a random end point within bounds that also complies with the speed limit
         while True:
-            xyz_end = [random.uniform(min_val, max_val) for min_val, max_val in zip(xyz_min, xyz_max)]
+            xyz_end = [
+                random.uniform(min_val, max_val)
+                for min_val, max_val in zip(xyz_min, xyz_max)
+            ]
             if distance(xyz_start, xyz_end) <= max_distance:
                 return xyz_end
 
-
-    def define_trajectory(self, trajectory_params, npoints, shape, event_duration, speed_limit=1.5):
+    def define_trajectory(
+        self, trajectory_params, npoints, shape, event_duration, speed_limit=1.5
+    ):
         """
-        Defines a trajectory for a moving sound event.
+        Defines a trajectory for a moving sound event within specified spatial bounds,
+        adhering to a given shape and speed limit.
+
+        This method calculates a series of XYZ coordinates that outline the path of a
+        sound event, based on the specified trajectory shape, the number of points to
+        define the trajectory, and the bounds within which the trajectory must lie. It
+        generates a starting point and an end point that comply with the specified speed
+        limit over the event's duration, and then interpolates between these points
+        according to the trajectory's shape.
 
         Args:
-            trajectory_params (tuple): Parameters defining the trajectory bounds.
-            npoints (int): Number of points to define the trajectory.
-            shape (str): The shape of the trajectory (e.g., 'circular', 'linear').
+            trajectory_params (tuple): Parameters defining the trajectory's spatial bounds,
+                                       structured as (param_description, xyz_min, xyz_max).
+                                       'param_description' is not directly used but indicates
+                                       the nature of the bounds.
+            npoints (int): The number of points to be used in defining the trajectory,
+                           influencing the granularity of the path.
+            shape (str): The shape of the trajectory. Supported shapes include 'circular',
+                         'linear', etc., which determine how the path is interpolated between
+                         start and end points.
+            event_duration (float): The duration of the event, in seconds, which, along with
+                                    the speed limit, influences the maximum allowable distance
+                                    between the start and end points.
+            speed_limit (float): The maximum speed at which the event can move, in units per
+                                 second. Default is 1.5. This parameter, combined with the event
+                                 duration, constrains the end point generation.
 
         Returns:
-            list: A list of XYZ coordinates defining the trajectory.
+            list: A list of XYZ coordinates defining the trajectory. Each element of the list
+                  is a tuple or list representing the XYZ coordinates at a point along the trajectory.
         """
 
         if all(trajectory_params[1:]):
@@ -394,7 +468,9 @@ class Scaper:
         else:
             xyz_min, xyz_max = self._get_room_min_max()
         xyz_start = self._gen_xyz(xyz_min, xyz_max)
-        xyz_end = self.generate_end_point(xyz_start, xyz_min, xyz_max, speed_limit, event_duration)
+        xyz_end = self.generate_end_point(
+            xyz_start, xyz_min, xyz_max, speed_limit, event_duration
+        )
         return generate_trajectory(xyz_start, xyz_end, npoints, shape)
 
     def define_position(self, position_params):
