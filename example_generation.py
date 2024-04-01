@@ -7,7 +7,7 @@ NSCAPES = 20  # Number of soundscapes to generate
 FOREGROUND_DIR = "datasets/sound_event_datasets/FSD50K_FMA"  # Directory with FSD50K foreground sound files
 BACKGROUND_DIR = ""  # Directory for background sound files, not used in this example
 RIR_DIR = "datasets/rir_datasets"  # Directory containing Room Impulse Response (RIR) files
-ROOM = "bomb_shelter"  # Initial room setting, change according to available rooms listed below
+ROOM = "se203"  # Initial room setting, change according to available rooms listed below
 FORMAT = "mic"  # Output format specifier
 N_EVENTS_MEAN = 15  # Mean number of foreground events in a soundscape
 N_EVENTS_STD = 6  # Standard deviation of the number of foreground events
@@ -41,6 +41,7 @@ def generate_soundscape(index):
         FORMAT,
         SR,
         max_event_overlap=2,
+        speed_limit=2.0, # in meters per second
     )
     ssc.ref_db = REF_DB
 

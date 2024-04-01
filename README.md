@@ -6,13 +6,13 @@
 [![CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
 
 > [!WARNING]
-> SpatialScaper is still undergoing active development. We have done our due diligence to test that  `example_generation.py` works as expected. However, please open an issue and describe any errors you encounter. Also, make sure to check in often, as we are actively adding more features. 
+> SpatialScaper is still undergoing active development. We have done our due diligence to test that  `example_generation.py` works as expected. However, please open an issue and describe any errors you encounter. Also, make sure to pull often, as we are actively adding more features. 
 
 **Guides**
 - [Requirements and Installation](#requirements-and-installation)
 - [Preparing Sound Event Assets](#preparing-sound-event-assets)
 - [Preparing RIR Datasets](#preparing-rir-datasets)
-- [Quick Examples for New Users](#quick-examples-for-new-users)
+- [Example data generation (for DCASE Task 3)](#quick-examples-for-new-users)
 
 <!-- omit in toc -->
 ## Introduction
@@ -90,7 +90,7 @@ Note that SRIR directions and distances differ with the room. Possible azimuths 
 
 ## Quick Examples for New Users
 
-Below we present the [example_generation.py](example_generation.py). The example generates 20 soundscapes, 1 minute long each, using audio clips from FSD50K, spatialized in the `gym` room.
+Below we present the [example_generation.py](example_generation.py). The example generates 20 soundscapes, 1 minute long each, using audio clips from FSD50K, spatialized in the `gym` room. These soundscapes are consistent with the DCASE Task 3 format. 
 
 Execute as:
 
@@ -142,6 +142,7 @@ def generate_soundscape(index):
         FORMAT,
         SR,
         max_event_overlap=2,
+        speed_limit=2.0, # in meters per second
     )
     ssc.ref_db = REF_DB
 
