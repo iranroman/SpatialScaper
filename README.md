@@ -172,10 +172,11 @@ for iscape in range(NSCAPES):
 ## Citation
 If you find our SpatialScaper library useful, please cite the following paper:
 ```
-@article{roman2024spatial,
-  title={Spatial scaper: a library to simulate and augment soundscapes for sound event localization and detection in realistic rooms},
+@inproceedings{roman2024spatial,
+  title={Spatial Scaper: a library to simulate and augment soundscapes for sound event localization and detection in realistic rooms},
   author={Roman, Iran R and Ick, Christopher and Ding, Sivan and Roman, Adrian S and McFee, Brian and Bello, Juan P},
-  journal={arXiv preprint arXiv:2401.12238},
-  year={2024}
+  booktitle={IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
+  year={2024},
+  organization={IEEE}
 }
 ```
