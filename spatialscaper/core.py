@@ -721,7 +721,7 @@ class Scaper:
                         offset=event.source_time,
                         duration=event.event_duration,
                     )
-                else:
+                else: # repeat ambient file until scape duration 
                     ambient, _ = librosa.load(event.source_file, sr=self.sr)
                     total_samples = int(self.duration * self.sr)
                     repeats = -(-total_samples // len(ambient))  # ceiling division
