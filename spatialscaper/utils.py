@@ -507,7 +507,7 @@ def IR_normalizer(IRs):
         impulse_responses = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
         normalized_IRs = IR_normalizer(impulse_responses)
     """
-    E = np.sqrt(np.sum(np.power(IRs, 2), axis=-1, keepdims=True))
+    E = np.sqrt(np.sum(np.power(np.abs(IRs), 2), axis=-1, keepdims=True))
     return IRs / np.mean(E, axis=-2, keepdims=True)
 
 
@@ -581,25 +581,22 @@ def traj_2_ir_idx(XYZs, trajectory):
 
     return indices
 
-
-def db2scale(db):
+def db2multiplier(db, x):
     """
-    Converts a value in decibels (dB) to a linear scale factor.
-
-    This function is commonly used in audio signal processing to convert dB values, which represent a logarithmic
-    measure of relative amplitude, to a linear scale. This linear scale is often needed for direct manipulation of
-    audio signal amplitudes.
+    Calculates the multiplier factor from a decibel (dB) value that, when applied to x,
+    adjusts its amplitude to reflect the specified dB. The relationship is 
+    based on the formula 20 * log10(factor * x) ≈ db
 
     Args:
-        db (float): The value in decibels to be converted.
+        db (float): The target decibel change to be applied.
+        x  (float): The original amplitude of x
 
     Returns:
-        float: The corresponding linear scale factor.
+        float: The multiplier factor.
 
-    The conversion is based on the formula: 10^(db/20), which is derived from the decibel definition
-    for power ratios and the relationship between power and amplitude.
     """
-    return 10 ** (db / 20)
+    return 10 ** (db / 20) / x
+
 
 
 def generate_trajectory(xyz_start, xyz_end, npoints, shape):
