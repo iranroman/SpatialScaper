@@ -581,10 +581,11 @@ def traj_2_ir_idx(XYZs, trajectory):
 
     return indices
 
+
 def db2multiplier(db, x):
     """
     Calculates the multiplier factor from a decibel (dB) value that, when applied to x,
-    adjusts its amplitude to reflect the specified dB. The relationship is 
+    adjusts its amplitude to reflect the specified dB. The relationship is
     based on the formula 20 * log10(factor * x) ≈ db
 
     Args:
@@ -596,7 +597,6 @@ def db2multiplier(db, x):
 
     """
     return 10 ** (db / 20) / x
-
 
 
 def generate_trajectory(xyz_start, xyz_end, npoints, shape):

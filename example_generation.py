@@ -15,7 +15,9 @@ N_EVENTS_STD = 6  # Standard deviation of the number of foreground events
 DURATION = 60.0  # Duration in seconds of each soundscape, customizable by the user
 SR = 24000  # SpatialScaper default sampling rate for the audio files
 OUTPUT_DIR = "output"  # Directory to store the generated soundscapes
-REF_DB = -65  # Reference decibel level for the background ambient noise. Try making this random too!
+REF_DB = (
+    -65
+)  # Reference decibel level for the background ambient noise. Try making this random too!
 
 # List of possible rooms to use for soundscape generation. Change 'ROOM' variable to one of these:
 # "metu", "bomb_shelter", "gym", "pb132", "pc226", "sa203", "sc203", "se203", "tb103", "tc352"

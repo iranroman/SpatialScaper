@@ -65,7 +65,7 @@ Event = namedtuple(
 
 # Paths for room SOFA files
 __SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
-__PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data","TAU-SNoise_DB")
+__PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "TAU-SNoise_DB")
 __ROOM_RIR_FILE__ = {
     "metu": "metu_sparg_em32.sofa",
     "arni": "arni_mic.sofa",
@@ -114,7 +114,7 @@ class Scaper:
             rir_dir (str): Directory path containing Room Impulse Response (RIR) files to spatialize sound
                 events in rooms. Default is an empty string.
             room (str): Identifier for the room where the scape will be simulated. Default is 'metu'.
-            use_room_ambient_noise (bool): whether the background noise will be sourced from the room's 
+            use_room_ambient_noise (bool): whether the background noise will be sourced from the room's
                 ambient recording. If True, background_dir is ignored. Default is True
             fmt (str): Output format specification, e.g., 'mic' for tetrahedral microphone. Default is 'mic'.
             sr (int): Sampling rate of the output audio in Hertz. Default is 24000 Hz.
@@ -170,15 +170,25 @@ class Scaper:
         path_to_ambient_noise_files = os.path.join(
             self.rir_dir, __PATH_TO_AMBIENT_NOISE_FILES__
         )
-        all_ambient_noise_files = glob.glob(os.path.join(path_to_ambient_noise_files,'*','*'))
-        if self.format == 'mic':
-            ambient_noise_format_files = [f for f in all_ambient_noise_files if 'tetra' in f]
-        elif self.format == 'foa':
-            ambient_noise_format_files = [f for f in all_ambient_noise_files if 'foa' in f]
-        if self.room == 'bomb_shelter':
-            room_ambient_noise_file = [f for f in ambient_noise_format_files if 'bomb_center' in f]
+        all_ambient_noise_files = glob.glob(
+            os.path.join(path_to_ambient_noise_files, "*", "*")
+        )
+        if self.format == "mic":
+            ambient_noise_format_files = [
+                f for f in all_ambient_noise_files if "tetra" in f
+            ]
+        elif self.format == "foa":
+            ambient_noise_format_files = [
+                f for f in all_ambient_noise_files if "foa" in f
+            ]
+        if self.room == "bomb_shelter":
+            room_ambient_noise_file = [
+                f for f in ambient_noise_format_files if "bomb_center" in f
+            ]
         else:
-            room_ambient_noise_file = [f for f in ambient_noise_format_files if self.room in f]
+            room_ambient_noise_file = [
+                f for f in ambient_noise_format_files if self.room in f
+            ]
         assert len(room_ambient_noise_file) < 2
         if room_ambient_noise_file:
             return room_ambient_noise_file[0]
@@ -204,7 +214,9 @@ class Scaper:
             source_file = self.get_path_to_room_ambient_noise()
             ambient_noise_duration = librosa.get_duration(path=source_file)
             if ambient_noise_duration > self.duration:
-                source_time = round(random.uniform(0,ambient_noise_duration-self.duration))
+                source_time = round(
+                    random.uniform(0, ambient_noise_duration - self.duration)
+                )
             else:
                 source_time = None
         else:
@@ -666,7 +678,7 @@ class Scaper:
                 xS = xS[: len(x)]
 
             # standardize the spatialized audio
-            event_scale = db2multiplier(self.ref_db + event.snr,np.mean(np.abs(xS)))
+            event_scale = db2multiplier(self.ref_db + event.snr, np.mean(np.abs(xS)))
             xS = event_scale * xS
 
             # add to out_audio
@@ -698,20 +710,24 @@ class Scaper:
         return out_audio, labels
 
     def get_background_noise(self, out_audio):
-
         for ievent, event in enumerate(self.bg_events):
             if not event.source_file:
                 ambient = self.generate_noise(event)
             else:
                 if event.source_time is not None:
-                    ambient, _ = librosa.load(event.source_file,sr=self.sr,offset=event.source_time,duration=event.event_duration)
+                    ambient, _ = librosa.load(
+                        event.source_file,
+                        sr=self.sr,
+                        offset=event.source_time,
+                        duration=event.event_duration,
+                    )
                 else:
-                    ambient, _ = librosa.load(event.source_file, sr= self.sr)
-                    total_samples = int( self.duration * self.sr ) 
-                    repeats = -(-total_samples// len(ambient)) # ceiling division
+                    ambient, _ = librosa.load(event.source_file, sr=self.sr)
+                    total_samples = int(self.duration * self.sr)
+                    repeats = -(-total_samples // len(ambient))  # ceiling division
                     ambient = np.tile(ambient, repeats)[:total_samples]
-                ambient = ambient[:,np.newaxis]
-            scale = db2multiplier(self.ref_db + event.snr,np.mean(np.abs(ambient)))
+                ambient = ambient[:, np.newaxis]
+            scale = db2multiplier(self.ref_db + event.snr, np.mean(np.abs(ambient)))
             out_audio += scale * ambient
         return out_audio
 
