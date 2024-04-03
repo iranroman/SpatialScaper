@@ -5,18 +5,17 @@ import os
 # Constants
 NSCAPES = 20  # Number of soundscapes to generate
 FOREGROUND_DIR = "datasets/sound_event_datasets/FSD50K_FMA"  # Directory with FSD50K foreground sound files
-BACKGROUND_DIR = ""  # Directory for background sound files, not used in this example
 RIR_DIR = (
     "datasets/rir_datasets"  # Directory containing Room Impulse Response (RIR) files
 )
-ROOM = "se203"  # Initial room setting, change according to available rooms listed below
+ROOM = "bomb_shelter"  # Initial room setting, change according to available rooms listed below
 FORMAT = "mic"  # Output format specifier
 N_EVENTS_MEAN = 15  # Mean number of foreground events in a soundscape
 N_EVENTS_STD = 6  # Standard deviation of the number of foreground events
 DURATION = 60.0  # Duration in seconds of each soundscape, customizable by the user
-SR = 24000  # Sampling rate for the audio files
+SR = 24000  # SpatialScaper default sampling rate for the audio files
 OUTPUT_DIR = "output"  # Directory to store the generated soundscapes
-REF_DB = -65  # Reference decibel level for normalization
+REF_DB = -65  # Reference decibel level for the background ambient noise. Try making this random too!
 
 # List of possible rooms to use for soundscape generation. Change 'ROOM' variable to one of these:
 # "metu", "bomb_shelter", "gym", "pb132", "pc226", "sa203", "sc203", "se203", "tb103", "tc352"
@@ -37,11 +36,9 @@ def generate_soundscape(index):
     ssc = ss.Scaper(
         DURATION,
         FOREGROUND_DIR,
-        BACKGROUND_DIR,
         RIR_DIR,
-        ROOM,
         FORMAT,
-        SR,
+        ROOM,
         max_event_overlap=2,
         speed_limit=2.0,  # in meters per second
     )
