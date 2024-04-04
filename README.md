@@ -6,7 +6,7 @@
 [![CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
 
 > [!WARNING]
-> SpatialScaper is still undergoing active development. We have done our due diligence to test that  `example_generation.py` works as expected. However, please open an issue and describe any errors you encounter. Also, make sure to pull often, as we are actively adding more features. 
+> SpatialScaper is still undergoing active development. We have done our due diligence to test that  `example_generation.py` works as expected. However, please open an issue and describe any errors you encounter. Also, make sure to pull often, as we are actively adding more features. Note: You'll need 100GB of storage space to comfortably setup and run the DCASE Task 3 data generation pipeline. 
 
 **Guides**
 - [Requirements and Installation](#requirements-and-installation)
@@ -106,16 +106,17 @@ import os
 # Constants
 NSCAPES = 20  # Number of soundscapes to generate
 FOREGROUND_DIR = "datasets/sound_event_datasets/FSD50K_FMA"  # Directory with FSD50K foreground sound files
-BACKGROUND_DIR = ""  # Directory for background sound files, not used in this example
-RIR_DIR = "datasets/rir_datasets"  # Directory containing Room Impulse Response (RIR) files
+RIR_DIR = (
+    "datasets/rir_datasets"  # Directory containing Room Impulse Response (RIR) files
+)
 ROOM = "bomb_shelter"  # Initial room setting, change according to available rooms listed below
 FORMAT = "mic"  # Output format specifier
 N_EVENTS_MEAN = 15  # Mean number of foreground events in a soundscape
 N_EVENTS_STD = 6  # Standard deviation of the number of foreground events
 DURATION = 60.0  # Duration in seconds of each soundscape, customizable by the user
-SR = 24000  # Sampling rate for the audio files
+SR = 24000  # SpatialScaper default sampling rate for the audio files
 OUTPUT_DIR = "output"  # Directory to store the generated soundscapes
-REF_DB = -65  # Reference decibel level for normalization
+REF_DB = -65  # Reference decibel level for the background ambient noise. Try making this random too!
 
 # List of possible rooms to use for soundscape generation. Change 'ROOM' variable to one of these:
 # "metu", "bomb_shelter", "gym", "pb132", "pc226", "sa203", "sc203", "se203", "tb103", "tc352"
@@ -136,13 +137,11 @@ def generate_soundscape(index):
     ssc = ss.Scaper(
         DURATION,
         FOREGROUND_DIR,
-        BACKGROUND_DIR,
         RIR_DIR,
-        ROOM,
         FORMAT,
-        SR,
+        ROOM,
         max_event_overlap=2,
-        speed_limit=2.0, # in meters per second
+        speed_limit=2.0,  # in meters per second
     )
     ssc.ref_db = REF_DB
 
@@ -151,10 +150,10 @@ def generate_soundscape(index):
 
     # Add a random number of foreground events, based on the specified mean and standard deviation.
     n_events = int(np.random.normal(N_EVENTS_MEAN, N_EVENTS_STD))
-    n_events = n_events if n_events > 0 else 1 # n_events should be greater than zero
+    n_events = n_events if n_events > 0 else 1  # n_events should be greater than zero
 
     for _ in range(n_events):
-        ssc.add_event() # randomly choosing and spatializing an FSD50K sound event
+        ssc.add_event()  # randomly choosing and spatializing an FSD50K sound event
 
     audiofile = os.path.join(OUTPUT_DIR, FORMAT, track_name)
     labelfile = os.path.join(OUTPUT_DIR, "labels", track_name)

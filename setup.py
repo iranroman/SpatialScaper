@@ -23,7 +23,7 @@ setup(
     classifiers=[
         "License :: Creative Commons Attribution 4.0",
         "Programming Language :: Python",
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
         "Topic :: Multimedia :: Sound/Audio :: Analysis",
