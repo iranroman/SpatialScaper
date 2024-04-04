@@ -89,7 +89,7 @@ def download_and_extract(url, extract_to):
 
 
 def prepare_metu(dataset_path):
-    spargpath = Path(dataset_path) / "original_RIRs" / "spargair" / "em32"
+    spargpath = Path(dataset_path) / "source_data" / "spargair" / "em32"
     nEMchans = 32
     XYZs = os.listdir(spargpath)
 
@@ -289,21 +289,21 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    os.makedirs(Path(args.path) / "original_RIRs", exist_ok=True)
+    os.makedirs(Path(args.path) / "source_data", exist_ok=True)
     os.makedirs(Path(args.path) / "spatialscaper_RIRs", exist_ok=True)
 
     # METU
-    download_and_extract(METU_URL, Path(args.path) / "original_RIRs")
+    download_and_extract(METU_URL, Path(args.path) / "source_data")
     prepare_metu(Path(args.path))
 
     # TAU
-    dest_path = Path(args.path) / "original_RIRs"
+    dest_path = Path(args.path) / "source_data"
     download_tau(dest_path)
     dest_path_sofa = Path(args.path) / "spatialscaper_RIRs"
     prepare_tau(dest_path, dest_path_sofa)
 
     # ARNI
-    dest_path = Path(args.path) / "original_RIRs"
-    download_and_extract(ARNI_URL, Path(args.path) / "original_RIRs")
+    dest_path = Path(args.path) / "source_data"
+    download_and_extract(ARNI_URL, Path(args.path) / "source_data")
     dest_path_sofa = Path(args.path) / "spatialscaper_RIRs"
     prepare_arni(dest_path, dest_path_sofa)

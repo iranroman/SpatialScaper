@@ -1,6 +1,7 @@
 import os
 import math
 import random
+import glob
 from collections import namedtuple
 
 import librosa
@@ -15,7 +16,7 @@ from .utils import (
     new_event_exceeds_max_overlap,
     count_leading_zeros_in_period,
     generate_trajectory,
-    db2scale,
+    db2multiplier,
     traj_2_ir_idx,
     find_indices_of_change,
     IR_normalizer,
@@ -64,6 +65,7 @@ Event = namedtuple(
 
 # Paths for room SOFA files
 __SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
+__PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "TAU-SNoise_DB")
 __ROOM_RIR_FILE__ = {
     "metu": "metu_sparg_em32.sofa",
     "arni": "arni_mic.sofa",
@@ -84,10 +86,11 @@ class Scaper:
         self,
         duration=60,
         foreground_dir="",
-        background_dir="",
         rir_dir="",
-        room="metu",
         fmt="mic",
+        room="metu",
+        use_room_ambient_noise=True,
+        background_dir=None,
         sr=24000,
         DCASE_format=True,
         max_event_overlap=2,
@@ -107,10 +110,12 @@ class Scaper:
         Args:
             duration (float): The duration of the soundscape in seconds. Default is 60 seconds.
             foreground_dir (str): Directory path containing foreground sound files. Default is an empty string.
-            background_dir (str): Directory path containing background sound files. Default is an empty string.
+            background_dir (str): Directory path containing background sound files. Default is None.
             rir_dir (str): Directory path containing Room Impulse Response (RIR) files to spatialize sound
                 events in rooms. Default is an empty string.
             room (str): Identifier for the room where the scape will be simulated. Default is 'metu'.
+            use_room_ambient_noise (bool): whether the background noise will be sourced from the room's
+                ambient recording. If True, background_dir is ignored. Default is True
             fmt (str): Output format specification, e.g., 'mic' for tetrahedral microphone. Default is 'mic'.
             sr (int): Sampling rate of the output audio in Hertz. Default is 24000 Hz.
             DCASE_format (bool): Flag to enable formatting of output labels for DCASE challenges compatibility.
@@ -136,6 +141,7 @@ class Scaper:
         self.background_dir = background_dir
         self.rir_dir = rir_dir
         self.room = room
+        self.use_room_ambient_noise = use_room_ambient_noise
         self.format = fmt
         self.sr = sr
         self.DCASE_format = DCASE_format
@@ -160,29 +166,73 @@ class Scaper:
 
         self.max_sample_attempts = max_sample_attempts
 
+    def get_path_to_room_ambient_noise(self):
+        path_to_ambient_noise_files = os.path.join(
+            self.rir_dir, __PATH_TO_AMBIENT_NOISE_FILES__
+        )
+        all_ambient_noise_files = glob.glob(
+            os.path.join(path_to_ambient_noise_files, "*", "*")
+        )
+        if self.format == "mic":
+            ambient_noise_format_files = [
+                f for f in all_ambient_noise_files if "tetra" in f
+            ]
+        elif self.format == "foa":
+            ambient_noise_format_files = [
+                f for f in all_ambient_noise_files if "foa" in f
+            ]
+        if self.room == "bomb_shelter":
+            room_ambient_noise_file = [
+                f for f in ambient_noise_format_files if "bomb_center" in f
+            ]
+        else:
+            room_ambient_noise_file = [
+                f for f in ambient_noise_format_files if self.room in f
+            ]
+        assert len(room_ambient_noise_file) < 2
+        if room_ambient_noise_file:
+            return room_ambient_noise_file[0]
+        else:
+            return random.choice(ambient_noise_format_files)
+
     def add_background(self):
         """
         Adds a background event to the soundscape.
         This method sets fixed values for event time, duration, and
         SNR, and adds the event to the background events list.
         """
-        event_time = ("const", 0)
-        event_duration = ("const", self.duration)
+        label = None
         snr = ("const", 0)
         role = "background"
         pitch_shift = None
         time_stretch = None
+        event_time = ("const", 0)
+        event_duration = ("const", self.duration)
+        event_position = None
+
+        if self.use_room_ambient_noise:
+            source_file = self.get_path_to_room_ambient_noise()
+            ambient_noise_duration = librosa.get_duration(path=source_file)
+            if ambient_noise_duration > self.duration:
+                source_time = round(
+                    random.uniform(0, ambient_noise_duration - self.duration)
+                )
+            else:
+                source_time = None
+        else:
+            source_file = None
+            source_time = None
 
         self.bg_events.append(
             Event(
-                label=None,
-                source_file=None,
-                source_time=None,
+                label=label,
+                source_file=source_file,
+                source_time=source_time,
                 event_time=event_time[1],
                 event_duration=event_duration[1],
-                event_position=None,
+                event_position=event_position,
                 snr=snr[1],
-                role="background",
+                role=role,
                 pitch_shift=pitch_shift,
                 time_stretch=time_stretch,
             )
@@ -541,22 +591,20 @@ class Scaper:
         else:
             return all_irs
 
-    def generate_noise(self, audio):
+    def generate_noise(self, event):
         """
-        Generates and adds noise to the provided audio based on the background events.
+        Generates noise to be used as background ambient.
 
         Args:
-            audio (numpy.ndarray): The audio to which noise will be added.
+            event : The event named tuple with metadat about the background noise.
 
         Returns:
-            numpy.ndarray: The audio with added noise.
+            numpy.ndarray: The generated noise.
         """
-        for event in self.bg_events:
-            if not event.source_file:
-                audio += db2scale(self.ref_db + event.snr) * np.random.normal(
-                    0, 1, (int(event.event_duration * self.sr), self.nchans)
-                )
-        return audio
+        noise_signal = np.random.normal(
+            0, 1, (int(event.event_duration * self.sr), self.nchans)
+        )
+        return noise_signal
 
     def synthesize_events_and_labels(self, all_irs, all_ir_xyzs, out_audio):
         """
@@ -604,7 +652,7 @@ class Scaper:
             irs = irs[ir_idx]
             ir_xyzs = ir_xyzs[ir_idx]
 
-            # load and normalize audio signal by its norm
+            # load and normalize audio signal to have peak of 1
             x, _ = librosa.load(event.source_file, sr=self.sr)
             x = x[: int(event.event_duration * self.sr)]
             x = x / np.max(np.abs(x))
@@ -630,8 +678,8 @@ class Scaper:
                 xS = xS[: len(x)]
 
             # standardize the spatialized audio
-            event_scale = db2scale(self.ref_db + event.snr)
-            xS = (event_scale / np.std(xS)) * xS
+            event_scale = db2multiplier(self.ref_db + event.snr, np.mean(np.abs(xS)))
+            xS = event_scale * xS
 
             # add to out_audio
             onsamp = int(event.event_time * self.sr)
@@ -660,6 +708,28 @@ class Scaper:
         labels = sort_matrix_by_columns(np.vstack(all_labels))
 
         return out_audio, labels
+
+    def get_background_noise(self, out_audio):
+        for ievent, event in enumerate(self.bg_events):
+            if not event.source_file:
+                ambient = self.generate_noise(event)
+            else:
+                if event.source_time is not None:
+                    ambient, _ = librosa.load(
+                        event.source_file,
+                        sr=self.sr,
+                        offset=event.source_time,
+                        duration=event.event_duration,
+                    )
+                else:  # repeat ambient file until scape duration
+                    ambient, _ = librosa.load(event.source_file, sr=self.sr)
+                    total_samples = int(self.duration * self.sr)
+                    repeats = -(-total_samples // len(ambient))  # ceiling division
+                    ambient = np.tile(ambient, repeats)[:total_samples]
+                ambient = ambient[:, np.newaxis]
+            scale = db2multiplier(self.ref_db + event.snr, np.mean(np.abs(ambient)))
+            out_audio += scale * ambient
+        return out_audio
 
     def generate(self, audiopath, labelpath):
         """
@@ -693,8 +763,8 @@ class Scaper:
         # initialize output audio array
         out_audio = np.zeros((int(self.duration * self.sr), self.nchans))
 
-        # add background noise
-        out_audio = self.generate_noise(out_audio)
+        # add background ambience
+        out_audio = self.get_background_noise(out_audio)
 
         # sort foreground events by onset time
         self.fg_events = sorted(self.fg_events, key=lambda x: x.event_time)
