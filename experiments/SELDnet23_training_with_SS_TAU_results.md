@@ -1,4 +1,4 @@
-Training the SELDnet23 model, following the instructions specified [here](https://github.com/sharathadavanne/seld-dcase2023), but using the data generated with `SpatialScaper/experiments/data_generation_TAU.py` instead of the synthetic recordings from the DCASE2022 webpage, results in a model with the following performance:
+Training the SELDnet23 model, following the instructions specified [here](https://github.com/sharathadavanne/seld-dcase2023), but using the data generated with `SpatialScaper/experiments/data_generation_TAU_{format}.py` (where format is `MIC` or 'FOA') instead of the synthetic recordings from the DCASE2022 webpage, results in a model with the following performance:
 
 ## MIC
 

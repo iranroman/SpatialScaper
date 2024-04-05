@@ -3,7 +3,7 @@ A model trained with the instructions and data specified [here](https://github.c
 # MIC
 
 ## BOMB SHELTER
-results on 133 scapes generated using `SpatialScaper/experiments/data_generation_TAU.py`
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_MIC.py`
 
 Test Loss
 SELD score (early stopping metric): 0.45 [0.44, 0.46]
@@ -26,7 +26,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.66 [0.64, 0.67]       0.37 [0.29, 0.45]       19.10 [15.91, 22.13]    0.43 [0.35, 0.51]   0.49 [0.45, 0.53]
 
 ## GYM
-results on 133 scapes generated using `SpatialScaper/experiments/data_generation_TAU.py`
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_MIC.py`
 
 Test Loss
 SELD score (early stopping metric): 0.45 [0.44, 0.46]
@@ -49,7 +49,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.65 [0.63, 0.67]       0.43 [0.36, 0.51]       17.08 [14.12, 19.99]    0.49 [0.41, 0.56]   0.46 [0.42, 0.49]
 
 ## PB132
-results on 133 scapes generated using `SpatialScaper/experiments/data_generation_TAU.py`
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_MIC.py`
 
 Test Loss
 SELD score (early stopping metric): 0.46 [0.45, 0.47]
@@ -72,7 +72,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.67 [0.65, 0.69]       0.30 [0.23, 0.37]       23.98 [20.35, 27.96]    0.44 [0.38, 0.50]   0.52 [0.48, 0.55]
 
 ## PC226
-results on 133 scapes generated using `SpatialScaper/experiments/data_generation_TAU.py`
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_MIC.py`
 
 Test Loss
 SELD score (early stopping metric): 0.46 [0.45, 0.47]
@@ -95,7 +95,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.67 [0.65, 0.69]       0.37 [0.30, 0.45]       21.20 [17.57, 24.77]    0.45 [0.38, 0.53]   0.49 [0.45, 0.53]
 
 ## SA203
-results on 133 scapes generated using `SpatialScaper/experiments/data_generation_TAU.py`
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_MIC.py`
 
 Test Loss
 SELD score (early stopping metric): 0.46 [0.44, 0.47]
@@ -118,7 +118,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.68 [0.65, 0.70]       0.42 [0.35, 0.49]       16.96 [14.17, 19.70]    0.46 [0.39, 0.52]   0.47 [0.44, 0.51]
 
 ## SC203
-results on 133 scapes generated using `SpatialScaper/experiments/data_generation_TAU.py`
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_MIC.py`
 
 Test Loss
 SELD score (early stopping metric): 0.44 [0.43, 0.46]
@@ -141,7 +141,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.66 [0.64, 0.69]       0.46 [0.40, 0.53]       20.33 [15.70, 24.92]    0.51 [0.44, 0.59]   0.45 [0.41, 0.49]
 
 ## SE203
-results on 133 scapes generated using `SpatialScaper/experiments/data_generation_TAU.py`
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_MIC.py`
 
 Test Loss
 SELD score (early stopping metric): 0.44 [0.43, 0.45]
@@ -164,7 +164,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.65 [0.63, 0.67]       0.43 [0.35, 0.52]       14.35 [10.85, 17.64]    0.36 [0.28, 0.44]   0.48 [0.44, 0.53]
 
 ## TB103
-results on 133 scapes generated using `SpatialScaper/experiments/data_generation_TAU.py`
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_MIC.py`
 
 Test Loss
 SELD score (early stopping metric): 0.43 [0.42, 0.44]
@@ -187,7 +187,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.63 [0.61, 0.65]       0.45 [0.38, 0.50]       15.50 [12.68, 18.36]    0.43 [0.37, 0.49]   0.46 [0.43, 0.49]
 
 ## TC352
-results on 133 scapes generated using `SpatialScaper/experiments/data_generation_TAU.py`
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_MIC.py`
 
 Test Loss
 SELD score (early stopping metric): 0.45 [0.44, 0.46]
@@ -210,7 +210,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.66 [0.64, 0.68]       0.40 [0.33, 0.46]       19.84 [17.57, 22.49]    0.54 [0.47, 0.61]   0.46 [0.43, 0.49]
 
 
-# Model metrics on the STARSS23 dataset for reference
+# Model metrics on the STARSS23 dataset validation split for reference
 
 ## MIC
 
