@@ -9,7 +9,7 @@ RIR_DIR = (
     "datasets/rir_datasets"  # Directory containing Room Impulse Response (RIR) files
 )
 ROOM = "bomb_shelter"  # Initial room setting, change according to available rooms listed below
-FORMAT = "mic"  # Output format specifier
+FORMAT = "foa"  # Output format specifier: could be 'mic' or 'foa'
 N_EVENTS_MEAN = 15  # Mean number of foreground events in a soundscape
 N_EVENTS_STD = 6  # Standard deviation of the number of foreground events
 DURATION = 60.0  # Duration in seconds of each soundscape, customizable by the user
