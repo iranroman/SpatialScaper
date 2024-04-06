@@ -3,6 +3,7 @@ A model trained with the instructions and data specified [here](https://github.c
 # FOA
 
 ## BOMB SHELTER
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_FOA.py`
 
 Test Loss
 SELD score (early stopping metric): 0.51 [0.50, 0.52]
@@ -25,6 +26,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.74 [0.72, 0.76]       0.31 [0.24, 0.37]       22.22 [19.31, 25.09]    0.47 [0.40, 0.54]   0.52 [0.49, 0.55]
 
 ## GYM
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_FOA.py`
 
 Test Loss
 SELD score (early stopping metric): 0.48 [0.47, 0.49]
@@ -47,6 +49,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.71 [0.69, 0.73]       0.39 [0.33, 0.46]       20.52 [17.66, 23.30]    0.61 [0.55, 0.67]   0.46 [0.42, 0.49]
 
 ## PB132
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_FOA.py`
 
 Test Loss
 SELD score (early stopping metric): 0.55 [0.54, 0.56]
@@ -69,6 +72,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.80 [0.78, 0.82]       0.24 [0.17, 0.31]       26.15 [22.50, 29.73]    0.48 [0.40, 0.55]   0.56 [0.52, 0.59]
 
 ## PC226
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_FOA.py`
 
 Test Loss
 SELD score (early stopping metric): 0.53 [0.52, 0.54]
@@ -91,6 +95,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.76 [0.74, 0.78]       0.28 [0.22, 0.33]       24.88 [22.27, 27.47]    0.52 [0.45, 0.59]   0.53 [0.50, 0.56]
 
 ## SA203
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_FOA.py`
 
 Test Loss
 SELD score (early stopping metric): 0.56 [0.55, 0.57]
@@ -113,6 +118,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.81 [0.79, 0.83]       0.35 [0.28, 0.41]       23.65 [19.31, 27.89]    0.50 [0.44, 0.57]   0.52 [0.49, 0.56]
 
 ## SC203
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_FOA.py`
 
 Test Loss
 SELD score (early stopping metric): 0.54 [0.53, 0.56]
@@ -135,6 +141,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.81 [0.78, 0.83]       0.29 [0.24, 0.36]       22.78 [19.55, 25.73]    0.50 [0.43, 0.58]   0.53 [0.50, 0.56]
 
 ## SE203
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_FOA.py`
 
 Test Loss
 SELD score (early stopping metric): 0.54 [0.53, 0.55]
@@ -157,6 +164,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.79 [0.77, 0.82]       0.38 [0.30, 0.44]       19.90 [15.85, 23.87]    0.44 [0.37, 0.51]   0.52 [0.49, 0.56]
 
 ## TB103
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_FOA.py`
 
 Test Loss
 SELD score (early stopping metric): 0.56 [0.55, 0.57]
@@ -179,6 +187,7 @@ Class   ER      F       LE      LR      SELD_score
 12      0.82 [0.80, 0.84]       0.31 [0.25, 0.36]       26.23 [21.28, 31.16]    0.52 [0.45, 0.59]   0.54 [0.50, 0.57]
 
 ## TC352
+results on 133 scapes generated for this room using `SpatialScaper/experiments/data_generation_TAU_FOA.py`
 
 Test Loss
 SELD score (early stopping metric): 0.52 [0.51, 0.53]
