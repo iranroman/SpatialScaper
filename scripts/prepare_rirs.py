@@ -176,10 +176,11 @@ def center_and_translate_arni(receiver_pos, source_pos):
     x2, y2, z2 = source_pos[0], source_pos[1], source_pos[2]
     # compute translation of the source (loud speaker)
     translation_x = -x1
+    translation_y = -y1
     translation_z = -z1
     # apply tranlation, note that the receiver (mic) remains at the same height
-    receiver_centered = [0, y1, 0]
-    source_translated = [x2 + translation_x, y2, z2 + translation_z]
+    receiver_centered = [0, 0, 0]
+    source_translated = [x2 + translation_x, y2 + translation_y, z2 + translation_z]
     return receiver_centered, source_translated
 
 
