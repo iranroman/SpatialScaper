@@ -176,14 +176,27 @@ def center_and_translate_arni(receiver_pos, source_pos):
     # Given two points, center the receiver coordinate at zero and tranlate the source
     y1, x1, z1 = receiver_pos[0], receiver_pos[1], receiver_pos[2]
     y2, x2, z2 = source_pos[0], source_pos[1], source_pos[2]
-    # compute translation of the source (loud speaker)
-    # add small perturbation to have unique coordinate for trajectory generation purposes
-    translation_y = y1 + random.uniform(-0.0001, 0.0001)
-    translation_x = -x1 + random.uniform(-0.0001, 0.0001)
-    translation_z = -z1 + random.uniform(-0.0001, 0.0001)
-    # apply tranlation, note that the receiver (mic) remains at the same height
-    receiver_centered = [0, 0, 0]
-    source_translated = [x2 + translation_x, translation_y - y2, translation_z - z2]
+    print("mic pos", y1, x1, z1)
+    print("spk pos", y2, x2, z2)
+    if DEBUG_FLAG: # DEBUG: right of y axis is negative
+        # compute translation of the source (loud speaker)
+        # add small perturbation to have unique coordinate for trajectory generation purposes
+        translation_y = -y1 + random.uniform(-0.0001, 0.0001)
+        translation_x = -x1 + random.uniform(-0.0001, 0.0001)
+        translation_z = z1 + random.uniform(-0.0001, 0.0001)
+        # apply tranlation, note that the receiver (mic) remains at the same height
+        receiver_centered = [0, 0, 0]
+        source_translated = [x2 + translation_x, y2 + translation_y, translation_z - z2]
+    else: # DEBUG: right of y axis is positive
+        # compute translation of the source (loud speaker)
+        # add small perturbation to have unique coordinate for trajectory generation purposes
+        translation_y = y1 + random.uniform(-0.0001, 0.0001)
+        translation_x = -x1 + random.uniform(-0.0001, 0.0001)
+        translation_z = z1 + random.uniform(-0.0001, 0.0001)
+        # apply tranlation, note that the receiver (mic) remains at the same height
+        receiver_centered = [0, 0, 0]
+        source_translated = [x2 + translation_x, translation_y - y2, translation_z - z2]
+    print(source_translated)
     return receiver_centered, source_translated
 
 
@@ -304,17 +317,18 @@ if __name__ == "__main__":
     os.makedirs(Path(args.path) / "source_data", exist_ok=True)
     os.makedirs(Path(args.path) / "spatialscaper_RIRs", exist_ok=True)
 
-    # METU
-    download_and_extract(METU_URL, Path(args.path) / "source_data")
-    prepare_metu(Path(args.path))
+    ## METU
+    #download_and_extract(METU_URL, Path(args.path) / "source_data")
+    #prepare_metu(Path(args.path))
 
-    # TAU
-    dest_path = Path(args.path) / "source_data"
-    download_tau(dest_path)
-    dest_path_sofa = Path(args.path) / "spatialscaper_RIRs"
-    prepare_tau(dest_path, dest_path_sofa)
+    ## TAU
+    #dest_path = Path(args.path) / "source_data"
+    #download_tau(dest_path)
+    #dest_path_sofa = Path(args.path) / "spatialscaper_RIRs"
+    #prepare_tau(dest_path, dest_path_sofa)
 
     # ARNI
+    DEBUG_FLAG = False # if True: right of y axis is negative, else right of y axis is positive
     dest_path = Path(args.path) / "source_data"
     download_and_extract(ARNI_URL_MIC, Path(args.path) / "source_data")
     download_and_extract(ARNI_URL_FOA, Path(args.path) / "source_data")
