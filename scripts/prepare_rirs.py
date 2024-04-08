@@ -319,7 +319,7 @@ if __name__ == "__main__":
     #prepare_tau(dest_path, dest_path_sofa)
 
     # ARNI
-    DEBUG_FLAG = False # if True: right of y axis is negative, else right of y axis is positive
+    DEBUG_FLAG = True # if True: right of y axis is negative, else right of y axis is positive
     dest_path = Path(args.path) / "source_data"
     download_and_extract(ARNI_URL, Path(args.path) / "source_data")
     dest_path_sofa = Path(args.path) / "spatialscaper_RIRs"
