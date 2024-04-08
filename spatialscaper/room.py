@@ -2,6 +2,7 @@ import os
 import glob
 
 import librosa
+
 # Local application/library specific imports
 from .sofa_utils import load_rir_pos, load_pos
 
@@ -26,12 +27,13 @@ __ROOM_RIR_FILE__ = {
 
 class BaseRoom:
     """
-    Initialize a Room object. 
+    Initialize a Room object.
 
-    A Room encapsulates the spatial and acoustic characteristics available of a physical room. 
-    This includes a collection of impulse response measurements taken at different positions in 
-    the room. 
+    A Room encapsulates the spatial and acoustic characteristics available of a physical room.
+    This includes a collection of impulse response measurements taken at different positions in
+    the room.
     """
+
     def __init__(self) -> None:
         pass
 
@@ -87,11 +89,13 @@ class SOFARoom(BaseRoom):
 
     @property
     def sofa_path(self):
-        '''Path to the SOFA file for this room.'''
-        if self.format == 'foa' and self.room in ['metu','arni']:
+        """Path to the SOFA file for this room."""
+        if self.format == "foa" and self.room in ["metu", "arni"]:
             raise ValueError('"metu" and "arni" rooms are currently only supported in mic (tetrahedral) format. please check again soon.')
         return os.path.join(
-            self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__, __ROOM_RIR_FILE__[self.room].format(fmt=self.format)
+            self.rir_dir,
+            __SPATIAL_SCAPER_RIRS_DIR__,
+            __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
         )
 
     def get_ambient_noise_paths(self):
@@ -121,10 +125,10 @@ class SOFARoom(BaseRoom):
         if room_ambient_noise_file:
             return room_ambient_noise_file
         return ambient_noise_format_files
-        
+
     def get_positions(self):
         return load_pos(self.sofa_path, doas=False)
-    
+
     def get_irs(self, sr=None, format=True):
         all_irs, ir_sr, all_ir_xyzs = load_rir_pos(self.sofa_path, doas=False)
         ir_sr = ir_sr.data[0]
@@ -136,14 +140,11 @@ class SOFARoom(BaseRoom):
         if format:
             self._format_irs(all_irs)
         return all_irs, ir_sr, all_ir_xyzs
-    
+
     def _format_irs(self, all_irs, fmt="mic"):
         if fmt == "mic" and self.room == "metu":
             return all_irs[:, [5, 9, 25, 21], :]
         return all_irs
-
-
-
 
 
 def get_room(rir_dir, *a, **kw):
