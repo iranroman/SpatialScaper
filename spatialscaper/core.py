@@ -69,15 +69,15 @@ __PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "TAU-SNoise_DB")
 __ROOM_RIR_FILE__ = {
     "metu": "metu_sparg_em32.sofa",
     "arni": "arni_mic.sofa",
-    "bomb_shelter": "bomb_shelter_mic.sofa",
-    "gym": "gym_mic.sofa",
-    "pb132": "pb132_mic.sofa",
-    "pc226": "pc226_mic.sofa",
-    "sa203": "sa203_mic.sofa",
-    "sc203": "sc203_mic.sofa",
-    "se203": "se203_mic.sofa",
-    "tb103": "tb103_mic.sofa",
-    "tc352": "tc352_mic.sofa",
+    "bomb_shelter": "bomb_shelter_{fmt}.sofa",
+    "gym": "gym_{fmt}.sofa",
+    "pb132": "pb132_{fmt}.sofa",
+    "pc226": "pc226_{fmt}.sofa",
+    "sa203": "sa203_{fmt}.sofa",
+    "sc203": "sc203_{fmt}.sofa",
+    "se203": "se203_{fmt}.sofa",
+    "tb103": "tb103_{fmt}.sofa",
+    "tc352": "tc352_{fmt}.sofa",
 }
 
 
@@ -547,8 +547,10 @@ class Scaper:
         Returns:
             numpy.ndarray: An array of XYZ coordinates for the impulse response positions.
         """
+        if self.format == 'foa' and self.room in ['metu','arni']:
+            raise ValueError('"metu" and "arni" rooms are currently only supported in mic (tetrahedral) format. please check again soon.')
         room_sofa_path = os.path.join(
-            self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__, __ROOM_RIR_FILE__[self.room]
+            self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__, __ROOM_RIR_FILE__[self.room].format(fmt=self.format)
         )
         return load_pos(room_sofa_path, doas=False)
 
@@ -563,8 +565,10 @@ class Scaper:
         Returns:
             tuple: A tuple containing the impulse responses, their sampling rate, and their XYZ positions.
         """
+        if self.format == 'foa' and self.room in ['metu','arni']:
+            raise ValueError('"metu" and "arni" rooms are currently only supported in mic (tetrahedral) format. please check again soon.')
         room_sofa_path = os.path.join(
-            self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__, __ROOM_RIR_FILE__[self.room]
+            self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__, __ROOM_RIR_FILE__[self.room].format(fmt=self.format)
         )
         all_irs, ir_sr, all_ir_xyzs = load_rir_pos(room_sofa_path, doas=False)
         ir_sr = ir_sr.data[0]
