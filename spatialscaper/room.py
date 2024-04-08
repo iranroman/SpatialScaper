@@ -1,31 +1,8 @@
 import os
-import math
-import random
 import glob
-from collections import namedtuple
 
 import librosa
-import scipy
-import numpy as np
-import warnings
-
 # Local application/library specific imports
-from .utils import (
-    get_label_list,
-    get_files_list,
-    new_event_exceeds_max_overlap,
-    count_leading_zeros_in_period,
-    generate_trajectory,
-    db2multiplier,
-    traj_2_ir_idx,
-    find_indices_of_change,
-    IR_normalizer,
-    spatialize,
-    get_timegrid,
-    get_labels,
-    save_output,
-    sort_matrix_by_columns,
-)
 from .sofa_utils import load_rir_pos, load_pos
 
 
@@ -48,10 +25,23 @@ __ROOM_RIR_FILE__ = {
 
 
 class BaseRoom:
+    """
+    Initialize a Room object. 
+
+    A Room encapsulates the spatial and acoustic characteristics available of a physical room. 
+    This includes a collection of impulse response measurements taken at different positions in 
+    the room. 
+    """
     def __init__(self) -> None:
         pass
 
-    def get_room_ambient_noise(self):
+    def get_ambient_noise_paths(self):
+        """
+        Retrieves paths to ambient noise audio files specific to this room.
+
+        Returns:
+            list[str]: A list of audio paths.
+        """
         raise NotImplementedError
 
     def get_positions(self):
@@ -97,6 +87,7 @@ class SOFARoom(BaseRoom):
 
     @property
     def sofa_path(self):
+        '''Path to the SOFA file for this room.'''
         return os.path.join(
             self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__, __ROOM_RIR_FILE__[self.room]
         )
@@ -132,14 +123,14 @@ class SOFARoom(BaseRoom):
     def get_positions(self):
         return load_pos(self.sofa_path, doas=False)
     
-    def get_irs(self, format=True):
+    def get_irs(self, sr=None, format=True):
         all_irs, ir_sr, all_ir_xyzs = load_rir_pos(self.sofa_path, doas=False)
         ir_sr = ir_sr.data[0]
         all_irs = all_irs.data
         all_ir_xyzs = all_ir_xyzs.data
-        if ir_sr != self.sr:
-            all_irs = librosa.resample(all_irs, orig_sr=ir_sr, target_sr=self.sr)
-            ir_sr = self.sr
+        if sr is not None and ir_sr != sr:
+            all_irs = librosa.resample(all_irs, orig_sr=ir_sr, target_sr=sr)
+            ir_sr = sr
         if format:
             self._format_irs(all_irs)
         return all_irs, ir_sr, all_ir_xyzs

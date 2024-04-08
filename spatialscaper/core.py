@@ -642,7 +642,7 @@ class Scaper:
         and that the output audio and labels are accurately saved for further use or analysis.
         """
 
-        all_irs, ir_sr, all_ir_xyzs = self.room.get_irs()
+        all_irs, ir_sr, all_ir_xyzs = self.room.get_irs(self.sr)
         self.nchans = all_irs.shape[1]  # a bit ugly but works for now
 
         # initialize output audio array
