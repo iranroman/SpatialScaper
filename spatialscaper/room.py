@@ -91,7 +91,9 @@ class SOFARoom(BaseRoom):
     def sofa_path(self):
         """Path to the SOFA file for this room."""
         if self.format == "foa" and self.room in ["metu", "arni"]:
-            raise ValueError('"metu" and "arni" rooms are currently only supported in mic (tetrahedral) format. please check again soon.')
+            raise ValueError(
+                '"metu" and "arni" rooms are currently only supported in mic (tetrahedral) format. please check again soon.'
+            )
         return os.path.join(
             self.rir_dir,
             __SPATIAL_SCAPER_RIRS_DIR__,
@@ -105,22 +107,20 @@ class SOFARoom(BaseRoom):
         ambient_noise_format_files = glob.glob(
             os.path.join(path_to_ambient_noise_files, "*", "*")
         )
+
+        fmt = self.format
         if self.format == "mic":
-            ambient_noise_format_files = [
-                f for f in ambient_noise_format_files if "tetra" in f
-            ]
-        elif self.format == "foa":
-            ambient_noise_format_files = [
-                f for f in ambient_noise_format_files if "foa" in f
-            ]
+            fmt = "tetra"
+        room = self.room
         if self.room == "bomb_shelter":
-            room_ambient_noise_file = [
-                f for f in ambient_noise_format_files if "bomb_center" in f
-            ]
-        else:
-            room_ambient_noise_file = [
-                f for f in ambient_noise_format_files if self.room in f
-            ]
+            room = "bomb_center"
+        ambient_noise_format_files = [
+            f for f in ambient_noise_format_files if fmt in os.path.basename(f)
+        ]
+        room_ambient_noise_file = [
+            f for f in ambient_noise_format_files if room in os.path.basename(f)
+        ]
+
         assert len(room_ambient_noise_file) < 2
         if room_ambient_noise_file:
             return room_ambient_noise_file
