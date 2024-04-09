@@ -258,7 +258,7 @@ def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI")
                 )  # add em32 rir data w/ hard-coded chans for tetra mic
             else: # foa
                 rir.append(
-                    irdata_resamp
+                    irdata_resamp[:4]
                 )  # add foa rir data
             cent_receiv, trans_source = center_and_translate_arni(
                 listenerPosition[meas], sourcePositions[meas]
