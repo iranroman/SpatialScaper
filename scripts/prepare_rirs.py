@@ -305,17 +305,16 @@ if __name__ == "__main__":
     os.makedirs(Path(args.path) / "spatialscaper_RIRs", exist_ok=True)
 
     ## METU
-    #download_and_extract(METU_URL, Path(args.path) / "source_data")
-    #prepare_metu(Path(args.path))
+    download_and_extract(METU_URL, Path(args.path) / "source_data")
+    prepare_metu(Path(args.path))
 
     ## TAU
-    #dest_path = Path(args.path) / "source_data"
-    #download_tau(dest_path)
-    #dest_path_sofa = Path(args.path) / "spatialscaper_RIRs"
-    #prepare_tau(dest_path, dest_path_sofa)
+    dest_path = Path(args.path) / "source_data"
+    download_tau(dest_path)
+    dest_path_sofa = Path(args.path) / "spatialscaper_RIRs"
+    prepare_tau(dest_path, dest_path_sofa)
 
     # ARNI
-    DEBUG_FLAG = True # if True: right of y axis is negative, else right of y axis is positive
     dest_path = Path(args.path) / "source_data"
     download_and_extract(ARNI_URL_MIC, Path(args.path) / "source_data")
     download_and_extract(ARNI_URL_FOA, Path(args.path) / "source_data")
