@@ -27,7 +27,8 @@ TAU_REMOTES = {
     "TAU-SNoise_DB.zip": "https://zenodo.org/records/6408611/files/TAU-SNoise_DB.zip?download=1",
 }
 
-ARNI_URL = "https://zenodo.org/records/5720724/files/6dof_SRIRs_eigenmike_raw.zip"
+ARNI_URL_MIC = "https://zenodo.org/records/5720724/files/6dof_SRIRs_eigenmike_raw.zip"
+ARNI_URL_FOA = "https://zenodo.org/records/5720724/files/6dof_SRIRs_eigenmike_SH.zip"
 
 NTAU_ROOMS = 9
 
@@ -202,7 +203,7 @@ def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI")
     # Sort the sofa_files based on increasing absorption levels
     sorted_sofa_files = sorted(sofa_files_absorption, key=get_absorption_level_arni)
 
-    filepath = os.path.join(db_dir, f"arni_mic.sofa")
+    filepath = os.path.join(db_dir, f"arni_{aud_fmt}.sofa")
     source_pos, mic_pos, rirs = [], [], []
     for abs_idx, sofa_abs_file in enumerate(sorted_sofa_files):
         # Load flattened (and flipped) rirs/paths from TAU-SRIR database
@@ -238,9 +239,14 @@ def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI")
             # add impulse response
             irdata = rirdata[meas, :, :]
             irdata_resamp = librosa.resample(irdata, orig_sr=48000, target_sr=FS)
-            rir.append(
-                irdata_resamp[[5, 9, 25, 21], :]
-            )  # add em32 rir data w/ hard-coded chans for tetra mic
+            if aud_fmt == "mic":
+                rir.append(
+                    irdata_resamp[[5, 9, 25, 21], :]
+                )  # add em32 rir data w/ hard-coded chans for tetra mic
+            else: # foa
+                rir.append(
+                    irdata_resamp
+                )  # add foa rir data
             cent_receiv, trans_source = center_and_translate_arni(
                 listenerPosition[meas], sourcePositions[meas]
             )
@@ -271,11 +277,14 @@ def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI")
     )
 
 
-def prepare_arni(path_raw, path_sofa, formats=["mic"]):
+def prepare_arni(path_raw, path_sofa, formats=["mic", "foa"]):
     # generate Sofa files
-    arni_db_dir = f"{path_raw/'6dof_SRIRs_eigenmike_raw'}"
     sofa_db_dir = path_sofa
     for aud_fmt in formats:
+        if aud_fmt == "mic":
+            arni_db_dir = f"{path_raw}/6dof_SRIRs_eigenmike_raw"
+        elif aud_fmt == "foa":
+            arni_db_dir = f"{path_raw}/6dof_SRIRs_eigenmike_SH"  
         print(f"Starting .sofa creation for {aud_fmt} format.")
         create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, ARNI_DB_NAME)
         print(f"Finished .sofa creation for {aud_fmt} format.")
@@ -307,6 +316,7 @@ if __name__ == "__main__":
 
     # ARNI
     dest_path = Path(args.path) / "source_data"
-    download_and_extract(ARNI_URL, Path(args.path) / "source_data")
+    download_and_extract(ARNI_URL_MIC, Path(args.path) / "source_data")
+    download_and_extract(ARNI_URL_FOA, Path(args.path) / "source_data")
     dest_path_sofa = Path(args.path) / "spatialscaper_RIRs"
     prepare_arni(dest_path, dest_path_sofa)
