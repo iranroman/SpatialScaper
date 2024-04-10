@@ -119,7 +119,7 @@ OUTPUT_DIR = "output"  # Directory to store the generated soundscapes
 REF_DB = -65  # Reference decibel level for the background ambient noise. Try making this random too!
 
 # List of possible rooms to use for soundscape generation. Change 'ROOM' variable to one of these:
-# "metu", "bomb_shelter", "gym", "pb132", "pc226", "sa203", "sc203", "se203", "tb103", "tc352"
+# "metu", "arni","bomb_shelter", "gym", "pb132", "pc226", "sa203", "sc203", "se203", "tb103", "tc352"
 # Each room has a different Room Impulse Response (RIR) file associated with it, affecting the acoustic properties.
 
 # FSD50K sound classes that will be spatialized include:
@@ -145,7 +145,7 @@ def generate_soundscape(index):
     )
     ssc.ref_db = REF_DB
 
-    # static white noise in this example
+    # static ambient noise
     ssc.add_background()
 
     # Add a random number of foreground events, based on the specified mean and standard deviation.
