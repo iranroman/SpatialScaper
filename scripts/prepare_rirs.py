@@ -186,96 +186,71 @@ def center_and_translate_arni(receiver_pos, source_pos):
     source_translated = [x2 + translation_x, y2 + translation_y, translation_z - z2]
     return receiver_centered, source_translated
 
-
 def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI"):
-    db_dir = sofa_db_dir
-    if not os.path.exists(db_dir):
-        os.makedirs(db_dir)
+    # Ensure the output directory exists
+    if not os.path.exists(sofa_db_dir):
+        os.makedirs(sofa_db_dir)
+    
+    # Gather all .sofa files in the source directory
+    sofa_files = [file for file in os.listdir(arni_db_dir) if file.endswith(".sofa")]
+    if not sofa_files:
+        raise ValueError(f"Error: {arni_db_dir} contains no .sofa files")
 
-    sofa_files_absorption = [
-        file for file in os.listdir(arni_db_dir) if file.endswith(".sofa")
-    ]
+    # Create the output file path
+    filepath = os.path.join(sofa_db_dir, f"arni_{aud_fmt}.sofa")
 
-    assert (
-        len(sofa_files_absorption) != 0
-    ), f"Error: {arni_db_dir} contains no .sofa files"
-    comment = f"SOFA conversion of {room} translated into a single trayectory"
-    # Sort the sofa_files based on increasing absorption levels
-    sorted_sofa_files = sorted(sofa_files_absorption, key=get_absorption_level_arni)
+    # Initialize containers for source and microphone positions, and RIRs
+    source_positions, mic_positions, rirs = [], [], []
 
-    filepath = os.path.join(db_dir, f"arni_{aud_fmt}.sofa")
-    source_pos, mic_pos, rirs = [], [], []
-    for abs_idx, sofa_abs_file in enumerate(sorted_sofa_files):
-        # Load flattened (and flipped) rirs/paths from TAU-SRIR database
-        sofa = pysofa.SOFAFile(os.path.join(arni_db_dir, sofa_abs_file), "r")
-        print(
-            f"Creating .sofa file for {aud_fmt}, Room: {room} (Progress: {abs_idx + 1}/{len(sofa_files_absorption)})"
-        )
+    # Process each sofa file
+    for sofa_file in sorted(sofa_files, key=lambda x: get_absorption_level_arni(x)):  # Sort by absorption level
+        sofa_path = os.path.join(arni_db_dir, sofa_file)
+        sofa = pysofa.SOFAFile(sofa_path, "r")
+        
         if not sofa.isValid():
             print("Error: the file is invalid")
             break
+        
+        # Extract data from the SOFA object
+        source_position = sofa.getVariableValue("SourcePosition")
+        listener_position = sofa.getVariableValue("ListenerPosition")
+        rir_data = sofa.getDataIR()
+        
+        # Assuming a fixed number of measurements to simplify
+        num_measurements = 21  # Number of measurements to consider
+        
+        # Loop through each measurement
+        for i in range(num_measurements):
+            ir_data = rir_data[i, :]
+            ir_data_resampled = librosa.resample(ir_data, orig_sr=48000, target_sr=FS)
 
-        sourcePositions = sofa.getVariableValue(
-            "SourcePosition"
-        )  # get sound source position
-        listenerPosition = sofa.getVariableValue("ListenerPosition")  # get mic position
-        # get RIR data
-        rirdata = sofa.getDataIR()
-        num_meas, num_ch = rirdata.shape[0], rirdata.shape[1]
-        num_meas = 15  # take only mics 1, 2, 3, 4, 5, exclude 6, 7
-        angles_mic_src = [
-            math.degrees(compute_azimuth_elevation(lis, src)[0])
-            for lis, src in zip(listenerPosition[:num_meas], sourcePositions[:num_meas])
-        ]
-        # sort rir measurements in increasing or decreasing order since we move back and forth
-        meas_sorted_ord = (
-            np.argsort(angles_mic_src)[::-1]
-            if (abs_idx % 2) == 0
-            else np.argsort(angles_mic_src)
-        )
-        sorted_angles_mic_src = [angles_mic_src[i] for i in meas_sorted_ord]
-        rir, mic_loc, src_loc = [], [], []
-        for meas in meas_sorted_ord:  # for each meas in decreasing order
-            # add impulse response
-            irdata = rirdata[meas, :, :]
-            irdata_resamp = librosa.resample(irdata, orig_sr=48000, target_sr=FS)
+            # Append data depending on the audio format
             if aud_fmt == "mic":
-                rir.append(
-                    irdata_resamp[[5, 9, 25, 21], :]
-                )  # add em32 rir data w/ hard-coded chans for tetra mic
-            else: # foa
-                rir.append(
-                    irdata_resamp[:4]
-                )  # add foa rir data
-            cent_receiv, trans_source = center_and_translate_arni(
-                listenerPosition[meas], sourcePositions[meas]
-            )
-            mic_loc.append(
-                cent_receiv
-            )  # add mic coordinate position (centered at zero)
-            src_loc.append(
-                trans_source
-            )  # add source (loud speaker) position (translated w.r.t microphone centered at zero)
-        rirs.extend(rir)
-        mic_pos.extend(mic_loc)
-        source_pos.extend(src_loc)
+                rirs.append(ir_data_resampled[[5, 9, 25, 21], :])  # Specific channels for 'mic' format
+            else:  # 'foa' format
+                rirs.append(ir_data_resampled[:4])
 
+            # Compute the centered and translated positions
+            mic_centered, src_translated = center_and_translate_arni(listener_position[i], source_position[i])
+            mic_positions.append(mic_centered)
+            source_positions.append(src_translated)
+
+    # Convert lists to numpy arrays
     rirs = np.array(rirs)
-    mic_pos = np.array(mic_pos)
-    source_pos = np.array(source_pos)
+    mic_positions = np.array(mic_positions)
+    source_positions = np.array(source_positions)
 
-    # Create .sofa files with flattened rirs/paths + metadata
+    # Create .sofa file
     sofa_utils.create_srir_sofa(
         filepath,
         rirs,
-        source_pos,
-        mic_pos,
+        source_positions,
+        mic_positions,
         room_name=room,
         listener_name=aud_fmt,
         sr=FS,
-        comment=comment,
+        comment=f"SOFA conversion of room {room}"
     )
-
 
 def prepare_arni(path_raw, path_sofa, formats=["mic", "foa"]):
     # generate Sofa files
