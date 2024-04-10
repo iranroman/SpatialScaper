@@ -68,7 +68,7 @@ __SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
 __PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "TAU-SNoise_DB")
 __ROOM_RIR_FILE__ = {
     "metu": "metu_sparg_em32.sofa",
-    "arni": "arni_mic.sofa",
+    "arni": "arni_{fmt}.sofa",
     "bomb_shelter": "bomb_shelter_{fmt}.sofa",
     "gym": "gym_{fmt}.sofa",
     "pb132": "pb132_{fmt}.sofa",
@@ -547,7 +547,7 @@ class Scaper:
         Returns:
             numpy.ndarray: An array of XYZ coordinates for the impulse response positions.
         """
-        if self.format == 'foa' and self.room in ['metu','arni']:
+        if self.format == 'foa' and self.room == 'metu':
             raise ValueError('"metu" and "arni" rooms are currently only supported in mic (tetrahedral) format. please check again soon.')
         room_sofa_path = os.path.join(
             self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__, __ROOM_RIR_FILE__[self.room].format(fmt=self.format)
@@ -565,8 +565,8 @@ class Scaper:
         Returns:
             tuple: A tuple containing the impulse responses, their sampling rate, and their XYZ positions.
         """
-        if self.format == 'foa' and self.room in ['metu','arni']:
-            raise ValueError('"metu" and "arni" rooms are currently only supported in mic (tetrahedral) format. please check again soon.')
+        if self.format == 'foa' and self.room == 'metu':
+            raise ValueError('"metu" room is currently only supported in mic (tetrahedral) format. please check again soon.')
         room_sofa_path = os.path.join(
             self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__, __ROOM_RIR_FILE__[self.room].format(fmt=self.format)
         )
@@ -655,6 +655,8 @@ class Scaper:
             ir_idx = find_indices_of_change(ir_xyzs)
             irs = irs[ir_idx]
             ir_xyzs = ir_xyzs[ir_idx]
+            np.save('irs',irs)
+            np.save('ir_xyz',ir_xyzs)
 
             # load and normalize audio signal to have peak of 1
             x, _ = librosa.load(event.source_file, sr=self.sr)
