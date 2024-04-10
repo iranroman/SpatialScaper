@@ -547,10 +547,14 @@ class Scaper:
         Returns:
             numpy.ndarray: An array of XYZ coordinates for the impulse response positions.
         """
-        if self.format == 'foa' and self.room == 'metu':
-            raise ValueError('"metu" and "arni" rooms are currently only supported in mic (tetrahedral) format. please check again soon.')
+        if self.format == "foa" and self.room == "metu":
+            raise ValueError(
+                '"metu" room is currently only supported in mic (tetrahedral) format. please check again soon.'
+            )
         room_sofa_path = os.path.join(
-            self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__, __ROOM_RIR_FILE__[self.room].format(fmt=self.format)
+            self.rir_dir,
+            __SPATIAL_SCAPER_RIRS_DIR__,
+            __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
         )
         return load_pos(room_sofa_path, doas=False)
 
@@ -565,10 +569,14 @@ class Scaper:
         Returns:
             tuple: A tuple containing the impulse responses, their sampling rate, and their XYZ positions.
         """
-        if self.format == 'foa' and self.room == 'metu':
-            raise ValueError('"metu" room is currently only supported in mic (tetrahedral) format. please check again soon.')
+        if self.format == "foa" and self.room == "metu":
+            raise ValueError(
+                '"metu" room is currently only supported in mic (tetrahedral) format. please check again soon.'
+            )
         room_sofa_path = os.path.join(
-            self.rir_dir, __SPATIAL_SCAPER_RIRS_DIR__, __ROOM_RIR_FILE__[self.room].format(fmt=self.format)
+            self.rir_dir,
+            __SPATIAL_SCAPER_RIRS_DIR__,
+            __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
         )
         all_irs, ir_sr, all_ir_xyzs = load_rir_pos(room_sofa_path, doas=False)
         ir_sr = ir_sr.data[0]
@@ -655,8 +663,6 @@ class Scaper:
             ir_idx = find_indices_of_change(ir_xyzs)
             irs = irs[ir_idx]
             ir_xyzs = ir_xyzs[ir_idx]
-            np.save('irs',irs)
-            np.save('ir_xyz',ir_xyzs)
 
             # load and normalize audio signal to have peak of 1
             x, _ = librosa.load(event.source_file, sr=self.sr)
