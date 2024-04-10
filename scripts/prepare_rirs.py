@@ -186,11 +186,12 @@ def center_and_translate_arni(receiver_pos, source_pos):
     source_translated = [x2 + translation_x, y2 + translation_y, translation_z - z2]
     return receiver_centered, source_translated
 
+
 def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI"):
     # Ensure the output directory exists
     if not os.path.exists(sofa_db_dir):
         os.makedirs(sofa_db_dir)
-    
+
     # Gather all .sofa files in the source directory
     sofa_files = [file for file in os.listdir(arni_db_dir) if file.endswith(".sofa")]
     if not sofa_files:
@@ -203,22 +204,24 @@ def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI")
     source_positions, mic_positions, rirs = [], [], []
 
     # Process each sofa file
-    for sofa_file in sorted(sofa_files, key=lambda x: get_absorption_level_arni(x)):  # Sort by absorption level
+    for sofa_file in sorted(
+        sofa_files, key=lambda x: get_absorption_level_arni(x)
+    ):  # Sort by absorption level
         sofa_path = os.path.join(arni_db_dir, sofa_file)
         sofa = pysofa.SOFAFile(sofa_path, "r")
-        
+
         if not sofa.isValid():
             print("Error: the file is invalid")
             break
-        
+
         # Extract data from the SOFA object
         source_position = sofa.getVariableValue("SourcePosition")
         listener_position = sofa.getVariableValue("ListenerPosition")
         rir_data = sofa.getDataIR()
-        
+
         # Assuming a fixed number of measurements to simplify
         num_measurements = 21  # Number of measurements to consider
-        
+
         # Loop through each measurement
         for i in range(num_measurements):
             ir_data = rir_data[i, :]
@@ -226,12 +229,16 @@ def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI")
 
             # Append data depending on the audio format
             if aud_fmt == "mic":
-                rirs.append(ir_data_resampled[[5, 9, 25, 21], :])  # Specific channels for 'mic' format
+                rirs.append(
+                    ir_data_resampled[[5, 9, 25, 21], :]
+                )  # Specific channels for 'mic' format
             else:  # 'foa' format
                 rirs.append(ir_data_resampled[:4])
 
             # Compute the centered and translated positions
-            mic_centered, src_translated = center_and_translate_arni(listener_position[i], source_position[i])
+            mic_centered, src_translated = center_and_translate_arni(
+                listener_position[i], source_position[i]
+            )
             mic_positions.append(mic_centered)
             source_positions.append(src_translated)
 
@@ -249,8 +256,9 @@ def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI")
         room_name=room,
         listener_name=aud_fmt,
         sr=FS,
-        comment=f"SOFA conversion of room {room}"
+        comment=f"SOFA conversion of room {room}",
     )
+
 
 def prepare_arni(path_raw, path_sofa, formats=["mic", "foa"]):
     # generate Sofa files
@@ -259,7 +267,7 @@ def prepare_arni(path_raw, path_sofa, formats=["mic", "foa"]):
         if aud_fmt == "mic":
             arni_db_dir = f"{path_raw}/6dof_SRIRs_eigenmike_raw"
         elif aud_fmt == "foa":
-            arni_db_dir = f"{path_raw}/6dof_SRIRs_eigenmike_SH"  
+            arni_db_dir = f"{path_raw}/6dof_SRIRs_eigenmike_SH"
         print(f"Starting .sofa creation for {aud_fmt} format.")
         create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, ARNI_DB_NAME)
         print(f"Finished .sofa creation for {aud_fmt} format.")
