@@ -9,7 +9,7 @@ RIR_DIR = (
     "datasets/rir_datasets"  # Directory containing Room Impulse Response (RIR) files
 )
 ROOM = "bomb_shelter"  # Initial room setting, change according to available rooms listed below
-FORMAT = "foa"  # Output format specifier: could be 'mic' or 'foa'
+FORMAT = "mic"  # Output format specifier: could be 'mic' or 'foa'
 N_EVENTS_MEAN = 15  # Mean number of foreground events in a soundscape
 N_EVENTS_STD = 6  # Standard deviation of the number of foreground events
 DURATION = 60.0  # Duration in seconds of each soundscape, customizable by the user
@@ -20,7 +20,7 @@ REF_DB = (
 )  # Reference decibel level for the background ambient noise. Try making this random too!
 
 # List of possible rooms to use for soundscape generation. Change 'ROOM' variable to one of these:
-# "metu", "bomb_shelter", "gym", "pb132", "pc226", "sa203", "sc203", "se203", "tb103", "tc352"
+# "metu", "arni","bomb_shelter", "gym", "pb132", "pc226", "sa203", "sc203", "se203", "tb103", "tc352"
 # Each room has a different Room Impulse Response (RIR) file associated with it, affecting the acoustic properties.
 
 # FSD50K sound classes that will be spatialized include:
@@ -46,7 +46,7 @@ def generate_soundscape(index):
     )
     ssc.ref_db = REF_DB
 
-    # static white noise in this example
+    # static ambient noise
     ssc.add_background()
 
     # Add a random number of foreground events, based on the specified mean and standard deviation.
