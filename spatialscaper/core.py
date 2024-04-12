@@ -548,14 +548,17 @@ class Scaper:
             numpy.ndarray: An array of XYZ coordinates for the impulse response positions.
         """
         if self.format == "foa" and self.room == "metu":
-            raise ValueError(
-                '"metu" room is currently only supported in mic (tetrahedral) format. please check again soon.'
+            room_sofa_path = os.path.join(
+                self.rir_dir,
+                __SPATIAL_SCAPER_RIRS_DIR__,
+                "metu_sparg_foa.sofa",
             )
-        room_sofa_path = os.path.join(
-            self.rir_dir,
-            __SPATIAL_SCAPER_RIRS_DIR__,
-            __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
-        )
+        else:
+            room_sofa_path = os.path.join(
+                self.rir_dir,
+                __SPATIAL_SCAPER_RIRS_DIR__,
+                __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
+            )
         return load_pos(room_sofa_path, doas=False)
 
     def get_room_irs_wav_xyz(self, wav=True, pos=True):
@@ -570,14 +573,17 @@ class Scaper:
             tuple: A tuple containing the impulse responses, their sampling rate, and their XYZ positions.
         """
         if self.format == "foa" and self.room == "metu":
-            raise ValueError(
-                '"metu" room is currently only supported in mic (tetrahedral) format. please check again soon.'
+            room_sofa_path = os.path.join(
+                self.rir_dir,
+                __SPATIAL_SCAPER_RIRS_DIR__,
+                "metu_sparg_foa.sofa",
             )
-        room_sofa_path = os.path.join(
-            self.rir_dir,
-            __SPATIAL_SCAPER_RIRS_DIR__,
-            __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
-        )
+        else:
+            room_sofa_path = os.path.join(
+                self.rir_dir,
+                __SPATIAL_SCAPER_RIRS_DIR__,
+                __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
+            )
         all_irs, ir_sr, all_ir_xyzs = load_rir_pos(room_sofa_path, doas=False)
         ir_sr = ir_sr.data[0]
         all_irs = all_irs.data
@@ -769,7 +775,7 @@ class Scaper:
         """
 
         all_irs, ir_sr, all_ir_xyzs = self.get_room_irs_wav_xyz()
-        all_irs = self.get_format_irs(all_irs)
+        all_irs = self.get_format_irs(all_irs, self.format)
         self.nchans = all_irs.shape[1]  # a bit ugly but works for now
 
         # initialize output audio array
