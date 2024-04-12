@@ -1,5 +1,5 @@
 <!-- omit in toc -->
-# Spatial scaper: a library to simulate and augment soundscapes for sound event localization and detection in realistic rooms.
+# SpatialScaper: a library to simulate and augment soundscapes for sound event localization and detection in realistic rooms.
 [![Platform](https://img.shields.io/badge/Platform-linux-lightgrey?logo=linux)](https://www.linux.org/)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-orange?logo=python)](https://www.python.org/)	
 [![arXiv](https://img.shields.io/badge/Arxiv-2401.03497-blueviolet?logo=arxiv)](https://arxiv.org/abs/2401.12238)
@@ -64,6 +64,8 @@ python scripts/prepare_rirs.py
 ```
 
 **Attention:** the first time setup takes some time ⏳, we recommend running under a `screen` or `tmux` session.
+
+Note: stay tuned as we will soon release the A2B ambisonics encoder. In the meantime, download the METU FOA sofa file from this [google drive link](https://drive.google.com/file/d/1zamCd6OR6Tr5M40RdDhswYbT1wbGo2ZO/view?usp=sharing). Place alongside all other sofa files that `prepare_rirs.py` generates under `SpatialScaper/datasets/rir_datasets/spatialscaper_RIRs`. 
 
 <details>
 <summary>Full descriptions of available rooms </summary>
@@ -177,5 +179,59 @@ If you find our SpatialScaper library useful, please cite the following paper:
   booktitle={IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
   year={2024},
   organization={IEEE}
+}
+```
+
+Also cite the RIR and sound event databases that SpatialScaper uses.
+
+```
+@dataset{politis_2022_6408611,
+  author       = {Politis, Archontis and
+                  Adavanne, Sharath and
+                  Virtanen, Tuomas},
+  title        = {{TAU Spatial Room Impulse Response Database (TAU- 
+                   SRIR DB)}},
+  month        = apr,
+  year         = 2022,
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.6408611},
+  url          = {https://doi.org/10.5281/zenodo.6408611}
+}
+
+@dataset{orhun_olgun_2019_2635758,
+  author       = {Orhun Olgun and
+                  Huseyin Hacihabiboglu},
+  title        = {{METU SPARG Eigenmike em32 Acoustic Impulse 
+                   Response Dataset v0.1.0}},
+  month        = apr,
+  year         = 2019,
+  publisher    = {Zenodo},
+  version      = {0.1.0},
+  doi          = {10.5281/zenodo.2635758},
+  url          = {https://doi.org/10.5281/zenodo.2635758}
+}
+
+@article{mckenzie2021dataset,
+  title={Dataset of spatial room impulse responses in a variable acoustics room for six degrees-of-freedom rendering and analysis},
+  author={McKenzie, Thomas and McCormack, Leo and Hold, Christoph},
+  journal={arXiv preprint arXiv:2111.11882},
+  year={2021}
+}
+
+@article{fonseca2021fsd50k,
+  title={Fsd50k: an open dataset of human-labeled sound events},
+  author={Fonseca, Eduardo and Favory, Xavier and Pons, Jordi and Font, Frederic and Serra, Xavier},
+  journal={IEEE/ACM Transactions on Audio, Speech, and Language Processing},
+  volume={30},
+  pages={829--852},
+  year={2021},
+  publisher={IEEE}
+}
+
+@article{defferrard2016fma,
+  title={FMA: A dataset for music analysis},
+  author={Defferrard, Micha{\"e}l and Benzi, Kirell and Vandergheynst, Pierre and Bresson, Xavier},
+  journal={arXiv preprint arXiv:1612.01840},
+  year={2016}
 }
 ```
