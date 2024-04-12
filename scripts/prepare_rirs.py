@@ -92,7 +92,6 @@ def download_and_extract(url, extract_to):
 
 def prepare_metu(dataset_path):
     spargpath = Path(dataset_path) / "source_data" / "spargair" / "em32"
-    nEMchans = 32
     XYZs = os.listdir(spargpath)
 
     def XYZ_2_xyz(XYZ):
@@ -110,8 +109,8 @@ def prepare_metu(dataset_path):
 
         wavpath = spargpath / XYZ
         X = []
-        for i in range(nEMchans):
-            wavfile = wavpath / f"IR{i+1:05d}.wav"
+        for ichan in [5, 9, 25, 21]: # Specific channels for 'mic' format
+            wavfile = wavpath / f"IR{ichan+1:05d}.wav"
             x, sr = sf.read(wavfile)
             X.append(x)
         IRs.append(np.array(X))

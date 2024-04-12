@@ -593,22 +593,6 @@ class Scaper:
             ir_sr = self.sr
         return all_irs, ir_sr, all_ir_xyzs
 
-    def get_format_irs(self, all_irs, fmt="mic"):
-        """
-        Retrieves impulse responses according to the specified format.
-
-        Args:
-            all_irs (numpy.ndarray): Array of all impulse responses.
-            fmt (str): The format for retrieving impulse responses (e.g., 'mic').
-
-        Returns:
-            numpy.ndarray: An array of impulse responses formatted according to the specified format.
-        """
-        if fmt == "mic" and self.room == "metu":
-            return all_irs[:, [5, 9, 25, 21], :]
-        else:
-            return all_irs
-
     def generate_noise(self, event):
         """
         Generates noise to be used as background ambient.
@@ -775,7 +759,6 @@ class Scaper:
         """
 
         all_irs, ir_sr, all_ir_xyzs = self.get_room_irs_wav_xyz()
-        all_irs = self.get_format_irs(all_irs, self.format)
         self.nchans = all_irs.shape[1]  # a bit ugly but works for now
 
         # initialize output audio array
