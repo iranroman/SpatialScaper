@@ -12,7 +12,7 @@ __SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
 __PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "TAU-SNoise_DB")
 __ROOM_RIR_FILE__ = {
     "metu": "metu_sparg_em32.sofa",
-    "arni": "arni_mic.sofa",
+    "arni": "arni_{fmt}.sofa",
     "bomb_shelter": "bomb_shelter_{fmt}.sofa",
     "gym": "gym_{fmt}.sofa",
     "pb132": "pb132_{fmt}.sofa",
@@ -90,9 +90,9 @@ class SOFARoom(BaseRoom):
     @property
     def sofa_path(self):
         """Path to the SOFA file for this room."""
-        if self.format == "foa" and self.room in ["metu", "arni"]:
+        if self.format == "foa" and self.room == "metu":
             raise ValueError(
-                '"metu" and "arni" rooms are currently only supported in mic (tetrahedral) format. please check again soon.'
+                '"metu" room is currently only supported in mic (tetrahedral) format. please check again soon.'
             )
         return os.path.join(
             self.rir_dir,
@@ -101,6 +101,7 @@ class SOFARoom(BaseRoom):
         )
 
     def get_ambient_noise_paths(self):
+        # list files from disk
         path_to_ambient_noise_files = os.path.join(
             self.rir_dir, __PATH_TO_AMBIENT_NOISE_FILES__
         )
@@ -108,23 +109,24 @@ class SOFARoom(BaseRoom):
             os.path.join(path_to_ambient_noise_files, "*", "*")
         )
 
+        # translate format
         fmt = self.format
         if self.format == "mic":
             fmt = "tetra"
         room = self.room
         if self.room == "bomb_shelter":
             room = "bomb_center"
+
+        # filter files
         ambient_noise_format_files = [
             f for f in ambient_noise_format_files if fmt in os.path.basename(f)
         ]
-        room_ambient_noise_file = [
+        room_ambient_noise_files = [
             f for f in ambient_noise_format_files if room in os.path.basename(f)
         ]
 
-        assert len(room_ambient_noise_file) < 2
-        if room_ambient_noise_file:
-            return room_ambient_noise_file
-        return ambient_noise_format_files
+        # assert len(room_ambient_noise_files) < 2
+        return room_ambient_noise_files or ambient_noise_format_files
 
     def get_positions(self):
         return load_pos(self.sofa_path, doas=False)
