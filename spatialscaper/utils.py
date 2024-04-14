@@ -1,10 +1,17 @@
 import os
 import glob
+import random
 import numpy as np
 import scipy
 import soundfile as sf
 from scipy.spatial import KDTree
 from scipy.interpolate import interp1d
+
+
+def set_seed(seed=123456):
+    """Set the random seeds for libraries used by SpatialScaper."""
+    random.seed(seed)
+    np.random.seed(seed)
 
 
 def cartesian_to_polar(cartesian_coords, include_radius=True):
@@ -310,7 +317,7 @@ def stft_ham(insig, winsize=256, fftsize=512, hopsize=128):
 
     return spectrum
 
-
+# @profile
 def ctf_ltv_direct(sig, irs, ir_times, fs, win_size):
     """
     function borrowed from

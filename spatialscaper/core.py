@@ -2,6 +2,7 @@ import os
 import math
 import random
 import glob
+import tqdm
 from collections import namedtuple
 
 import librosa
@@ -27,6 +28,7 @@ from .utils import (
     sort_matrix_by_columns,
 )
 from .sofa_utils import load_rir_pos, load_pos
+from .spatialize import spatialize
 
 
 # Sound event classes for DCASE Challenge
@@ -654,7 +656,8 @@ class Scaper:
         """
 
         all_labels = []
-        for ievent, event in enumerate(self.fg_events):
+        events = tqdm.tqdm(self.fg_events, desc="🧪 Spatializing events 📐🤔...")
+        for ievent, event in enumerate(events):
             # fetch trajectory from irs
             ir_idx = traj_2_ir_idx(all_ir_xyzs, event.event_position)
             irs = all_irs[ir_idx]
@@ -673,21 +676,30 @@ class Scaper:
             norm_irs = IR_normalizer(irs)
 
             # SPATIALIZE
-            norm_irs = np.transpose(norm_irs, (2, 1, 0))
-            if len(irs) > 1:
-                ir_times = np.linspace(0, event.event_duration, len(irs))
-                xS = spatialize(x, norm_irs, ir_times, sr=self.sr, s=event.snr)
-            else:
-                ir_times = np.linspace(0, event.event_duration, len(irs) + 1)
+            # norm_irs = np.transpose(norm_irs, (2, 1, 0)) # (n_irs, n_ch, n_ir_samples) -> (n_ir_samples, n_ch, n_irs)
+            # if len(irs) > 1:
+            #     ir_times = np.linspace(0, event.event_duration, len(irs))
+            #     xS = spatialize(x, norm_irs, ir_times, sr=self.sr, s=event.snr)
+            # else:
+            #     ir_times = np.linspace(0, event.event_duration, len(irs) + 1)
+            #     ir_xyzs = np.concatenate([ir_xyzs, ir_xyzs])
+            #     xS = []
+            #     for i in range(norm_irs.shape[1]):
+            #         _x = scipy.signal.convolve(
+            #             x, np.squeeze(norm_irs[:, i]), mode="full", method="fft"
+            #         )
+            #         xS.append(_x)
+            #     xS = np.array(xS).T
+            #     xS = xS[: len(x)]
+            # need at least a start and end point for IR interpolation
+            if len(irs) == 1:
                 ir_xyzs = np.concatenate([ir_xyzs, ir_xyzs])
-                xS = []
-                for i in range(norm_irs.shape[1]):
-                    _x = scipy.signal.convolve(
-                        x, np.squeeze(norm_irs[:, i]), mode="full", method="fft"
-                    )
-                    xS.append(_x)
-                xS = np.array(xS).T
-                xS = xS[: len(x)]
+            ir_times = np.linspace(0, event.event_duration, len(ir_xyzs))
+            # print(norm_irs.shape)
+            norm_irs = np.transpose(norm_irs, (1, 0, 2)) # (n_irs, n_ch, n_ir_samples) -> (n_ch, n_irs, n_ir_samples)
+            # print(norm_irs.shape)
+            xS = spatialize(x, norm_irs, ir_times, sr=self.sr, snr=event.snr)
+
 
             # standardize the spatialized audio
             event_scale = db2multiplier(self.ref_db + event.snr, np.mean(np.abs(xS)))
