@@ -35,6 +35,8 @@ NTAU_ROOMS = 9
 TAU_DB_NAME = "TAU-SRIR-DB-SOFA"
 ARNI_DB_NAME = "ARNI-SRIR-DB-SOFA"
 
+__TETRA_CHANS_IN_EM32__ = [5, 9, 25, 21]
+
 
 def create_single_sofa_file(aud_fmt, tau_db_dir, sofa_db_dir, db_name):
     db_dir = sofa_db_dir
@@ -109,13 +111,13 @@ def prepare_metu(dataset_path):
 
         wavpath = spargpath / XYZ
         X = []
-        for ichan in [5, 9, 25, 21]: # Specific channels for 'mic' format
+        for ichan in __TETRA_CHANS_IN_EM32__:  # Specific channels for 'mic' format
             wavfile = wavpath / f"IR{ichan+1:05d}.wav"
             x, sr = sf.read(wavfile)
             X.append(x)
         IRs.append(np.array(X))
 
-    filepath = Path(dataset_path) / "spatialscaper_RIRs" / "metu_sparg_em32.sofa"
+    filepath = Path(dataset_path) / "spatialscaper_RIRs" / "metu_sparg_mic.sofa"
     rirs = np.array(IRs)
     source_pos = np.array(xyzs)
     mic_pos = np.array([[0, 0, 0]])
@@ -229,7 +231,7 @@ def create_single_sofa_file_arni(aud_fmt, arni_db_dir, sofa_db_dir, room="ARNI")
             # Append data depending on the audio format
             if aud_fmt == "mic":
                 rirs.append(
-                    ir_data_resampled[[5, 9, 25, 21], :]
+                    ir_data_resampled[__TETRA_CHANS_IN_EM32__, :]
                 )  # Specific channels for 'mic' format
             else:  # 'foa' format
                 rirs.append(ir_data_resampled[:4])

@@ -67,7 +67,7 @@ Event = namedtuple(
 __SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
 __PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "TAU-SNoise_DB")
 __ROOM_RIR_FILE__ = {
-    "metu": "metu_sparg_em32.sofa",
+    "metu": "metu_sparg_{fmt}.sofa",
     "arni": "arni_{fmt}.sofa",
     "bomb_shelter": "bomb_shelter_{fmt}.sofa",
     "gym": "gym_{fmt}.sofa",
@@ -547,18 +547,11 @@ class Scaper:
         Returns:
             numpy.ndarray: An array of XYZ coordinates for the impulse response positions.
         """
-        if self.format == "foa" and self.room == "metu":
-            room_sofa_path = os.path.join(
-                self.rir_dir,
-                __SPATIAL_SCAPER_RIRS_DIR__,
-                "metu_sparg_foa.sofa",
-            )
-        else:
-            room_sofa_path = os.path.join(
-                self.rir_dir,
-                __SPATIAL_SCAPER_RIRS_DIR__,
-                __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
-            )
+        room_sofa_path = os.path.join(
+            self.rir_dir,
+            __SPATIAL_SCAPER_RIRS_DIR__,
+            __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
+        )
         return load_pos(room_sofa_path, doas=False)
 
     def get_room_irs_wav_xyz(self, wav=True, pos=True):
@@ -572,18 +565,11 @@ class Scaper:
         Returns:
             tuple: A tuple containing the impulse responses, their sampling rate, and their XYZ positions.
         """
-        if self.format == "foa" and self.room == "metu":
-            room_sofa_path = os.path.join(
-                self.rir_dir,
-                __SPATIAL_SCAPER_RIRS_DIR__,
-                "metu_sparg_foa.sofa",
-            )
-        else:
-            room_sofa_path = os.path.join(
-                self.rir_dir,
-                __SPATIAL_SCAPER_RIRS_DIR__,
-                __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
-            )
+        room_sofa_path = os.path.join(
+            self.rir_dir,
+            __SPATIAL_SCAPER_RIRS_DIR__,
+            __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
+        )
         all_irs, ir_sr, all_ir_xyzs = load_rir_pos(room_sofa_path, doas=False)
         ir_sr = ir_sr.data[0]
         all_irs = all_irs.data
