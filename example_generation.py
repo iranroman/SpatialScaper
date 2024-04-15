@@ -8,11 +8,11 @@ FOREGROUND_DIR = "datasets/sound_event_datasets/FSD50K_FMA"  # Directory with FS
 RIR_DIR = (
     "datasets/rir_datasets"  # Directory containing Room Impulse Response (RIR) files
 )
-ROOM = "bomb_shelter"  # Initial room setting, change according to available rooms listed below
-FORMAT = "mic"  # Output format specifier: could be 'mic' or 'foa'
+ROOM = "metu"  # Initial room setting, change according to available rooms listed below
+FORMAT = "foa"  # Output format specifier: could be 'mic' or 'foa'
 N_EVENTS_MEAN = 15  # Mean number of foreground events in a soundscape
 N_EVENTS_STD = 6  # Standard deviation of the number of foreground events
-DURATION = 60.0  # Duration in seconds of each soundscape, customizable by the user
+DURATION = 60.0  # Duration in seconds of each soundscape
 SR = 24000  # SpatialScaper default sampling rate for the audio files
 OUTPUT_DIR = "output"  # Directory to store the generated soundscapes
 REF_DB = (
@@ -33,7 +33,7 @@ REF_DB = (
 
 # Function to generate a soundscape
 def generate_soundscape(index):
-    track_name = f"fold5_room1_mix{index+1:03d}"
+    track_name = f"fold1_room1_mix{index+1:03d}"
     # Initialize Scaper. 'max_event_overlap' controls the maximum number of overlapping sound events.
     ssc = ss.Scaper(
         DURATION,
