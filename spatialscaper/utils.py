@@ -190,7 +190,13 @@ def save_output(audiofile, labelfile, x, sr, labels, fmt="mic"):
     )
 
 
-def spatialize(sig, irs, ir_times, win_size=512, sr=24000, s=1.0):
+def _spatialize(sig, irs, ir_times, win_size=512, sr=24000, s=1.0):
+    output_signal = ctf_ltv_direct(sig, irs, ir_times, sr, win_size)
+    output_signal /= np.abs(output_signal).max()
+    return s * output_signal
+
+
+def spatialize(x, norm_irs, ir_times, sr, snr):
     """
     Spatializes a mono audio signal using convolution with multiple impulse responses.
 
@@ -228,11 +234,20 @@ def spatialize(sig, irs, ir_times, win_size=512, sr=24000, s=1.0):
 
         # Output is a spatialized signal
     """
-
-    output_signal = ctf_ltv_direct(sig, irs, ir_times, sr, win_size)
-    output_signal /= np.abs(output_signal).max()
-
-    return s * output_signal
+    # this is from synthesize_events_and_labels so that the two spatialize functions have the same inputs
+    norm_irs = np.transpose(norm_irs, (2, 0, 1)) # (n_ch, n_irs, n_ir_samples) -> (n_ir_samples, n_ch, n_irs)
+    if norm_irs.shape[-1] > 1:
+        xS = _spatialize(x, norm_irs, ir_times, sr=sr, s=snr)
+    else:
+        xS = []
+        for i in range(norm_irs.shape[1]):
+            _x = scipy.signal.convolve(
+                x, np.squeeze(norm_irs[:, i]), mode="full", method="fft"
+            )
+            xS.append(_x)
+        xS = np.array(xS).T
+        xS = xS[: len(x)]
+    return xS
 
 
 def stft_ham(insig, winsize=256, fftsize=512, hopsize=128):

@@ -676,28 +676,11 @@ class Scaper:
             norm_irs = IR_normalizer(irs)
 
             # SPATIALIZE
-            # norm_irs = np.transpose(norm_irs, (2, 1, 0)) # (n_irs, n_ch, n_ir_samples) -> (n_ir_samples, n_ch, n_irs)
-            # if len(irs) > 1:
-            #     ir_times = np.linspace(0, event.event_duration, len(irs))
-            #     xS = spatialize(x, norm_irs, ir_times, sr=self.sr, s=event.snr)
-            # else:
-            #     ir_times = np.linspace(0, event.event_duration, len(irs) + 1)
-            #     ir_xyzs = np.concatenate([ir_xyzs, ir_xyzs])
-            #     xS = []
-            #     for i in range(norm_irs.shape[1]):
-            #         _x = scipy.signal.convolve(
-            #             x, np.squeeze(norm_irs[:, i]), mode="full", method="fft"
-            #         )
-            #         xS.append(_x)
-            #     xS = np.array(xS).T
-            #     xS = xS[: len(x)]
             # need at least a start and end point for IR interpolation
             if len(irs) == 1:
                 ir_xyzs = np.concatenate([ir_xyzs, ir_xyzs])
             ir_times = np.linspace(0, event.event_duration, len(ir_xyzs))
-            # print(norm_irs.shape)
             norm_irs = np.transpose(norm_irs, (1, 0, 2)) # (n_irs, n_ch, n_ir_samples) -> (n_ch, n_irs, n_ir_samples)
-            # print(norm_irs.shape)
             xS = spatialize(x, norm_irs, ir_times, sr=self.sr, snr=event.snr)
 
 

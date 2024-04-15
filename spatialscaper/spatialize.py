@@ -8,19 +8,11 @@ def stft_ham(y, fft_size=512, win_size=256, hop_size=128, move_to_start=True):
     window = np.sin(np.pi / win_size * np.arange(win_size))**2
     
     # Compute padding and pad the input signal
-    # Compute padding and pad the input signal
-    n_frames = 2 * int(np.ceil(y.shape[-1] / (2.0 * hop_size))) + 1
-    # n_frames = (y.shape[-1] + win_size) // hop_size  # consistent with previous implementation
-    # extra_pad = 0#(n_frames - 1) * hop_size + win_size - len(y)
-    # n_frames = int(2 * np.ceil(len(y) / (2.0 * hop_size)) + 1)
-    # frontpad = win_size - hop_size
-    # backpad = n_frames * hop_size - len(y)
-    # print(n_frames, win_size, hop_size, y.shape, win_size - hop_size, n_frames * hop_size - y.shape[-1])
+    n_frames = 2 * int(np.ceil(y.shape[-1] / (2.0 * hop_size))) + 1  # consistent with previous implementation
     pad_width = [(0, 0)] * (y.ndim - 1) + [(win_size - hop_size, n_frames * hop_size - y.shape[-1])]
     y_padded = np.pad(y, pad_width, mode='constant')
 
     # Use stride tricks to efficiently extract windows
-    # n_frames = (y.shape[-1] + win_size) // hop_size  # consistent with previous implementation
     shape = y_padded.shape[:-1] + (win_size, n_frames)
     strides = y_padded.strides[:-1] + (y_padded.strides[-1], y_padded.strides[-1] * hop_size)
     windows = np.lib.stride_tricks.as_strided(y_padded, shape=shape, strides=strides)
@@ -35,9 +27,9 @@ def stft_ham(y, fft_size=512, win_size=256, hop_size=128, move_to_start=True):
 
 def generate_interpolation_matrix(ir_times, sr, hop_size):
     # frames: n_irs
-    frames = np.ceil((ir_times * sr + hop_size) / hop_size)
+    frames = np.round((ir_times * sr + hop_size) / hop_size)
     # G_interp: n_frames, n_irs
-    G_interp = np.zeros((int(frames[-1]+1), len(frames))) # FIXME: +1 is a hack
+    G_interp = np.zeros((int(frames[-1]), len(frames))) # FIXME: +1 is a hack
     for ni in range(len(frames) - 1):
         tpts = np.arange(frames[ni], frames[ni + 1] + 1, dtype=int) - 1
         ntpts_ratio = np.linspace(0, 1, len(tpts))
@@ -53,43 +45,49 @@ def perform_time_variant_convolution(
     ):
     # get shapes
     n_freq, n_frames_ir, n_ch, n_irs = irspec.shape  # NOTE: (channels, n_irs) is muchh faster than the other way around
-    n_frames = sigspec.shape[1]
+    n_frames = min(sigspec.shape[1], ir_interp.shape[0])  # TODO: constant pad ir_interp to sigspec length
     fft_size = 2 * win_size
 
-    # Temporary buffers: shifted spectrum, interpolation weights
-    W = np.zeros((n_frames_ir, n_irs), dtype=complex)
-    S = np.zeros((n_freq, n_frames_ir), dtype=complex)
-    ctf_ltv = np.zeros((n_freq, n_frames_ir, n_ch), dtype=complex)
+    # # Temporary buffers: shifted spectrum, interpolation weights
+    # W = np.zeros((n_frames_ir, n_irs), dtype=complex)
+    # S = np.zeros((n_freq, n_frames_ir), dtype=complex)
 
-    # Output:
-    # spatialized audio signal: (n_samples, n_ch)
+    # Flip for convolution
+    S = np.ascontiguousarray(sigspec[:, ::-1])
+    W = np.ascontiguousarray(ir_interp[::-1])
+
+    # Output: spatialized audio signal: (n_samples, n_ch)
     spatial_signal = np.zeros(((n_frames + 1) * win_size // 2 + win_size, n_ch))
 
     # tqdm.tqdm(range(n_frames), desc='calculating 🥵...', leave=False)
     for i in range(n_frames):
-        # Shift interpolation buffer
-        W[1:] = W[:-1]  # Shift up
-        W[0] = ir_interp[i]  # Update with current interpolation weights
+        # # Shift interpolation buffer
+        # W[1:] = W[:-1]  # Shift up
+        # W[0] = ir_interp[i]  # Update with current interpolation weights
 
-        # Shift spectrogram buffer
-        S[:, 1:] = S[:, :-1]  # Shift up
-        S[:, 0] = sigspec[:, i]  # Update with the new signal spectrum
+        # # Shift spectrogram buffer
+        # S[:, 1:] = S[:, :-1]  # Shift up
+        # S[:, 0] = sigspec[:, i]  # Update with the new signal spectrum
+
+        # reverse indices for IR frames
+        i_ir = -i-1
+        j_ir = min(-i-1+n_frames_ir, 0) or None
 
         # compute the weighted IR spec: ijkl,jl->ijk  # XXX: Takes ~89% of the time
-        #   irspec:  (freq, frame, channel, n_ir) = (513, 27, 4, 36)
-        # x W:       (    , frame,          n_ir) = (     27,    36)
-        # = ctf_ltv: (freq, frame, channel      ) = (513, 27, 4    )
-        ctf_ltv = np.einsum('ijkl,jl->ijk', irspec, W)
+        #   irspec:  (freq, frame[:n], channel, n_ir) = (513, 27, 4, 36)
+        # x W:       (    , frame[:n],          n_ir) = (     27,    36)
+        # = ctf_ltv: (freq, frame[:n], channel      ) = (513, 27, 4    )
+        ctf_ltv = np.einsum('ijkl,jl->ijk', irspec[:, :i+1], W[i_ir:j_ir])
         # , order='C', casting='no', optimize=['einsum_path', (0, 1)]
 
         # Multiply the signal spectrum with the CTF:  # XXX: Takes about ~7% of the time
-        #   S:       (freq, frame,        ) = (513, 27, 4)
-        # x ctf_ltv: (freq, frame, channel) = (513, 27, 4)
-        # = spec_i:  (freq,      , channel) = (513,   , 4)
-        spec_i = (S[:, :, None] * ctf_ltv).sum(1)
+        #   S:       (freq, frame[:n],        ) = (513, 27, 4)
+        # x ctf_ltv: (freq, frame[:n], channel) = (513, 27, 4)
+        # = spec_i:  (freq,          , channel) = (513,   , 4)
+        spec_i = (S[:, i_ir:j_ir, None] * ctf_ltv).sum(1)
 
         # Inverse FFT to convert the convolution result back to time domain
-        sig_part = scipy.fft.irfft(spec_i, fft_size, norm="forward", axis=0)
+        sig_part = np.real(scipy.fft.irfft(spec_i, fft_size, norm="forward", axis=0))
 
         # overlap-add synthesis
         spatial_signal[i * hop_size : i * hop_size + fft_size] += sig_part
@@ -112,6 +110,18 @@ def spatialize(audio, irs, ir_times, sr, win_size=512, snr=1.0):  # TODO: s->snr
     The convolution is performed in the frequency domain using Short-Time Fourier Transform (STFT).
     It handles both single and multi-channel impulse responses and signals.
 
+    Arguments:
+        audio (np.ndarray): 1-D Input audio signal with shape [audio samples]. 
+        irs (np.ndarray): Impulse response audio signals of shape (channels, IR index, audio samples).
+        ir_times (np.ndarray): Start times for each impulse response corresponding to [IR index]. 
+            Currently, they are linearly cross-faded.
+        sr (float): The audio sample rate for both the signal and the impulse responses.
+        win_size (int): The window size of the FFT
+        snr (float): The signal-to-noise ratio of the audio file. By default, the audio peak is normalized to 1.
+            This is equivalent to multiplying the output signal by this number.
+
+    Returns:
+        np.ndarray: The spatialized audio signal with shape [audio samples, channels].
     '''
     # irs = irs.transpose(1, 2, 0)  # flip dimensions
     
