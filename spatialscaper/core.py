@@ -67,7 +67,7 @@ Event = namedtuple(
 __SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
 __PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "TAU-SNoise_DB")
 __ROOM_RIR_FILE__ = {
-    "metu": "metu_sparg_em32.sofa",
+    "metu": "metu_sparg_{fmt}.sofa",
     "arni": "arni_{fmt}.sofa",
     "bomb_shelter": "bomb_shelter_{fmt}.sofa",
     "gym": "gym_{fmt}.sofa",
@@ -547,10 +547,6 @@ class Scaper:
         Returns:
             numpy.ndarray: An array of XYZ coordinates for the impulse response positions.
         """
-        if self.format == "foa" and self.room == "metu":
-            raise ValueError(
-                '"metu" room is currently only supported in mic (tetrahedral) format. please check again soon.'
-            )
         room_sofa_path = os.path.join(
             self.rir_dir,
             __SPATIAL_SCAPER_RIRS_DIR__,
@@ -569,10 +565,6 @@ class Scaper:
         Returns:
             tuple: A tuple containing the impulse responses, their sampling rate, and their XYZ positions.
         """
-        if self.format == "foa" and self.room == "metu":
-            raise ValueError(
-                '"metu" room is currently only supported in mic (tetrahedral) format. please check again soon.'
-            )
         room_sofa_path = os.path.join(
             self.rir_dir,
             __SPATIAL_SCAPER_RIRS_DIR__,
@@ -586,22 +578,6 @@ class Scaper:
             all_irs = librosa.resample(all_irs, orig_sr=ir_sr, target_sr=self.sr)
             ir_sr = self.sr
         return all_irs, ir_sr, all_ir_xyzs
-
-    def get_format_irs(self, all_irs, fmt="mic"):
-        """
-        Retrieves impulse responses according to the specified format.
-
-        Args:
-            all_irs (numpy.ndarray): Array of all impulse responses.
-            fmt (str): The format for retrieving impulse responses (e.g., 'mic').
-
-        Returns:
-            numpy.ndarray: An array of impulse responses formatted according to the specified format.
-        """
-        if fmt == "mic" and self.room == "metu":
-            return all_irs[:, [5, 9, 25, 21], :]
-        else:
-            return all_irs
 
     def generate_noise(self, event):
         """
@@ -769,7 +745,6 @@ class Scaper:
         """
 
         all_irs, ir_sr, all_ir_xyzs = self.get_room_irs_wav_xyz()
-        all_irs = self.get_format_irs(all_irs)
         self.nchans = all_irs.shape[1]  # a bit ugly but works for now
 
         # initialize output audio array
