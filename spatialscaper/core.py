@@ -8,6 +8,11 @@ import librosa
 import scipy
 import numpy as np
 import warnings
+from tqdm import tqdm
+
+import pyroomacoustics as pra
+from .room_sim import get_tetra_mics, center_mic_coords
+
 
 # Local application/library specific imports
 from .utils import (
@@ -26,7 +31,7 @@ from .utils import (
     save_output,
     sort_matrix_by_columns,
 )
-from .sofa_utils import load_rir_pos, load_pos
+from .sofa_utils import load_rir_pos, load_pos, create_srir_sofa
 
 
 # Sound event classes for DCASE Challenge
@@ -762,3 +767,121 @@ class Scaper:
 
         # save output
         save_output(audiopath, labelpath, out_audio, self.sr, labels)
+
+class Room:
+    def __init__(
+        self,
+        dims,
+        sr=24000,
+        src_locs=None,
+        mic_loc=None,
+        mic_type="tetra",
+        max_order=15,
+        scattering=0.9,
+        wall_abs=0.5,
+        flor_abs=0.1,
+        ceil_abs=0.1
+    ):
+        """
+        Initializes a Room. Should inherit most properties from the pyroomacoustics room class. Stores output to a .sofa file which can be read by the Scape class for generating soundscapes
+    
+        Args:
+            dims (list): Three-element list defining length, width, and height of the defined room (in meters).
+            sr (int): Sample rate of room simulation
+            src_locs (np.ndarray, 3 X N): Element of 3D coordinates defining locations for all sources. If None, generate 9 rings sampled at 1degree increments evenly spaced within the height of the room
+            mic_loc (list): Three-element list defining the centerpoint of the microphone array
+            max_order (int): max order of reflections computed
+            mic_type (string): string defining type of microphone array, or list of coordinates to define custom microphone array options are tetra right now
+            TODO: add em32 coordinates
+            scattering: (float) scattering coefficient
+            wall_abs: (float) wall absorption coefficient
+            flor_abs: (float) floor absorption coefficient
+            ceil_abs: (float) ceiling absorption coefficient
+    
+    
+        """
+    
+        
+        absorption_arr = [wall_abs] * 4 + [flor_abs, ceil_abs]
+        materials = [pra.Material(a, scattering) for a in absorption_arr]
+        
+        if mic_type == 'tetra':
+            mic_coords, mic_dirs = get_tetra_mics()
+        else:
+            print("Unsupported mic type")
+    
+        if mic_loc is None:
+            mic_loc = np.array([dims[0]/2, dims[1]/2, dims[2]/2])
+            
+        centered_mics  = center_mic_coords(mic_coords, mic_loc)
+    
+        self.dims = dims
+        self.sr = sr
+        self.materials = materials
+        self.max_order = max_order
+        self.mic_type = mic_type
+        self.mic_loc = mic_loc
+        self.mics = list(centered_mics)
+        self.mic_dirs = mic_dirs
+        self.src_locs = src_locs
+    
+    
+    def compute_rirs(self, sofa_path, rir_len=7200, flip=True, db_name="Sim RIR", room_name="Sim Room", n_angles=360):
+        if self.src_locs is None:
+    
+            path_stack = np.empty((0, 3))
+            rir_stack = np.empty((0, len(self.mics), rir_len))
+            
+            heights = np.linspace(0,self.dims[2],11)[1:10] #generate 9 evenly spaced heights
+            rad = 0.4*np.minimum(self.dims[0], self.dims[1])
+            deg = np.linspace(0, 2*np.pi, n_angles)
+    
+            for j, height in enumerate(tqdm(heights)):
+                
+                path = [[rad*np.cos(deg[i]),rad*np.sin(deg[i]), height]for i in range(n_angles)]
+                path_rirs = np.empty((len(self.mics), len(path), rir_len))
+    
+                room = pra.ShoeBox(
+                    self.dims,
+                    fs=self.sr,
+                    materials=self.materials[0], #todo fix list import
+                    max_order=self.max_order,
+                )
+    
+                room.add_microphone_array(np.array(self.mics).T, directivity=self.mic_dirs)
+                for source in path:
+                    try:
+                        room.add_source(np.maximum(source, 0))
+    
+                    except ValueError:
+                        print("Source at {} is not inside room of dimensions {}"\
+                              .format(source, room_dim)
+                        )
+                room.compute_rir()
+                for k in range(len(self.mics)):
+                    for l in range(len(path)):
+                        path_rirs[k, l] = room.rir[k][l][:rir_len]
+                
+                if flip:
+                    if j % 2 == 1:
+                        # flip every other height, as in DCASE
+                        path_rirs = path_rirs[:, ::-1]
+                        path = path[::-1]
+    
+                path_rirs = np.moveaxis(path_rirs, [0, 1, 2], [1, 0, 2])
+    
+                rir_stack = np.concatenate((rir_stack, path_rirs), axis=0)
+                path_stack = np.concatenate((path_stack, path), axis=0)
+    
+            create_srir_sofa(
+                sofa_path,
+                rir_stack,
+                path_stack,
+                self.mic_loc,
+                db_name=db_name,
+                room_name=room_name,
+                listener_name=self.mic_type,
+            )
+        else:
+            print("Unsupported src location")
+                
