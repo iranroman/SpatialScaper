@@ -1,11 +1,15 @@
 # datasets
 datasets/
 output/
+tests/*.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# line-profiler files
+*.lprof
 
 # C extensions
 *.so

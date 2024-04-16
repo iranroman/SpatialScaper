@@ -192,11 +192,11 @@ def save_output(audiofile, labelfile, x, sr, labels, fmt="mic"):
 
 def _spatialize(sig, irs, ir_times, win_size=512, sr=24000, s=1.0):
     output_signal = ctf_ltv_direct(sig, irs, ir_times, sr, win_size)
-    output_signal /= np.abs(output_signal).max()
+    output_signal /= np.abs(output_signal).max(initial=1e-15)
     return s * output_signal
 
 
-def spatialize(x, norm_irs, ir_times, sr, snr):
+def spatialize(x, norm_irs, ir_times, sr, snr=1.0):
     """
     Spatializes a mono audio signal using convolution with multiple impulse responses.
 
@@ -332,7 +332,7 @@ def stft_ham(insig, winsize=256, fftsize=512, hopsize=128):
 
     return spectrum
 
-# @profile
+@profile
 def ctf_ltv_direct(sig, irs, ir_times, fs, win_size):
     """
     function borrowed from
@@ -418,7 +418,7 @@ def ctf_ltv_direct(sig, irs, ir_times, fs, win_size):
     for ni in range(nIrs - 1):
         tpts = np.arange(tStamps[ni], tStamps[ni + 1] + 1, dtype=int) - 1
         ntpts = len(tpts)
-        ntpts_ratio = np.arange(0, ntpts) / (ntpts - 1)
+        ntpts_ratio = np.arange(0, 1, ntpts)
         Gint[tpts, ni] = 1 - ntpts_ratio
         Gint[tpts, ni + 1] = ntpts_ratio
 

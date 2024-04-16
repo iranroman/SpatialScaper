@@ -2,8 +2,10 @@ import numpy as np
 import scipy.fft
 # import tqdm
 
+__all__ = ['spatialize']
 
-def stft_ham(y, fft_size=512, win_size=256, hop_size=128, move_to_start=True):
+
+def stft(y, fft_size=512, win_size=256, hop_size=128, stft_dims_first=True):
     # Generate the window
     window = np.sin(np.pi / win_size * np.arange(win_size))**2
     
@@ -19,17 +21,20 @@ def stft_ham(y, fft_size=512, win_size=256, hop_size=128, move_to_start=True):
     
     # Apply window function and compute FFT
     spec = scipy.fft.rfft(windows * window[:, None], fft_size, norm="backward", axis=-2)
-    if move_to_start:
-        spec = np.moveaxis(np.moveaxis(spec, -1, 0), -1, 0)
+
+    # move stft dims to the front (it's what the tv conv expects)
+    if stft_dims_first:
+        spec = np.moveaxis(spec, [-2, -1], [0, 1])
     spec = np.ascontiguousarray(spec)
     return spec
 
 
-def generate_interpolation_matrix(ir_times, sr, hop_size):
+def generate_interpolation_matrix(ir_times, sr, hop_size, n_frames=None):
     # frames: n_irs
     frames = np.round((ir_times * sr + hop_size) / hop_size)
+    n_frames = n_frames if n_frames is not None else int(frames[-1])
     # G_interp: n_frames, n_irs
-    G_interp = np.zeros((int(frames[-1]), len(frames))) # FIXME: +1 is a hack
+    G_interp = np.zeros((n_frames, len(frames)))
     for ni in range(len(frames) - 1):
         tpts = np.arange(frames[ni], frames[ni + 1] + 1, dtype=int) - 1
         ntpts_ratio = np.linspace(0, 1, len(tpts))
@@ -39,67 +44,47 @@ def generate_interpolation_matrix(ir_times, sr, hop_size):
 
 
 # @profile
-def perform_time_variant_convolution(
-        sigspec, irspec, ir_interp, 
-        win_size, hop_size
-    ):
+def perform_time_variant_convolution(S_audio, S_ir, W_ir, win_size, hop_size):
     # get shapes
-    n_freq, n_frames_ir, n_ch, n_irs = irspec.shape  # NOTE: (channels, n_irs) is muchh faster than the other way around
-    n_frames = min(sigspec.shape[1], ir_interp.shape[0])  # TODO: constant pad ir_interp to sigspec length
+    n_freq, n_frames_ir, n_ch, n_irs = S_ir.shape  # NOTE: (channels, n_irs) is muchh faster than the other way around
+    n_frames = min(S_audio.shape[1], W_ir.shape[0])  # TODO: constant pad ir_interp to sigspec length
     fft_size = 2 * win_size
 
-    # # Temporary buffers: shifted spectrum, interpolation weights
-    # W = np.zeros((n_frames_ir, n_irs), dtype=complex)
-    # S = np.zeros((n_freq, n_frames_ir), dtype=complex)
-
-    # Flip for convolution
-    S = np.ascontiguousarray(sigspec[:, ::-1])
-    W = np.ascontiguousarray(ir_interp[::-1])
+    # Invert time for convolution
+    S = np.ascontiguousarray(S_audio[:, ::-1])
+    W_ir = np.ascontiguousarray(W_ir[::-1]).astype(complex)
 
     # Output: spatialized audio signal: (n_samples, n_ch)
-    spatial_signal = np.zeros(((n_frames + 1) * win_size // 2 + win_size, n_ch))
+    spatial_audio = np.zeros(((n_frames + 1) * win_size // 2 + win_size, n_ch))
 
     # tqdm.tqdm(range(n_frames), desc='calculating 🥵...', leave=False)
     for i in range(n_frames):
-        # # Shift interpolation buffer
-        # W[1:] = W[:-1]  # Shift up
-        # W[0] = ir_interp[i]  # Update with current interpolation weights
-
-        # # Shift spectrogram buffer
-        # S[:, 1:] = S[:, :-1]  # Shift up
-        # S[:, 0] = sigspec[:, i]  # Update with the new signal spectrum
-
         # reverse indices for IR frames
         i_ir = -i-1
         j_ir = min(-i-1+n_frames_ir, 0) or None
 
-        # compute the weighted IR spec: ijkl,jl->ijk  # XXX: Takes ~89% of the time
-        #   irspec:  (freq, frame[:n], channel, n_ir) = (513, 27, 4, 36)
-        # x W:       (    , frame[:n],          n_ir) = (     27,    36)
-        # = ctf_ltv: (freq, frame[:n], channel      ) = (513, 27, 4    )
-        ctf_ltv = np.einsum('ijkl,jl->ijk', irspec[:, :i+1], W[i_ir:j_ir])
-        # , order='C', casting='no', optimize=['einsum_path', (0, 1)]
+        # compute the weighted IR spectrogram: ijkl,jl->ijk  # XXX: Takes ~72% of the time
+        # (freq,  , ch, nir) x (   , frame,   , nir) = (freq, frame, ch,   )
+        ctf_ltv = np.einsum('ijkl,jl->ijk', S_ir[:, :i+1], W_ir[i_ir:j_ir])
 
-        # Multiply the signal spectrum with the CTF:  # XXX: Takes about ~7% of the time
-        #   S:       (freq, frame[:n],        ) = (513, 27, 4)
-        # x ctf_ltv: (freq, frame[:n], channel) = (513, 27, 4)
-        # = spec_i:  (freq,          , channel) = (513,   , 4)
-        spec_i = (S[:, i_ir:j_ir, None] * ctf_ltv).sum(1)
+        # Multiply the signal spectrogram with the CTF:  # XXX: Takes about ~6% of the time
+        # (freq,  , ch) x (freq, frame,   ) = (freq,   ch)
+        Si = np.einsum('ijk,ij->ik', ctf_ltv, S[:, i_ir:j_ir])
 
-        # Inverse FFT to convert the convolution result back to time domain
-        sig_part = np.real(scipy.fft.irfft(spec_i, fft_size, norm="forward", axis=0))
+        # Inverse FFT to convert freq to time domain  # XXX: Takes about ~14% of the time
+        audio_frame = np.real(scipy.fft.irfft(Si, fft_size, norm="forward", axis=0))
 
         # overlap-add synthesis
-        spatial_signal[i * hop_size : i * hop_size + fft_size] += sig_part
+        spatial_audio[i * hop_size : i * hop_size + fft_size] += audio_frame
 
     # clip output - consistent with previous implementation
-    spatial_signal = spatial_signal[win_size:(n_frames * win_size) // 2, :]
-    return spatial_signal
+    spatial_audio = spatial_audio[win_size:(n_frames * win_size) // 2, :]
+    return spatial_audio
 
 
 def apply_snr(x, snr):
-    x /= max(np.abs(x).max(), 1e-15)
-    return x * snr
+    x *= snr / np.abs(x).max(initial=1e-15)
+    return x
 
 
 # @profile
@@ -123,10 +108,8 @@ def spatialize(audio, irs, ir_times, sr, win_size=512, snr=1.0):  # TODO: s->snr
     Returns:
         np.ndarray: The spatialized audio signal with shape [audio samples, channels].
     '''
-    # irs = irs.transpose(1, 2, 0)  # flip dimensions
-    
     n_ch, n_irs, n_ir_samples = irs.shape
-    if n_irs == 1:  # trivial - single ir
+    if n_irs == 1:  # trivial - single ir - # XXX: this is slower than stft convolve, but removing it changes the output so.
         audio = scipy.signal.fftconvolve(audio[:, None], irs[:, 0].T, mode="full", axes=0)[:len(audio), :]
         return audio
     if n_irs == 0:  # unspatialized
@@ -137,15 +120,18 @@ def spatialize(audio, irs, ir_times, sr, win_size=512, snr=1.0):  # TODO: s->snr
     hop_size = win_size // 2
 
     # check ir shape
-    assert n_irs == ir_times.shape[0], f"ir_times must have the same number of IRs as irs. got {n_irs} and {ir_times.shape}"
+    assert n_irs == 1 or n_irs == ir_times.shape[0], f"ir_times must have the same number of IRs as irs. got {n_irs} and {ir_times.shape}"
 
-    # get the ir interpolation matrix: (n_frames, n_irs)
-    G_interp = generate_interpolation_matrix(ir_times, sr, hop_size)
+    # compute spectrograms
+    # ir_spec:    (n_ch, n_irs, n_freq, n_frames)
+    # audio_spec: (             n_freq, n_frames)
+    ir_spec = stft(irs, fft_size=2 * win_size, win_size=win_size, hop_size=hop_size)
+    audio_spec = stft(audio, fft_size=2 * win_size, win_size=win_size, hop_size=hop_size)  # NOTE: as audio grows, this takes majority of time
 
-    # irspec: (n_irs, n_ch_irs, n_freq, n_frames)
-    # sigspec: (n_ch, n_freq, n_frames)
-    irspec = stft_ham(irs, fft_size=2 * win_size, win_size=win_size, hop_size=hop_size, move_to_start=True)
-    sigspec = stft_ham(audio, fft_size=2 * win_size, win_size=win_size, hop_size=hop_size, move_to_start=True)
-    spatial_signal = perform_time_variant_convolution(sigspec, irspec, G_interp, win_size, hop_size)
-    spatial_signal = apply_snr(spatial_signal, snr)
-    return spatial_signal
+    # get the ir interpolation weight matrix: (n_frames, n_irs)
+    W_ir = generate_interpolation_matrix(ir_times, sr, hop_size, audio_spec.shape[1])
+
+    # convolve signal with irs
+    spatial_audio = perform_time_variant_convolution(audio_spec, ir_spec, W_ir, win_size, hop_size)
+    spatial_audio = apply_snr(spatial_audio, snr)
+    return spatial_audio
