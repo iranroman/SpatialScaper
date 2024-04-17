@@ -332,7 +332,7 @@ def stft_ham(insig, winsize=256, fftsize=512, hopsize=128):
 
     return spectrum
 
-@profile
+# @profile
 def ctf_ltv_direct(sig, irs, ir_times, fs, win_size):
     """
     function borrowed from
@@ -418,7 +418,7 @@ def ctf_ltv_direct(sig, irs, ir_times, fs, win_size):
     for ni in range(nIrs - 1):
         tpts = np.arange(tStamps[ni], tStamps[ni + 1] + 1, dtype=int) - 1
         ntpts = len(tpts)
-        ntpts_ratio = np.arange(0, 1, ntpts)
+        ntpts_ratio = np.linspace(0, 1, ntpts)
         Gint[tpts, ni] = 1 - ntpts_ratio
         Gint[tpts, ni + 1] = ntpts_ratio
 

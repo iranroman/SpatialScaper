@@ -24,7 +24,7 @@ def stft(y, fft_size=512, win_size=256, hop_size=128, stft_dims_first=True):
 
     # move stft dims to the front (it's what the tv conv expects)
     if stft_dims_first:
-        spec = np.moveaxis(spec, [-2, -1], [0, 1])
+        spec = np.moveaxis(np.moveaxis(spec, -1, 0), -1, 0)
     spec = np.ascontiguousarray(spec)
     return spec
 
