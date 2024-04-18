@@ -288,8 +288,9 @@ class Scaper:
             source_file_ = random.choice(source_file[1])
         elif source_file[0] == "choose":
             source_file_ = random.choice(
-                get_files_list(os.path.join(self.foreground_dir, label_), split)
-            )
+                get_files_list(os.path.join(self.foreground_dir, label_), split))
+        elif source_file[0] == "const":
+            source_file_ = source_file[1]
 
         if source_time[0] == "const":
             source_time_ = source_time[1]
@@ -325,13 +326,17 @@ class Scaper:
             # round down to one decimal value
             event_time_ = (self.label_rate * event_time_ // 1) / self.label_rate
 
+        
         if event_position[0] == "choose":
             moving = bool(random.getrandbits(1))
+        elif len(event_position[1])==3:
+            moving = True
         else:
-            moving = True if event_position[0] == "moving" else False
+            moving = True if event_position[0] == "moving" else False #????? what 
+        
         if moving:  # currently the trajectory shape is randomly selected
-            shape = "circular" if bool(random.getrandbits(1)) else "linear"
             if event_position[1][0] == "uniform" and moving:
+                shape = "circular" if bool(random.getrandbits(1)) else "linear"
                 event_position_ = self.define_trajectory(
                     event_position[1],
                     int(event_duration_ / (1 / self.label_rate)),
@@ -339,12 +344,25 @@ class Scaper:
                     event_duration_,
                     self.speed_limit,
                 )
-        else:
+            elif event_position[1][0] == "line":
+                npoints = int(event_duration_ / (1 / self.label_rate))
+                start = event_position[1][1]
+                stop = event_position[1][2]
+                xs = np.linspace(start[0], stop[0], npoints)
+                ys = np.linspace(start[1], stop[1], npoints)
+                zs = np.linspace(start[2], stop[2], npoints)
+                event_position_ = [[xs[i],ys[i], zs[i]] for i in range(npoints)]
+        elif event_position[1][0] == "const":
+            xyz = event_position[1][1]
+            event_position_ = [xyz]
+        elif event_position[1][0] == "uniform":
             xyz_min, xyz_max = self._get_room_min_max()
             event_position_ = [self._gen_xyz(xyz_min, xyz_max)]
 
         if snr[0] == "uniform" and len(snr) == 3:
             snr_ = random.uniform(*snr[1:])
+        elif snr[0] == "const":
+            snr_ = snr[1]
         else:
             snr_ = random.uniform(*_DEFAULT_SNR_RANGE)
 
@@ -552,11 +570,18 @@ class Scaper:
         Returns:
             numpy.ndarray: An array of XYZ coordinates for the impulse response positions.
         """
-        room_sofa_path = os.path.join(
-            self.rir_dir,
-            __SPATIAL_SCAPER_RIRS_DIR__,
-            __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
-        )
+
+        if self.room in __ROOM_RIR_FILE__.keys():
+            self.room_sofa_path = os.path.join(
+                self.rir_dir,
+                __SPATIAL_SCAPER_RIRS_DIR__,
+                __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
+            )
+        else:
+            room_sofa_path = os.path.join(
+                self.rir_dir,
+                self.room,
+            )
         return load_pos(room_sofa_path, doas=False)
 
     def get_room_irs_wav_xyz(self, wav=True, pos=True):
@@ -570,11 +595,18 @@ class Scaper:
         Returns:
             tuple: A tuple containing the impulse responses, their sampling rate, and their XYZ positions.
         """
-        room_sofa_path = os.path.join(
-            self.rir_dir,
-            __SPATIAL_SCAPER_RIRS_DIR__,
-            __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
-        )
+        if self.room in __ROOM_RIR_FILE__.keys():
+            self.room_sofa_path = os.path.join(
+                self.rir_dir,
+                __SPATIAL_SCAPER_RIRS_DIR__,
+                __ROOM_RIR_FILE__[self.room].format(fmt=self.format),
+            )
+        else:
+            room_sofa_path = os.path.join(
+                self.rir_dir,
+                self.room,
+            )
+            
         all_irs, ir_sr, all_ir_xyzs = load_rir_pos(room_sofa_path, doas=False)
         ir_sr = ir_sr.data[0]
         all_irs = all_irs.data

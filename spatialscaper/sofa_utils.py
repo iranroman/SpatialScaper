@@ -2,11 +2,10 @@ import os
 import mat73
 import sys
 from spatialscaper import tau_utils
-import numpy as np
-import pysofaconventions as pysofa
-
+import numpy as np 
 from netCDF4 import Dataset
 import time
+import pysofaconventions as pysofa
 
 
 def load_flat_tau_srir(tau_db_dir, room_idx, aud_fmt="mic", traj=None, flip=True):
@@ -226,16 +225,32 @@ def load_rir_pos(filepath, doas=True):
     The source positions are normalized to unit vectors if 'doas' is True to represent directions rather than positions.
     """
     sofa = pysofa.SOFAFile(filepath, "r")
-    assert sofa.isValid()
     rirs = sofa.getVariableValue("Data.IR")
     rirs_sr = sofa.getVariableValue("Data.SamplingRate")
     source_pos = sofa.getVariableValue("SourcePosition")
+    _, meas_type = sofa.getPositionVariableInfo('SourcePosition')
     if doas:
         source_pos = (
             source_pos * (1 / np.sqrt(np.sum(source_pos**2, axis=1)))[:, np.newaxis]
         )  # normalize
     sofa.close()
-    return rirs, rirs_sr, source_pos
+
+    if len(rirs.shape)>3:
+        axes  = rirs.shape
+        rirs = rirs.reshape((axes[0], axes[1], axes[-1]))
+    
+    if meas_type == 'cartesian':
+        return rirs, rirs_sr, source_pos
+    elif meas_type == 'spherical':
+        azi = source_pos[:,0]/360 * 2 * np.pi
+        ele = source_pos[:,1]/360 * 2 * np.pi
+        r = source_pos[:,2]
+
+        source_pos[:,0] = r * np.cos(azi) * np.cos(ele)
+        source_pos[:,1] = r * np.sin(azi) * np.cos(ele)
+        source_pos[:,2] = r * np.sin(ele)
+
+        return rirs, rirs_sr, source_pos
 
 
 def load_rir(filepath):
@@ -267,11 +282,33 @@ def load_pos(filepath, doas=True):
     useful for applications requiring directional information rather than absolute positions.
     """
     sofa = pysofa.SOFAFile(filepath, "r")
-    assert sofa.isValid()
     source_pos = sofa.getVariableValue("SourcePosition")
+    _, meas_type = sofa.getPositionVariableInfo('SourcePosition')
+    
     if doas:
         source_pos = (
             source_pos * (1 / np.sqrt(np.sum(source_pos**2, axis=1)))[:, np.newaxis]
         )  # normalize
     sofa.close()
-    return source_pos
+    if meas_type == 'cartesian':
+        return source_pos
+    elif meas_type == 'spherical':
+        azi = source_pos[:,0]/360 * 2 * np.pi
+        ele = source_pos[:,1]/360 * 2 * np.pi
+        r = source_pos[:,2]
+
+        source_pos[:,0] = r * np.cos(azi) * np.cos(ele)
+        source_pos[:,1] = r * np.sin(azi) * np.cos(ele)
+        source_pos[:,2] = r * np.sin(ele)
+
+        return source_pos
+
+
+
+
+
+
+
+
+
+
