@@ -18,7 +18,7 @@ def stft(y, fft_size=512, win_size=256, hop_size=128, stft_dims_first=True):
     shape = y_padded.shape[:-1] + (win_size, n_frames)
     strides = y_padded.strides[:-1] + (y_padded.strides[-1], y_padded.strides[-1] * hop_size)
     windows = np.lib.stride_tricks.as_strided(y_padded, shape=shape, strides=strides)
-    
+
     # Apply window function and compute FFT
     spec = scipy.fft.rfft(windows * window[:, None], fft_size, norm="backward", axis=-2)
 
@@ -44,7 +44,7 @@ def generate_interpolation_matrix(ir_times, sr, hop_size, n_frames=None):
 
 
 # @profile
-def perform_time_variant_convolution(S_audio, S_ir, W_ir, win_size, hop_size):
+def perform_time_variant_convolution(S_audio, S_ir, W_ir, win_size, hop_size, _ir_slice_min=0, _ir_relevant_ratio_max=1):
     # get shapes
     n_freq, n_frames_ir, n_ch, n_irs = S_ir.shape  # NOTE: (channels, n_irs) is muchh faster than the other way around
     n_frames = min(S_audio.shape[1], W_ir.shape[0])  # TODO: constant pad ir_interp to sigspec length
@@ -64,8 +64,17 @@ def perform_time_variant_convolution(S_audio, S_ir, W_ir, win_size, hop_size):
         j_ir = min(-i-1+n_frames_ir, 0) or None
 
         # compute the weighted IR spectrogram: ijkl,jl->ijk  # XXX: Takes ~72% of the time
+        sir = S_ir[:, :i+1]
+        wir = W_ir[i_ir:j_ir]
+        # slice active irs to reduce computation
+        if _ir_slice_min is not None and n_irs >= _ir_slice_min:
+            relevant = np.any(wir != 0, axis=0)
+            if relevant.mean() < _ir_relevant_ratio_max:  # could optimize this
+                sir = sir[:, :, :, relevant]  # this is a copy because of the boolean array :/
+                wir = wir[:, relevant]
+
         # (freq,  , ch, nir) x (   , frame,   , nir) = (freq, frame, ch,   )
-        ctf_ltv = np.einsum('ijkl,jl->ijk', S_ir[:, :i+1], W_ir[i_ir:j_ir])
+        ctf_ltv = np.einsum('ijkl,jl->ijk', sir, wir)
 
         # Multiply the signal spectrogram with the CTF:  # XXX: Takes about ~6% of the time
         # (freq,  , ch) x (freq, frame,   ) = (freq,   ch)
@@ -88,7 +97,7 @@ def apply_snr(x, snr):
 
 
 # @profile
-def spatialize(audio, irs, ir_times, sr, win_size=512, snr=1.0):  # TODO: s->snr
+def spatialize(audio, irs, ir_times, sr, win_size=512, snr=1.0):
     '''Performs time-variant convolution of a signal with multiple impulse responses.
 
     This function convolves an input signal with a series of impulse responses that vary over time.
@@ -109,9 +118,10 @@ def spatialize(audio, irs, ir_times, sr, win_size=512, snr=1.0):  # TODO: s->snr
         np.ndarray: The spatialized audio signal with shape [audio samples, channels].
     '''
     n_ch, n_irs, n_ir_samples = irs.shape
-    if n_irs == 1:  # trivial - single ir - # XXX: this is slower than stft convolve, but removing it changes the output so.
-        audio = scipy.signal.fftconvolve(audio[:, None], irs[:, 0].T, mode="full", axes=0)[:len(audio), :]
-        return audio
+    if n_irs == 1:  # trivial - single ir
+        spatial_audio = scipy.signal.fftconvolve(audio[:, None], irs[:, 0].T, mode="full", axes=0)[:len(audio), :]
+        assert spatial_audio.shape == (audio.shape[0], n_ch)
+        return spatial_audio
     if n_irs == 0:  # unspatialized
         return np.repeat(audio[:, None], n_ch, 1)
 
@@ -123,15 +133,23 @@ def spatialize(audio, irs, ir_times, sr, win_size=512, snr=1.0):  # TODO: s->snr
     assert n_irs == 1 or n_irs == ir_times.shape[0], f"ir_times must have the same number of IRs as irs. got {n_irs} and {ir_times.shape}"
 
     # compute spectrograms
-    # ir_spec:    (n_ch, n_irs, n_freq, n_frames)
-    # audio_spec: (             n_freq, n_frames)
+    # ir_spec:    (n_freq, n_frames, n_ch, n_irs)
+    # audio_spec: (n_freq, n_frames,            )
     ir_spec = stft(irs, fft_size=2 * win_size, win_size=win_size, hop_size=hop_size)
     audio_spec = stft(audio, fft_size=2 * win_size, win_size=win_size, hop_size=hop_size)  # NOTE: as audio grows, this takes majority of time
+    _assert_shape_match(ir_spec.shape, (win_size+1, None, n_ch, n_irs))
+    _assert_shape_match(audio_spec.shape, (win_size+1, None))
 
-    # get the ir interpolation weight matrix: (n_frames, n_irs)
-    W_ir = generate_interpolation_matrix(ir_times, sr, hop_size, audio_spec.shape[1])
+    # get the ir interpolation weight matrix: (n_frames, n_irs)  # TODO: pass audio_spec.shape[1]
+    W_ir = generate_interpolation_matrix(ir_times, sr, hop_size)#, audio_spec.shape[1]
+    _assert_shape_match(W_ir.shape, (None, n_irs))
+    assert audio_spec.shape[1] -2 <= W_ir.shape[0] <= audio_spec.shape[1], f'{W_ir.shape}: {W_ir.shape[0]}!={audio_spec.shape[1]} - {ir_times}'
 
     # convolve signal with irs
     spatial_audio = perform_time_variant_convolution(audio_spec, ir_spec, W_ir, win_size, hop_size)
     spatial_audio = apply_snr(spatial_audio, snr)
+    _assert_shape_match(spatial_audio.shape, (None, n_ch)) #audio.shape[0]
     return spatial_audio
+
+def _assert_shape_match(shape_a, shape_b, msg=None):
+    assert all(a==b or b is None for a, b in zip(shape_a, shape_b)), msg or f'{shape_a} != {shape_b}'

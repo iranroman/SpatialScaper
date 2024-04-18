@@ -55,7 +55,9 @@ def generate_soundscape(index):
     n_events = n_events if n_events > 0 else 1  # n_events should be greater than zero
 
     for _ in range(n_events):
-        ssc.add_event()  # randomly choosing and spatializing an FSD50K sound event
+        ssc.add_event(
+            event_position=("moving", ("uniform", None, None))
+        )  # randomly choosing and spatializing an FSD50K sound event
 
     audiofile = os.path.join(OUTPUT_DIR, FORMAT, track_name)
     labelfile = os.path.join(OUTPUT_DIR, "labels", track_name)

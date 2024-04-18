@@ -196,7 +196,7 @@ def _spatialize(sig, irs, ir_times, win_size=512, sr=24000, s=1.0):
     return s * output_signal
 
 
-def spatialize(x, norm_irs, ir_times, sr, snr=1.0):
+def spatialize(x, norm_irs, ir_times, win_size=512, sr=24000, snr=1.0):
     """
     Spatializes a mono audio signal using convolution with multiple impulse responses.
 
@@ -237,7 +237,7 @@ def spatialize(x, norm_irs, ir_times, sr, snr=1.0):
     # this is from synthesize_events_and_labels so that the two spatialize functions have the same inputs
     norm_irs = np.transpose(norm_irs, (2, 0, 1)) # (n_ch, n_irs, n_ir_samples) -> (n_ir_samples, n_ch, n_irs)
     if norm_irs.shape[-1] > 1:
-        xS = _spatialize(x, norm_irs, ir_times, sr=sr, s=snr)
+        xS = _spatialize(x, norm_irs, ir_times, win_size, sr, s=snr)
     else:
         xS = []
         for i in range(norm_irs.shape[1]):

@@ -656,7 +656,7 @@ class Scaper:
         """
 
         all_labels = []
-        events = tqdm.tqdm(self.fg_events, desc="🧪 Spatializing events 📐🤔...")
+        events = tqdm.tqdm(self.fg_events, desc="🧪 Spatializing events 🔊...")
         for ievent, event in enumerate(events):
             # fetch trajectory from irs
             ir_idx = traj_2_ir_idx(all_ir_xyzs, event.event_position)
