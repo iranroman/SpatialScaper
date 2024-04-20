@@ -11,7 +11,7 @@ from .sofa_utils import load_rir_pos, load_pos
 __SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
 __PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "TAU-SNoise_DB")
 __ROOM_RIR_FILE__ = {
-    "metu": "metu_sparg_em32.sofa",
+    "metu": "metu_sparg_{fmt}.sofa",
     "arni": "arni_{fmt}.sofa",
     "bomb_shelter": "bomb_shelter_{fmt}.sofa",
     "gym": "gym_{fmt}.sofa",
@@ -90,10 +90,6 @@ class SOFARoom(BaseRoom):
     @property
     def sofa_path(self):
         """Path to the SOFA file for this room."""
-        if self.format == "foa" and self.room == "metu":
-            raise ValueError(
-                '"metu" room is currently only supported in mic (tetrahedral) format. please check again soon.'
-            )
         return os.path.join(
             self.rir_dir,
             __SPATIAL_SCAPER_RIRS_DIR__,
@@ -139,14 +135,7 @@ class SOFARoom(BaseRoom):
         if sr is not None and ir_sr != sr:
             all_irs = librosa.resample(all_irs, orig_sr=ir_sr, target_sr=sr)
             ir_sr = sr
-        if format:
-            self._format_irs(all_irs)
         return all_irs, ir_sr, all_ir_xyzs
-
-    def _format_irs(self, all_irs, fmt="mic"):
-        if fmt == "mic" and self.room == "metu":
-            return all_irs[:, [5, 9, 25, 21], :]
-        return all_irs
 
 
 def get_room(rir_dir, *a, **kw):
