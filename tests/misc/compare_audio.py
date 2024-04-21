@@ -19,7 +19,7 @@ def main(path_a, path_b):
     n_ch = audio_a.shape[0]
     
     # Calculate residuals for each channel and visualize again
-    fig, axs = plt.subplots(n_ch, 3, figsize=(14, 10))
+    fig, axs = plt.subplots(3, n_ch, figsize=(16, 8))
 
     for i in range(n_ch):
         Sa = librosa.amplitude_to_db(np.abs(librosa.stft(audio_a[i])), ref=np.max)
@@ -27,9 +27,10 @@ def main(path_a, path_b):
         # Compute residual
         residual = Sa - Sb
         print(Sa.shape, Sb.shape, np.allclose(Sa, Sb), residual.min(), residual.max())
-        librosa.display.specshow(Sa, y_axis='log', sr=sr_a, ax=axs[i, 0])
-        librosa.display.specshow(Sa, y_axis='log', sr=sr_a, ax=axs[i, 1])
-        librosa.display.specshow(residual, y_axis='log', sr=sr_a, ax=axs[i, 2], cmap='coolwarm')
+        librosa.display.specshow(Sa, y_axis='log', sr=sr_a, ax=axs[0, i])
+        librosa.display.specshow(Sa, y_axis='log', sr=sr_a, ax=axs[1, i])
+        librosa.display.specshow(residual, y_axis='log', sr=sr_a, ax=axs[2, i], cmap='coolwarm')
+    plt.tight_layout()
     plt.savefig('compare_spec.png')
 
 
