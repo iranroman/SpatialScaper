@@ -4,7 +4,7 @@ import os
 ss.utils.set_seed(111)
 
 # Constants
-NSCAPES = 3  # Number of soundscapes to generate
+NSCAPES = 15  # Number of soundscapes to generate
 FOREGROUND_DIR = "datasets/sound_event_datasets/FSD50K_FMA"  # Directory with FSD50K foreground sound files
 RIR_DIR = (
     "datasets/rir_datasets"  # Directory containing Room Impulse Response (RIR) files
