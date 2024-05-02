@@ -72,20 +72,21 @@ def main():
     # audio_lengths = [5, 15, 30, 60, 120]
     # num_irs = [1, 2, 3, 4, 5, 6, 7, 8, 16, 32]
     audio_lengths = [5, 15, 30, 60, 120]
-    num_irs = [1, 2, 3, 4, 5, 6, 7, 8, 16, 32]
+    num_irs = [1, 2, 3, 4, 5, 6, 7, 8, 16, 32, 48, 64]
     # audio_lengths = [30, 60, 120]
     # num_irs = [8]
     sr = 24000
     ir_samples = 7200
     runs_per_test = 5
 
+    # there is some fixed warm-up cost for scipy fft
     spatialize(np.random.randn(1000), np.random.randn(2, 1, ir_samples), np.linspace(0, 1000 / sr, 2), sr=sr)
     # n_ir = 9
     # length = 15
     # spatialize_old(np.random.randn(int(length * sr)), np.random.randn(2, n_ir, ir_samples), np.linspace(0, length, max(n_ir, 2)), sr=sr)
 
     results_new = generate_data(spatialize, audio_lengths, num_irs, ir_samples, sr, runs_per_test, "New", f'tests/output/new.npz')
-    results_old = generate_data(spatialize_old, audio_lengths, [x for x in num_irs if x < 8], ir_samples, sr, runs_per_test, "Old", f'tests/output/old.npz')
+    results_old = generate_data(spatialize_old, audio_lengths, num_irs, ir_samples, sr, runs_per_test, "Old", f'tests/output/old.npz')
     # np.savez(f"{PLT_DIR}/profile_spatialize_results.npz", results_old=results_old, results_new=results_new, num_irs=num_irs, audio_lengths=audio_lengths)
     results_old = np.pad(results_old, ((0, len(results_new) - len(results_old)), (0,0)))
     plot_results(results_old, results_new, num_irs, audio_lengths)
@@ -109,7 +110,7 @@ def plot_results(results_old, results_new, num_irs, audio_lengths):
     plt.subplot(1, 3, 1)
     scale = results_new.max()-1
     ax = sns.heatmap(results_new, annot=True, fmt=".3g", cmap='magma', xticklabels=audio_lengths, yticklabels=num_irs)
-    ax.set_title('Current Execution Time (sec)')
+    ax.set_title('New Execution Time (sec)')
     ax.set_xlabel('Audio Length (seconds)')
     ax.set_ylabel('Number of Impulse Responses')
     plt.subplot(1, 3, 2)
