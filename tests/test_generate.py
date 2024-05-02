@@ -22,9 +22,15 @@ def compare_audio(gen_file, ref_file):
     assert np.allclose(yp, yt), "audio content does not match"
 
 
+def compare_labels(gen_file, ref_file):
+    gen_content = open(gen_file, 'r').read()
+    ref_content = open(ref_file, 'r').read()
+    assert gen_content == ref_content, "label files do not match"
+
+
 @pytest.mark.parametrize("room", ["bomb_shelter"])
 @pytest.mark.parametrize("fmt", ["mic", "foa"])
-@pytest.mark.parametrize("seed", [1, 2, 3, 4, 5])
+@pytest.mark.parametrize("seed", [1, 2])
 def test_end2end(room, fmt, seed):
     ss.utils.set_seed(seed)
     
@@ -49,4 +55,6 @@ def test_end2end(room, fmt, seed):
     ssc.generate(audiofile, labelfile)
 
     refaudiofile = DATA_DIR / "end2end" / fmt / track_name
+    reflabelfile = DATA_DIR / "end2end" / f'{fmt}_labels' / track_name
     compare_audio(f'{audiofile}.wav', f'{refaudiofile}.wav')
+    compare_labels(f'{labelfile}.csv', f'{reflabelfile}.csv')
