@@ -31,7 +31,7 @@ def compare_labels(gen_file, ref_file):
 @pytest.mark.parametrize("room", ["bomb_shelter"])
 @pytest.mark.parametrize("fmt", ["mic", "foa"])
 @pytest.mark.parametrize("seed", [1, 2])
-def test_end2end(room, fmt, seed):
+def test_generation(room, fmt, seed):
     ss.utils.set_seed(seed)
     
     ssc = ss.Scaper(
@@ -50,11 +50,11 @@ def test_end2end(room, fmt, seed):
         ssc.add_event()
 
     track_name = f"room-{room}_fmt-{fmt}_seed-{seed:03d}"
-    audiofile = OUTPUT_DIR / "end2end" / fmt / track_name
-    labelfile = OUTPUT_DIR / "end2end" / f"{fmt}_labels" / track_name
+    audiofile = OUTPUT_DIR / "generation" / fmt / track_name
+    labelfile = OUTPUT_DIR / "generation" / f"{fmt}_labels" / track_name
     ssc.generate(audiofile, labelfile)
 
-    refaudiofile = DATA_DIR / "end2end" / fmt / track_name
-    reflabelfile = DATA_DIR / "end2end" / f'{fmt}_labels' / track_name
+    refaudiofile = DATA_DIR / "generation" / fmt / track_name
+    reflabelfile = DATA_DIR / "generation" / f'{fmt}_labels' / track_name
     compare_audio(f'{audiofile}.wav', f'{refaudiofile}.wav')
     compare_labels(f'{labelfile}.csv', f'{reflabelfile}.csv')
