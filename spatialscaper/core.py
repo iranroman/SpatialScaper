@@ -163,7 +163,7 @@ class Scaper:
                 l: __DCASE_SOUND_EVENT_CLASSES__[l] for l in fg_label_list if l not in self.leave_out_classes 
             }
         else:
-            self.fg_labels = {l: i for i, l in enumerate(fg_label_list) if l not in self.leave_out_classes }
+            self.fg_labels = {l: i for i, l in enumerate(fg_label_list)}
 
         self.speed_limit = speed_limit
 
