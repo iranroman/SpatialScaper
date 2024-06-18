@@ -50,7 +50,7 @@ python3.8 -m venv "ssenv"
 
 First we need to prepare sound event assets for soundscape synthesis. SpatialScaper works with any sound files that you wish to spatialize. You can get started using sound events from the [FSD50K](https://zenodo.org/record/4060432#.ZE7ely2B0Ts) and [FMA](https://github.com/mdeff/fma) (music) dataset by using.
 ```shell
-python scripts/prepare_fsd50k_fma.py --download_FSD --download_FMA --data_dir datasets
+python scripts/prepare_fsd50k_fma.py --download_FSD --download_FMA --cleanup
 ```
 
 This creates a `datasets/sound_event_datasets/FSD50K_FMA` directory with a structure of sound event categories and files. 
