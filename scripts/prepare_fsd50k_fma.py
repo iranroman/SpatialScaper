@@ -1,5 +1,6 @@
 import argparse
 import os
+import fnmatch
 import shutil
 import requests
 import zipfile
@@ -8,6 +9,7 @@ import pandas as pd
 import librosa
 import soundata
 from tqdm import tqdm
+from glob import glob
 
 from utils import extract_zip
 from utils import download_file
@@ -113,7 +115,43 @@ class FMADataSetup(BaseDataSetup):
                 shutil.copyfile(fma_track_path, dcase_path)
 
     # Additional methods for FMADataSetup can be added here, Cleanup, for example
+    def cleanup(self):
+        pass
 
+
+# patch to by-pass soundata issue https://github.com/soundata/soundata/issues/183   
+def download_multipart_zip(zip_remotes, save_dir, force_overwrite, cleanup):
+    """Download and unzip a multipart zip file.
+
+    Args:
+        zip_remotes (list):
+            A list of RemoteFileMetadata Objects
+            containing download information
+        save_dir (str):
+            Path to save downloaded file
+        force_overwrite (bool):
+            If True, overwrites existing files
+        cleanup (bool):
+            If True, remove zipfile after unziping
+
+    """
+    from soundata.download_utils import download_from_remote, unzip
+    import subprocess
+    for l in range(len(zip_remotes)):
+        download_from_remote(zip_remotes[l], save_dir, force_overwrite)
+    zip_path = os.path.join(
+        save_dir,
+        next((part.filename for part in zip_remotes if ".zip" in part.filename), None),
+    )
+    out_path = zip_path.replace(".zip", "_single.zip")
+    subprocess.run(["zip", "-s", "0", zip_path, "--out", out_path])
+    if cleanup:
+        for l in range(len(zip_remotes)):
+            zip_path = os.path.join(save_dir, zip_remotes[l].filename)
+            os.remove(zip_path)
+    unzip(out_path, cleanup=cleanup)
+import soundata.download_utils
+soundata.download_utils.download_multipart_zip = download_multipart_zip
 
 class FSD50KDataSetup(BaseDataSetup):
     def __init__(self, dataset_name="fsd50k", download=False, **kwargs):
@@ -183,7 +221,7 @@ class FSD50KDataSetup(BaseDataSetup):
         # Delete non-matching files
         for file in os.listdir(self.dataset_home):
             full_path = os.path.join(self.dataset_home, file)
-            if os.path.isfile(full_path) and not glob.fnmatch.fnmatch(
+            if os.path.isfile(full_path) and not fnmatch.fnmatch(
                 file, target_subdir
             ):
                 os.remove(full_path)
