@@ -42,5 +42,6 @@ setup(
         "tqdm",
         "coverage",
         "pytest",
+        "black",
     ],
 )
