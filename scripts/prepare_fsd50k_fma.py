@@ -33,6 +33,26 @@ class BaseDataSetup:
         self.dataset_home = dataset_home
         self.metadata_path = metadata_path
 
+    def cleanup(self, target_subdir="FSD50K_FMA"):
+        for subdir in os.listdir(self.dataset_home):
+            # Construct the full path to the subdirectory
+            full_path = os.path.join(self.dataset_home, subdir)
+
+            # Check if it is a directory and not the target directory
+            if os.path.isdir(full_path) and subdir != target_subdir:
+                # Remove the directory
+                shutil.rmtree(full_path)
+                print(f"Deleted: {full_path}")
+
+        # Delete non-matching files
+        for file in os.listdir(self.dataset_home):
+            full_path = os.path.join(self.dataset_home, file)
+            if os.path.isfile(full_path) and not fnmatch.fnmatch(
+                file, target_subdir
+            ):
+                os.remove(full_path)
+                print(f"Deleted file: {full_path}")
+
 
 # FMA dataset setup class
 class FMADataSetup(BaseDataSetup):
@@ -60,16 +80,14 @@ class FMADataSetup(BaseDataSetup):
         os.makedirs(self.dataset_home, exist_ok=True)
         download_file(self.base_url, os.path.join(self.dataset_home, self.zip_name))
         extract_zip(os.path.join(self.dataset_home, self.zip_name), self.dataset_home)
-        print("Done unzipping")
-        # Download and extract metadata
-        print("Downloading FMA small metadata...")
+        print("Done downloading and unzipping FMA")
         download_file(
             self.metadata_url, os.path.join(self.dataset_home, "meta_" + self.zip_name)
         )
         extract_zip(
             os.path.join(self.dataset_home, "meta_" + self.zip_name), self.dataset_home
         )
-        print("Done unzipping metadata")
+        print("Done downloading and unzipping metadata")
 
     def gen_dataset_splits(self, target_subdir="FSD50K_FMA"):
         """Generates dataset splits for training and testing."""
@@ -114,9 +132,6 @@ class FMADataSetup(BaseDataSetup):
                 )
                 shutil.copyfile(fma_track_path, dcase_path)
 
-    # Additional methods for FMADataSetup can be added here, Cleanup, for example
-    def cleanup(self):
-        pass
 
 
 # patch to by-pass soundata issue https://github.com/soundata/soundata/issues/183   
@@ -207,26 +222,6 @@ class FSD50KDataSetup(BaseDataSetup):
             # Copy file to new directory
             shutil.copy(src_file, os.path.join(dest_path, new_dir, filename))
 
-    def cleanup(self, target_subdir="FSD50K_FMA"):
-        for subdir in os.listdir(self.dataset_home):
-            # Construct the full path to the subdirectory
-            full_path = os.path.join(self.dataset_home, subdir)
-
-            # Check if it is a directory and not the target directory
-            if os.path.isdir(full_path) and subdir != target_subdir:
-                # Remove the directory
-                shutil.rmtree(full_path)
-                print(f"Deleted: {full_path}")
-
-        # Delete non-matching files
-        for file in os.listdir(self.dataset_home):
-            full_path = os.path.join(self.dataset_home, file)
-            if os.path.isfile(full_path) and not fnmatch.fnmatch(
-                file, target_subdir
-            ):
-                os.remove(full_path)
-                print(f"Deleted file: {full_path}")
-
 
 # Function to prepare the FSD50K dataset
 def prepare_fsd50k(args):
@@ -239,6 +234,8 @@ def prepare_fsd50k(args):
     fsd50k.prepare_dataset()
     fsd50k.to_DCASE_format()
     if args.cleanup:
+        print('Deleting FSD50K source files that are')
+        print('         not needed to use SpatialScaper')
         fsd50k.cleanup()
 
 
@@ -249,6 +246,10 @@ def prepare_fma(args):
         dataset_home=os.path.join(args.data_dir, SOUND_EVENT_DATASETS_SUBDIR)
     )
     fma.prepare_dataset()
+    if args.cleanup:
+        print('Deleting FMA source files that are')
+        print('         not needed to use SpatialScaper')
+        fma.cleanup()
 
 
 # Main execution logic
