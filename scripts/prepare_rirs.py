@@ -19,12 +19,11 @@ FS = 24000
 METU_URL = "https://zenodo.org/record/2635758/files/spargair.zip"
 
 TAU_REMOTES = {
-    "TAU-SRIR_DB.z01": "https://zenodo.org/records/6408611/files/TAU-SRIR_DB.z01?download=1",
-    "TAU-SRIR_DB.z02": "https://zenodo.org/records/6408611/files/TAU-SRIR_DB.z02?download=1",
-    "TAU-SRIR_DB.z03": "https://zenodo.org/records/6408611/files/TAU-SRIR_DB.z03?download=1",
-    "TAU-SRIR_DB.zip": "https://zenodo.org/records/6408611/files/TAU-SRIR_DB.zip?download=1",
-    "TAU-SNoise_DB.z01": "https://zenodo.org/records/6408611/files/TAU-SNoise_DB.z01?download=1",
-    "TAU-SNoise_DB.zip": "https://zenodo.org/records/6408611/files/TAU-SNoise_DB.zip?download=1",
+    "TAU-SRIR_DB.z01": "https://zenodo.org/records/6408611/files/TAU-SRIR_DB.z01",
+    "TAU-SRIR_DB.z02": "https://zenodo.org/records/6408611/files/TAU-SRIR_DB.z02",
+    "TAU-SRIR_DB.z03": "https://zenodo.org/records/6408611/files/TAU-SRIR_DB.z03",
+    "TAU-SNoise_DB.z01": "https://zenodo.org/records/6408611/files/TAU-SNoise_DB.z01",
+    "TAU-SNoise_DB.zip": "https://zenodo.org/records/6408611/files/TAU-SNoise_DB.zip",
 }
 
 ARNI_URL_MIC = "https://zenodo.org/records/5720724/files/6dof_SRIRs_eigenmike_raw.zip"
@@ -69,7 +68,7 @@ def create_single_sofa_file(aud_fmt, tau_db_dir, sofa_db_dir, db_name):
         )
 
 
-def download_and_extract(url, extract_to):
+def download_and_extract(url, extract_to, cleanup=True):
     # Ensure the extract_to directory exists
     extract_to = Path(extract_to)
     extract_to.mkdir(parents=True, exist_ok=True)
@@ -89,7 +88,8 @@ def download_and_extract(url, extract_to):
         extract_zip(zip_path, extract_to)
 
         # remove the zip file after extraction
-        os.remove(zip_path)
+        if cleanup:
+            os.remove(zip_path)
 
 
 def prepare_metu(dataset_path):
@@ -134,14 +134,25 @@ def prepare_metu(dataset_path):
     )
 
 
-def download_tau(dest_path):
+def download_tau(dest_path, cleanup=True):
     # Download combine and extract zip files
     for filename, url in TAU_REMOTES.items():
+        extracted_dir = dest_path / filename.split('.')[0]
+        if extracted_dir.is_dir():
+            print(
+                f"Data already present in {extracted_dir}. Skipping {filename} download and extraction."
+            )
+            continue
         download_file(url, dest_path / filename)
     combine_multizip(f"{dest_path/'TAU-SRIR_DB.zip'}", f"{dest_path/'single.zip'}")
     extract_zip(dest_path / "single.zip", dest_path)
     combine_multizip(f"{dest_path/'TAU-SNoise_DB.zip'}", f"{dest_path/'single.zip'}")
     extract_zip(dest_path / "single.zip", dest_path)
+    # cleanup zip files
+    if cleanup:
+        for filename, url in TAU_REMOTES.items():
+            extracted_zip = dest_path / filename
+            os.remove(extracted_zip)
 
 
 def prepare_tau(path_raw, path_sofa, formats=["foa", "mic"]):
@@ -283,24 +294,27 @@ if __name__ == "__main__":
         default="datasets/rir_datasets",
         help="Path to store and process the dataset.",
     )
+    parser.add_argument(
+        "--cleanup", action="store_true", help="Whether to cleanup after download"
+    )
     args = parser.parse_args()
 
     os.makedirs(Path(args.path) / "source_data", exist_ok=True)
     os.makedirs(Path(args.path) / "spatialscaper_RIRs", exist_ok=True)
 
     ## METU
-    download_and_extract(METU_URL, Path(args.path) / "source_data")
-    prepare_metu(Path(args.path))
+    #download_and_extract(METU_URL, Path(args.path) / "source_data", args.cleanup)
+    #prepare_metu(Path(args.path))
 
-    ## TAU
+    # TAU
     dest_path = Path(args.path) / "source_data"
     download_tau(dest_path)
     dest_path_sofa = Path(args.path) / "spatialscaper_RIRs"
     prepare_tau(dest_path, dest_path_sofa)
 
-    # ARNI
-    dest_path = Path(args.path) / "source_data"
-    download_and_extract(ARNI_URL_MIC, Path(args.path) / "source_data")
-    download_and_extract(ARNI_URL_FOA, Path(args.path) / "source_data")
-    dest_path_sofa = Path(args.path) / "spatialscaper_RIRs"
-    prepare_arni(dest_path, dest_path_sofa)
+    ## ARNI
+    #dest_path = Path(args.path) / "source_data"
+    #download_and_extract(ARNI_URL_MIC, Path(args.path) / "source_data", args.cleanup)
+    #download_and_extract(ARNI_URL_FOA, Path(args.path) / "source_data", args.cleanup)
+    #dest_path_sofa = Path(args.path) / "spatialscaper_RIRs"
+    #prepare_arni(dest_path, dest_path_sofa)

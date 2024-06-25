@@ -284,5 +284,5 @@ if __name__ == "__main__":
     else:
         raise Exception(
             f"the directory {fsd50k_fma_path}"
-            "  already exists; delete it if you would like to repeat this step from scratch"
+            "  already exists; delete it if you would like to repeat this step from scratch."
         )
