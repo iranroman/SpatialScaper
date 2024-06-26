@@ -96,10 +96,10 @@ def create_single_sofa_file(aud_fmt, tau_db_dir, sofa_db_dir, db_name):
         )
 
 
-def download_and_extract_remotes(urls_dict, extract_to):
+def download_and_extract_remotes(urls_dict, extract_to, cleanup=True):
     # Ensure the extract_to directory exists
     extract_to = Path(extract_to)
-    extract_to.mkdir(parents=True, exist_ok=True, cleaup=True)
+    extract_to.mkdir(parents=True, exist_ok=True)
 
     # Extract the filename from the URL
     for filename, url in urls_dict.items():
@@ -113,7 +113,7 @@ def download_and_extract_remotes(urls_dict, extract_to):
         else:
             # Download and extract the file
             download_file(url, zip_path)
-            extract_zip(zip_path, extract_to)
+            extract_zip(zip_path, extracted_dir)
             
             # remove the zip file after extraction
             if cleanup: 
@@ -410,8 +410,11 @@ def prepare_arni(path_raw, path_sofa, formats=["mic", "foa"]):
         print(f"Finished .sofa creation for {aud_fmt} format.")
 
 def prepare_daga(source_path, sofa_path, audio_fmts=["mic"]):
+
+    # microphone assumed to be in the center
     mic_position = np.array([0, 0, 0])
     
+    # the source positions are exactly in front of the microphone
     source_positions = {
         '0': np.array([2.5, 0, 0]),
         '180': np.array([2.8, 0, 0])
@@ -474,7 +477,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--cleanup",
-        default="store_true",
+        action="store_true",
         help="Whether to cleanup after download",
     )
     args = parser.parse_args()
@@ -503,6 +506,6 @@ if __name__ == "__main__":
     # download_and_extract_remotes(RSOANU_REMOTES, source_path)
     #prepare_rsoanu(source_path, sofa_path) 
 
-    # # DAGA DRIR 
-    # download_and_extract_remotes(DAGA_REMOTES, source_path)
+    # DAGA DRIR 
+    download_and_extract_remotes(DAGA_REMOTES, source_path, args.cleanup)
     prepare_daga(source_path, sofa_path) 
