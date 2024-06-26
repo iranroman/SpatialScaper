@@ -20,13 +20,12 @@ TARGET_FSD50K_FMA_DIR = "FSD50K_FMA"
 FMA_REMOTES = {
     "name": "fma_small",
     "filename": "fma_small.zip",
-    "base_url": "https://urldefense.proofpoint.com/v2/url?u=https-3A__os.unil.cloud.switch.ch_fma_fma-5Fsmall.zip&d=DwIFaQ&c=slrrB7dE8n7gBJbeO0g-IQ&r=a52iHv92uCFjmQ0X7ISWLQ&m=6yYomznDzmRAEkyFS3LmEVxt6L6_XtxV0Whck8uwIbgwc3-zWDygg20t3l5o8A9Z&s=bUMWjWewSEazhp862BxjPckKLhWidO74hnMlgOzEKPQ&e= ",
-    "metadata_url": "https://urldefense.proofpoint.com/v2/url?u=https-3A__os.unil.cloud.switch.ch_fma_fma-5Fmetadata.zip&d=DwIFaQ&c=slrrB7dE8n7gBJbeO0g-IQ&r=a52iHv92uCFjmQ0X7ISWLQ&m=6yYomznDzmRAEkyFS3LmEVxt6L6_XtxV0Whck8uwIbgwc3-zWDygg20t3l5o8A9Z&s=5IA0cgssTJuIu2kQXVhZGQ_KItZIiODmd423wr45ipQ&e= ",
+    "base_url": "https://os.unil.cloud.switch.ch/fma/fma_small.zip",
+    "metadata_url": "https://os.unil.cloud.switch.ch/fma/fma_metadata.zip",
 }
 CORRUPT_FMA_TRACKS = ["098565", "098567", "098569", "099134", "108925", "133297"]
 SKIP_GENRES = ["Electronic", "Experimental", "Instrumental"]
-DCASE_FSD50K_SELECTED = "https://urldefense.proofpoint.com/v2/url?u=https-3A__zenodo.org_record_6406873_files_FSD50K-5Fselected.txt&d=DwIFaQ&c=slrrB7dE8n7gBJbeO0g-IQ&r=a52iHv92uCFjmQ0X7ISWLQ&m=6yYomznDzmRAEkyFS3LmEVxt6L6_XtxV0Whck8uwIbgwc3-zWDygg20t3l5o8A9Z&s=H3qC7j9hAdkLJGHkyHrt6VYJc4TWXNUNgNb8c-Q7o6U&e= "
-
+DCASE_FSD50K_SELECTED = "https://zenodo.org/record/6406873/files/FSD50K_selected.txt"
 
 # Base class for dataset setup
 class BaseDataSetup:
@@ -132,7 +131,7 @@ class FMADataSetup(BaseDataSetup):
                 shutil.copyfile(fma_track_path, dcase_path)
 
 
-# patch to by-pass soundata issue https://urldefense.proofpoint.com/v2/url?u=https-3A__github.com_soundata_soundata_issues_183&d=DwIFaQ&c=slrrB7dE8n7gBJbeO0g-IQ&r=a52iHv92uCFjmQ0X7ISWLQ&m=6yYomznDzmRAEkyFS3LmEVxt6L6_XtxV0Whck8uwIbgwc3-zWDygg20t3l5o8A9Z&s=ccl5sw8gZukLOGnSMAsn4MFjqPHLYnvHebupRKmVKQY&e=
+# patch to by-pass soundata issue https://github.com/soundata/soundata/issues/183 
 def download_multipart_zip(zip_remotes, save_dir, force_overwrite, cleanup):
     """Download and unzip a multipart zip file.
 
