@@ -4,7 +4,6 @@ import pickle
 
 import pyroomacoustics as pra
 from pyroomacoustics import directivities as dr
-from room_scaper import sofa_utils, tau_loading
 
 
 def deg2rad(deg):
@@ -69,7 +68,19 @@ def unitvec_to_cartesian(path_unitvec, height, dist):
     if type(dist) == np.ndarray:
         z_offset = height
         rad = np.sqrt(dist[0] ** 2 + (dist[2] + z_offset) ** 2)
-        scaled_path = tau_loading.map_to_cylinder(path_unitvec, rad, axis=1)
+        scaled_path = map_to_cylinder(path_unitvec, rad, axis=1)
     else:
-        scaled_path = tau_loading.map_to_cylinder(path_unitvec, dist, axis=2)
+        scaled_path = map_to_cylinder(path_unitvec, dist, axis=2)
+    return scaled_path
+
+def map_to_cylinder(path, rad, axis=2):
+    # maps points (unit vecs) to cylinder of known radius along axis (default z/2)
+    scaled_path = np.empty(path.shape)
+    rad_axes = [0, 1, 2]
+    rad_axes.remove(axis)
+    for i in range(path.shape[0]):
+        vec = path[i]
+        scale_rad = np.sqrt(np.sum([vec[j] ** 2 for j in rad_axes]))
+        scale = rad / scale_rad
+        scaled_path[i] = vec * scale
     return scaled_path
