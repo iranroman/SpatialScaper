@@ -428,7 +428,7 @@ def prepare_daga(source_path, sofa_path, audio_fmts=["mic"]):
     
     for sofa_file in sofa_folder.glob('*.sofa'): 
         
-        source_angle = '0' if sofa_file.name[13] == '0' else '180'
+        source_angle = '180' if '180' in sofa_file.name else '0'
         source_pos = source_positions[source_angle] + random.uniform(-0.001, 0.001)
         
         sofa = netCDF4.Dataset(sofa_file, 'r')
@@ -441,7 +441,8 @@ def prepare_daga(source_path, sofa_path, audio_fmts=["mic"]):
             if fmt == "mic":
                 processed_irs = irs[:, __TETRA_CHANS_IN_EM32__, 0].T  
             else:
-                processed_irs = irs  
+                # place array2sh conversion here
+                pass
             
             aggregated_irs[fmt].append(processed_irs)
             aggregated_source_positions[fmt].append(source_pos)
@@ -453,7 +454,7 @@ def prepare_daga(source_path, sofa_path, audio_fmts=["mic"]):
         M = all_irs.shape[0]  # number of samples
         N = all_irs.shape[-1]  # number of source positions
     
-        filepath = dest_path_sofa / f"daga-drir-room_{fmt}.sofa"
+        filepath = dest_path_sofa / f"daga_{fmt}.sofa"
         
         sofa_utils.create_srir_sofa(
             filepath,
@@ -461,7 +462,7 @@ def prepare_daga(source_path, sofa_path, audio_fmts=["mic"]):
             all_source_positions,
             np.zeros_like(all_source_positions), 
             db_name=DAGA_DB_NAME, 
-            room_name="daga-drir-room",
+            room_name="daga",
             listener_name=fmt,
             sr=orig_sr,
         )
