@@ -65,9 +65,9 @@ Event = namedtuple(
 
 # Paths for room SOFA files
 __SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
-__PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "TAU-SNoise_DB")
+__PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "tau","TAU-SNoise_DB")
 __ROOM_RIR_FILE__ = {
-    "metu": "metu_sparg_{fmt}.sofa",
+    "metu": "metu_{fmt}.sofa",
     "arni": "arni_{fmt}.sofa",
     "bomb_shelter": "bomb_shelter_{fmt}.sofa",
     "gym": "gym_{fmt}.sofa",
@@ -78,6 +78,9 @@ __ROOM_RIR_FILE__ = {
     "se203": "se203_{fmt}.sofa",
     "tb103": "tb103_{fmt}.sofa",
     "tc352": "tc352_{fmt}.sofa",
+    "motus": "motus_{fmt}.sofa",
+    "rsoanu": "rsoanu_{fmt}.sofa",
+    "daga": "data_{fmt}.sofa",
 }
 
 
