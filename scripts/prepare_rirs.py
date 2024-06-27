@@ -231,7 +231,7 @@ def prepare_rsoanu(dataset_path, dest_path_sofa, audio_fmts=["mic"]):
         '3': np.array([2.25, 2.50, 0.93]),
     }
     for fmt in audio_fmts:
-        datapath = Path(dataset_path)
+        datapath = Path(dataset_path) / 'RSoANU_RIRs_em32Eigenmike'
         IRs, xyzs = [], []
         for folder in os.scandir(datapath):
             if not folder.is_dir():
@@ -297,6 +297,7 @@ def download_tau(dest_path, urls, cleanup=False):
             for file in glob.glob(os.path.join(root, '*.z*')):
                 # Remove the zip file
                 os.remove(file)
+
 
 
 def prepare_tau(path_raw, path_sofa, formats=["foa", "mic"]):
@@ -525,7 +526,7 @@ if __name__ == "__main__":
     download_and_extract_remotes(MOTUS_REMOTES['remotes'], motus_path, args.cleanup)
     prepare_motus(motus_path, sofa_path) 
 
-    # RSOANU
+    ## RSOANU
     rsoanu_path = source_path / RSOANU_REMOTES['database_name']
     download_and_extract_remotes(RSOANU_REMOTES['remotes'], rsoanu_path, args.cleanup)
     prepare_rsoanu(rsoanu_path, sofa_path) 
