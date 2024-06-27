@@ -20,46 +20,60 @@ from spatialscaper import sofa_utils, tau_utils
 FS = 24000
 
 METU_REMOTES = {
-    "spargair.zip": "https://zenodo.org/record/2635758/files/spargair.zip",
+    'database_name': 'metu',
+    'remotes':{"spargair.zip": "https://zenodo.org/record/2635758/files/spargair.zip"},
 }
 
 TAU_REMOTES = {
+    'database_name':'tau',
+    'remotes':{
     "TAU-SRIR_DB.z01": "https://zenodo.org/records/6408611/files/TAU-SRIR_DB.z01",
     "TAU-SRIR_DB.z02": "https://zenodo.org/records/6408611/files/TAU-SRIR_DB.z02",
     "TAU-SRIR_DB.z03": "https://zenodo.org/records/6408611/files/TAU-SRIR_DB.z03",
     "TAU-SRIR_DB.zip": "https://zenodo.org/records/6408611/files/TAU-SRIR_DB.zip",
     "TAU-SNoise_DB.z01": "https://zenodo.org/records/6408611/files/TAU-SNoise_DB.z01",
     "TAU-SNoise_DB.zip": "https://zenodo.org/records/6408611/files/TAU-SNoise_DB.zip",
+    }
 }
 
 ARNI_REMOTES = {
+    'database_name':'arni',
+    'remotes':{
     "6dof_SRIRs_eigenmike_raw.zip": "https://zenodo.org/records/5720724/files/6dof_SRIRs_eigenmike_raw.zip",
     "6dof_SRIRs_eigenmike_SH.zip": "https://zenodo.org/records/5720724/files/6dof_SRIRs_eigenmike_SH.zip",
+    }
 }
 
 MOTUS_REMOTES = {
+    'database_name':'motus',
+    'remotes':{
     "raw_rirs.zip": "https://zenodo.org/records/4923187/files/raw_rirs.zip",
     "sh_rirs.zip": "https://zenodo.org/records/4923187/files/sh_rirs.zip",
-    "metadata.zip": "https://zenodo.org/records/4923187/files/metadata.zip",
+    }
 }
 
 RSOANU_REMOTES = {
-    "RSoANU_RIRs_Bformat_RodeNTSF1.zip": "https://zenodo.org/records/10720345/files/RSoANU_RIRs_Bformat_RodeNTSF1.zip",
+    'database_name':'rsoanu',
+    'remotes':{
     "RSoANU_RIRs_em32Eigenmike.zip": "https://zenodo.org/records/10720345/files/RSoANU_RIRs_em32Eigenmike.zip",
+    }
 }
 
 DAGA_REMOTES = {
+    'database_name':'daga',
+    'remotes':{
     "DRIRs_Eigenmike_SOFAfiles.zip": "https://zenodo.org/records/2593714/files/DRIRs_Eigenmike_SOFAfiles.zip" 
+    }
 }
 
 NTAU_ROOMS = 9
 
 METU_DB_NAME = "METU-SPARG"
-TAU_DB_NAME = "TAU-SRIR-DB-SOFA"
-ARNI_DB_NAME = "ARNI-SRIR-DB-SOFA"
+TAU_DB_NAME = "TAU"
+ARNI_DB_NAME = "ARNI"
 MOTUS_DB_NAME = "MOTUS" 
 RSOANU_DB_NAME = "RSOANU"
-DAGA_DB_NAME = "DAGA-DRIR"
+DAGA_DB_NAME = "DAGA"
 
 __TETRA_CHANS_IN_EM32__ = [5, 9, 25, 21]
 __FOA_ACN_CHANS__ = [0, 1, 2, 3] 
@@ -96,28 +110,34 @@ def create_single_sofa_file(aud_fmt, tau_db_dir, sofa_db_dir, db_name):
         )
 
 
-def download_and_extract_remotes(urls_dict, extract_to, cleanup=True):
-    # Ensure the extract_to directory exists
-    extract_to = Path(extract_to)
-    extract_to.mkdir(parents=True, exist_ok=True)
+def download_and_extract_remotes(urls_dict, extract_to, cleanup=False):
 
-    # Extract the filename from the URL
-    for filename, url in urls_dict.items():
-        zip_path = extract_to / filename
-        # Check if the extracted directory already exists
-        extracted_dir = extract_to / filename.replace(".zip", "")
-        if extracted_dir.is_dir() or zip_path.is_file():
-            print(
-                f"Data already present in {extracted_dir}. Skipping download and extraction."
-            )
-        else:
-            # Download and extract the file
-            download_file(url, zip_path)
-            extract_zip(zip_path, extracted_dir)
-            
-            # remove the zip file after extraction
-            if cleanup: 
-                os.remove(zip_path)
+    extract_to.mkdir(parents=True, exist_ok=True)
+    if not os.listdir(extract_to):
+        # Extract the filename from the URL
+        for filename, url in urls_dict.items():
+            # Check if the zip file already exists
+            zip_path = extract_to / filename
+            zip_extract_to = zip_path.parent
+            zip_extract_to.mkdir(parents=True, exist_ok=True)
+            if zip_path.is_file():
+                print(
+                    f"Zip file {zip_path} already present. Skipping download."
+                )
+            else:
+                download_file(url, zip_path)
+                # Download and extract the file
+                extract_zip(zip_path, zip_extract_to)
+                # remove the zip file after extraction
+                if cleanup: 
+                    os.remove(zip_path)
+    else:
+        print(
+            f'Data already present in directory {extract_to}. Skipping database download.'
+        )
+
+
+
 
 
 def prepare_metu(dataset_path, dest_path_sofa):
@@ -145,7 +165,7 @@ def prepare_metu(dataset_path, dest_path_sofa):
             X.append(x)
         IRs.append(np.array(X))
 
-    filepath = dest_path_sofa / "metu_sparg_mic.sofa"
+    filepath = dest_path_sofa / "metu_mic.sofa"
     rirs = np.array(IRs)
     source_pos = np.array(xyzs)
     mic_pos = np.array([[0, 0, 0]])
@@ -155,7 +175,7 @@ def prepare_metu(dataset_path, dest_path_sofa):
         rirs,
         source_pos,
         mic_pos,
-        db_name= METU_DB_NAME,
+        db_name=METU_DB_NAME,
         room_name="classroom",
         listener_name="em32",
         sr=sr,
@@ -169,21 +189,19 @@ def prepare_motus(dataset_path, dest_path_sofa, audio_fmts = ["foa","mic"]):
         '4': np.array([[2.056, 1.362, 0.0]])
     }
     mic_pos = np.array([[0.0, 0.0, 0.0]])
-    print("in prepare_motus")
     for fmt in audio_fmts: 
+        RIR_file_names = os.listdir(dataset_path)
         if fmt == "foa": 
-            motuspath = Path(dataset_path) / "sh_rirs"
+            RIR_file_names = [f for f in RIR_file_names if 'sh' in f]
         elif fmt == "mic": 
-            motuspath = Path(dataset_path) / "raw_rirs"
-        RIR_file_names = os.listdir(motuspath)
+            RIR_file_names = [f for f in RIR_file_names if 'raw' in f]
         IRs, xyzs = [], []
         for filename in RIR_file_names:
             source_pos_index = filename.split("_")[1]
             source_pos = source_positions[source_pos_index] + random.uniform(-0.001, 0.001) #mm 
             xyzs.append(source_pos)
-            wavfile = motuspath / filename
+            wavfile = dataset_path / filename
             x, sr = sf.read(wavfile)            
-            
             if fmt == "foa": 
                 x = (x[:, __FOA_ACN_CHANS__]).T 
             elif fmt == "mic":
@@ -193,39 +211,35 @@ def prepare_motus(dataset_path, dest_path_sofa, audio_fmts = ["foa","mic"]):
         # Reshape source_pos to have shape (num_measurements, 3) as required in sofa_utils
         # (M,C) aka... (num measurements, num coordinates)
         source_pos = np.array(xyzs).reshape(len(xyzs), 3)
-        filepath = dest_path_sofa / f"motusroom_{fmt}.sofa"
-        print('shape or IRs going into SOFA creation', rirs.shape)
+        filepath = dest_path_sofa / f"motus_{fmt}.sofa"
         sofa_utils.create_srir_sofa(
             filepath,
             rirs,
             source_pos,
             mic_pos,
             db_name= MOTUS_DB_NAME, 
-            room_name="motusroom",
+            room_name="motus",
             listener_name=fmt,
             sr=sr,
         )
 
-def prepare_rsoanu(dataset_path, dest_path_sofa, audio_fmts=["mic", "foa"]):
+def prepare_rsoanu(dataset_path, dest_path_sofa, audio_fmts=["mic"]):
     source_positions = {
         '1': np.array([6.75, 3.75, 1.2]),
         '2': np.array([4.75, 4.25, 1.384]),
         '3': np.array([2.25, 2.50, 0.93]),
     }
     for fmt in audio_fmts:
-        datapath = Path(dataset_path) / f"RSoANU_RIRs_{'em32Eigenmike' if fmt == 'mic' else 'Bformat_RodeNTSF1'}"
+        datapath = Path(dataset_path)
         IRs, xyzs = [], []
         for folder in os.scandir(datapath):
             if not folder.is_dir():
                 continue
             wav_files_path = Path(folder) / "WAV Files"
             sr = process_wav_files(wav_files_path, fmt, source_positions, IRs, xyzs)
-            outlier_path = wav_files_path / "Outlier"
-            if outlier_path.exists():
-                sr = process_wav_files(outlier_path, fmt, source_positions, IRs, xyzs, is_outlier=True)
         rirs = np.array(IRs)
         source_pos = np.array(xyzs).reshape(len(xyzs), 3)
-        filepath = dest_path_sofa / f"rsoanuroom_{fmt}.sofa"
+        filepath = dest_path_sofa / f"rsoanu_{fmt}.sofa"
         mic_pos = np.zeros((len(source_pos), 3))
         sofa_utils.create_srir_sofa(
             filepath,
@@ -233,17 +247,15 @@ def prepare_rsoanu(dataset_path, dest_path_sofa, audio_fmts=["mic", "foa"]):
             source_pos,
             mic_pos,
             db_name=RSOANU_DB_NAME,
-            room_name="rsoanuroom",
+            room_name="rsoanu",
             listener_name=fmt,
             sr=sr,
         )
         
-def process_wav_files(wav_files_path, fmt, source_positions, IRs, xyzs, is_outlier=False):
+def process_wav_files(wav_files_path, fmt, source_positions, IRs, xyzs):
     for filename in os.scandir(wav_files_path):
         if not filename.name.endswith('.wav'):
             continue
-        if is_outlier and filename.name != os.listdir(wav_files_path)[0]:
-            break
         source_pos_index = filename.name[5]
         x, y = parse_coordinates(filename.name)
         mic_pos = np.array([x, y, 1.7])
@@ -251,9 +263,8 @@ def process_wav_files(wav_files_path, fmt, source_positions, IRs, xyzs, is_outli
         xyzs.append(source_pos)
         x, sr = sf.read(filename.path)
         if fmt == "foa":
-            x = (x[:, __FOA_ACN_CHANS__]).T 
-            # w, x, y, z = x
-            # x = np.array([w, y, z, x])
+            # array2sh here
+            pass
         elif fmt == "mic":
             x = (x[:, __TETRA_CHANS_IN_EM32__]).T  
         IRs.append(x)
@@ -272,7 +283,7 @@ def parse_coordinates(filename):
 
 def download_tau(dest_path):
     # Download combine and extract zip files
-    for filename, url in TAU_REMOTES.items():
+    for filename, url in TAU_REMOTES['remotes'].items():
         download_file(url, dest_path / filename)
     combine_multizip(f"{dest_path/'TAU-SRIR_DB.zip'}", f"{dest_path/'single.zip'}")
     extract_zip(dest_path / "single.zip", dest_path)
@@ -420,7 +431,7 @@ def prepare_daga(source_path, sofa_path, audio_fmts=["mic"]):
         '180': np.array([2.8, 0, 0])
     }
     
-    sofa_folder = Path(source_path) / "DRIRs_Eigenmike_SOFAfiles"
+    sofa_folder = Path(source_path)
     dest_path_sofa = Path(sofa_path)
     aggregated_irs = {fmt: [] for fmt in audio_fmts}
     aggregated_source_positions = {fmt: [] for fmt in audio_fmts}
@@ -486,27 +497,32 @@ if __name__ == "__main__":
     source_path, sofa_path = Path(args.path) / "source_data", Path(args.path) / "spatialscaper_RIRs"
     [os.makedirs(p, exist_ok=True) for p in (source_path, sofa_path)]
     
-    # # METU
-    # download_and_extract_remotes(METU_REMOTES, source_path)
-    # prepare_metu(source_path, sofa_path)
+    # METU
+    metu_path = source_path / METU_REMOTES['database_name']
+    download_and_extract_remotes(METU_REMOTES['remotes'], metu_path, args.cleanup)
+    prepare_metu(metu_path, sofa_path)
 
-    # # TAU
-    # download_tau(source_path)
-    # prepare_tau(source_path, sofa_path)
+    # TAU
+    tau_path = source_path / TAU_REMOTES['database_name']
+    download_tau(tau_path)
+    prepare_tau(tau_path, sofa_path)
 
-    # # ARNI
-    # download_and_extract(ARNI_URL_MIC, Path(args.path) / "source_data")
-    # download_and_extract(ARNI_URL_FOA, Path(args.path) / "source_data")
-    # prepare_arni(source_path, sofa_path)
+    # ARNI
+    arni_path = source_path / ARNI_REMOTES['database_name']
+    download_and_extract_remotes(ARNI_REMOTES['remotes'], arni_path, args.cleanup)
+    prepare_arni(arni_path, sofa_path)
 
-    # # MOTUS
-    # download_and_extract_remotes(MOTUS_REMOTES, source_path)
-    #prepare_motus(source_path, sofa_path) 
+    # MOTUS
+    motus_path = source_path / MOTUS_REMOTES['database_name']
+    download_and_extract_remotes(MOTUS_REMOTES['remotes'], motus_path, args.cleanup)
+    prepare_motus(motus_path, sofa_path) 
 
     # RSOANU
-    # download_and_extract_remotes(RSOANU_REMOTES, source_path)
-    #prepare_rsoanu(source_path, sofa_path) 
+    rsoanu_path = source_path / RSOANU_REMOTES['database_name']
+    download_and_extract_remotes(RSOANU_REMOTES['remotes'], rsoanu_path, args.cleanup)
+    prepare_rsoanu(rsoanu_path, sofa_path) 
 
     # DAGA DRIR 
-    download_and_extract_remotes(DAGA_REMOTES, source_path, args.cleanup)
-    prepare_daga(source_path, sofa_path) 
+    daga_path = source_path / DAGA_REMOTES['database_name']
+    download_and_extract_remotes(DAGA_REMOTES['remotes'], daga_path, args.cleanup)
+    prepare_daga(daga_path, sofa_path) 
