@@ -184,7 +184,7 @@ def spatialize(audio, irs, ir_times, sr, win_size=512, snr=1.0):
         # they passed their own weights matrix of shape (n_frames, n_irs)
         W_ir = ir_times
     else:
-        _assert_shape_match(W_ir.shape, (n_irs,))
+        _assert_shape_match(ir_times.shape, (n_irs,))
         # TODO: pass n_frames to generate_interpolation_matrix to avoid clipping the output audio
         W_ir = generate_interpolation_matrix(ir_times, sr, hop_size)#, audio_spec.shape[1]
 
