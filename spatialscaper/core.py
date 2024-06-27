@@ -99,6 +99,7 @@ class Scaper:
         ref_db=-60,
         speed_limit=1.5,
         max_sample_attempts=100,
+        leave_out_classes=[],
     ):
         """
         Initializes a SpatialScaper object.
@@ -129,6 +130,7 @@ class Scaper:
                 from a starting to an end point. Default is 1.5.
             max_sample_attempts (int): Maximum attempts to place a sound event at a specific point in time
                 without exceeding max_event_overlap, before giving up . Default is 100.
+            leave_out_classes (list): List of sound event classes to ignore in a simulation. Default is [].
 
         Attributes:
             fg_events (list): Initialized as an empty list to hold foreground event specifications.
@@ -150,6 +152,7 @@ class Scaper:
             self.label_rate = __DCASE_LABEL_RATE__
         self.max_event_overlap = max_event_overlap
         self.max_event_dur = max_event_dur
+        self.leave_out_classes = leave_out_classes
         self.ref_db = ref_db
 
         self.fg_events = []
@@ -158,7 +161,7 @@ class Scaper:
         fg_label_list = get_label_list(self.foreground_dir)
         if self.DCASE_format:
             self.fg_labels = {
-                l: __DCASE_SOUND_EVENT_CLASSES__[l] for l in fg_label_list
+                l: __DCASE_SOUND_EVENT_CLASSES__[l] for l in fg_label_list if l not in self.leave_out_classes 
             }
         else:
             self.fg_labels = {l: i for i, l in enumerate(fg_label_list)}
