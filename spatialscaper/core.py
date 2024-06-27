@@ -21,7 +21,6 @@ from .utils import (
     traj_2_ir_idx,
     find_indices_of_change,
     IR_normalizer,
-    spatialize,
     get_timegrid,
     get_labels,
     save_output,
