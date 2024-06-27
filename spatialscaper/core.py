@@ -65,7 +65,7 @@ Event = namedtuple(
 
 # Paths for room SOFA files
 __SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
-__PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "tau","TAU-SNoise_DB")
+__PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "tau", "TAU-SNoise_DB")
 __ROOM_RIR_FILE__ = {
     "metu": "metu_{fmt}.sofa",
     "arni": "arni_{fmt}.sofa",

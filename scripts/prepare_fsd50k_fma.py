@@ -27,6 +27,7 @@ CORRUPT_FMA_TRACKS = ["098565", "098567", "098569", "099134", "108925", "133297"
 SKIP_GENRES = ["Electronic", "Experimental", "Instrumental"]
 DCASE_FSD50K_SELECTED = "https://zenodo.org/record/6406873/files/FSD50K_selected.txt"
 
+
 # Base class for dataset setup
 class BaseDataSetup:
     def __init__(self, dataset_home=None, metadata_path=None):
@@ -131,7 +132,7 @@ class FMADataSetup(BaseDataSetup):
                 shutil.copyfile(fma_track_path, dcase_path)
 
 
-# patch to by-pass soundata issue https://github.com/soundata/soundata/issues/183 
+# patch to by-pass soundata issue https://github.com/soundata/soundata/issues/183
 def download_multipart_zip(zip_remotes, save_dir, force_overwrite, cleanup):
     """Download and unzip a multipart zip file.
 
