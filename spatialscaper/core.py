@@ -80,7 +80,7 @@ __ROOM_RIR_FILE__ = {
     "tc352": "tc352_{fmt}.sofa",
     "motus": "motus_{fmt}.sofa",
     "rsoanu": "rsoanu_{fmt}.sofa",
-    "daga": "data_{fmt}.sofa",
+    "daga": "daga_{fmt}.sofa",
 }
 
 
