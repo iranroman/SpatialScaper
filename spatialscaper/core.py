@@ -67,7 +67,7 @@ Event = namedtuple(
 
 # Paths for room SOFA files
 __SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
-__PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", 'tau', "TAU-SNoise_DB")
+__PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "tau", "TAU-SNoise_DB")
 __ROOM_RIR_FILE__ = {
     "metu": "metu_sparg_em32.sofa",
     "arni": "arni_{fmt}.sofa",
@@ -680,9 +680,10 @@ class Scaper:
             if len(irs) == 1:
                 ir_xyzs = np.concatenate([ir_xyzs, ir_xyzs])
             ir_times = np.linspace(0, event.event_duration, len(ir_xyzs))
-            norm_irs = np.transpose(norm_irs, (1, 0, 2)) # (n_irs, n_ch, n_ir_samples) -> (n_ch, n_irs, n_ir_samples)
+            norm_irs = np.transpose(
+                norm_irs, (1, 0, 2)
+            )  # (n_irs, n_ch, n_ir_samples) -> (n_ch, n_irs, n_ir_samples)
             xS = spatialize(x, norm_irs, ir_times, sr=self.sr, snr=event.snr)
-
 
             # standardize the spatialized audio
             event_scale = db2multiplier(self.ref_db + event.snr, np.mean(np.abs(xS)))

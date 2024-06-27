@@ -235,7 +235,9 @@ def spatialize(x, norm_irs, ir_times, win_size=512, sr=24000, snr=1.0):
         # Output is a spatialized signal
     """
     # this is from synthesize_events_and_labels so that the two spatialize functions have the same inputs
-    norm_irs = np.transpose(norm_irs, (2, 0, 1)) # (n_ch, n_irs, n_ir_samples) -> (n_ir_samples, n_ch, n_irs)
+    norm_irs = np.transpose(
+        norm_irs, (2, 0, 1)
+    )  # (n_ch, n_irs, n_ir_samples) -> (n_ir_samples, n_ch, n_irs)
     if norm_irs.shape[-1] > 1:
         xS = _spatialize(x, norm_irs, ir_times, win_size, sr, s=snr)
     else:
@@ -331,6 +333,7 @@ def stft_ham(insig, winsize=256, fftsize=512, hopsize=128):
             nf += 1
 
     return spectrum
+
 
 # @profile
 def ctf_ltv_direct(sig, irs, ir_times, fs, win_size):

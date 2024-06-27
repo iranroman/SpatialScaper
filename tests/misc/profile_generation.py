@@ -1,6 +1,7 @@
 import numpy as np
 import spatialscaper as ss
 import os
+
 ss.utils.set_seed(111)
 
 # Constants
@@ -66,6 +67,7 @@ def generate_soundscape(index):
 
 
 from pyinstrument import Profiler
+
 profiler = Profiler()
 profiler.start()
 try:

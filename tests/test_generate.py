@@ -7,8 +7,8 @@ import librosa
 import pytest
 
 HERE = pathlib.Path(__file__).parent
-DATA_DIR = HERE/"data"
-OUTPUT_DIR = HERE/"output"
+DATA_DIR = HERE / "data"
+OUTPUT_DIR = HERE / "output"
 
 
 def compare_audio(gen_file, ref_file):
@@ -23,8 +23,8 @@ def compare_audio(gen_file, ref_file):
 
 
 def compare_labels(gen_file, ref_file):
-    gen_content = open(gen_file, 'r').read()
-    ref_content = open(ref_file, 'r').read()
+    gen_content = open(gen_file, "r").read()
+    ref_content = open(ref_file, "r").read()
     assert gen_content == ref_content, "label files do not match"
 
 
@@ -33,7 +33,7 @@ def compare_labels(gen_file, ref_file):
 @pytest.mark.parametrize("seed", [1, 2])
 def test_generation(room, fmt, seed):
     ss.utils.set_seed(seed)
-    
+
     ssc = ss.Scaper(
         duration=30,
         foreground_dir="datasets/sound_event_datasets/FSD50K_FMA",
@@ -55,6 +55,6 @@ def test_generation(room, fmt, seed):
     ssc.generate(audiofile, labelfile)
 
     refaudiofile = DATA_DIR / "generation" / fmt / track_name
-    reflabelfile = DATA_DIR / "generation" / f'{fmt}_labels' / track_name
-    compare_audio(f'{audiofile}.wav', f'{refaudiofile}.wav')
-    compare_labels(f'{labelfile}.csv', f'{reflabelfile}.csv')
+    reflabelfile = DATA_DIR / "generation" / f"{fmt}_labels" / track_name
+    compare_audio(f"{audiofile}.wav", f"{refaudiofile}.wav")
+    compare_labels(f"{labelfile}.csv", f"{reflabelfile}.csv")
