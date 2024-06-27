@@ -299,7 +299,6 @@ def download_tau(dest_path, urls, cleanup=False):
                 os.remove(file)
 
 
-
 def prepare_tau(path_raw, path_sofa, formats=["foa", "mic"]):
     # generate Sofa files
     tau_db_dir = f"{path_raw/'TAU-SRIR_DB'}"
