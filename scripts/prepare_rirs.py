@@ -6,6 +6,7 @@ import shutil
 import requests
 import zipfile
 import librosa
+import glob
 import numpy as np
 import soundfile as sf
 from pathlib import Path
@@ -281,14 +282,22 @@ def parse_coordinates(filename):
     return x, y
 
 
-def download_tau(dest_path):
+def download_tau(dest_path, urls, cleanup=False):
     # Download combine and extract zip files
-    for filename, url in TAU_REMOTES['remotes'].items():
+    dest_path.mkdir(parents=True, exist_ok=True)
+    for filename, url in urls.items():
         download_file(url, dest_path / filename)
     combine_multizip(f"{dest_path/'TAU-SRIR_DB.zip'}", f"{dest_path/'single.zip'}")
     extract_zip(dest_path / "single.zip", dest_path)
     combine_multizip(f"{dest_path/'TAU-SNoise_DB.zip'}", f"{dest_path/'single.zip'}")
     extract_zip(dest_path / "single.zip", dest_path)
+    if cleanup:
+        for root, dirs, files in os.walk(dest_path):
+            # Find all zip files in current directory
+            for file in glob.glob(os.path.join(root, '*.z*')):
+                # Remove the zip file
+                os.remove(file)
+
 
 
 def prepare_tau(path_raw, path_sofa, formats=["foa", "mic"]):
@@ -504,7 +513,7 @@ if __name__ == "__main__":
 
     # TAU
     tau_path = source_path / TAU_REMOTES['database_name']
-    download_tau(tau_path)
+    download_tau(tau_path, TAU_REMOTES['remotes'], args.cleanup)
     prepare_tau(tau_path, sofa_path)
 
     # ARNI
