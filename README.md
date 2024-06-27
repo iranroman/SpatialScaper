@@ -25,9 +25,9 @@ To run the SpatialScaper library, manually setup your environment as follows.
 #### Manual Environment Setup
 The minimum environment requirements are `Python >= 3.8`. You could find the versions of other dependencies we use in `setup.py`.
 ```shell
-git clone https://urldefense.proofpoint.com/v2/url?u=https-3A__github.com_iranroman_SpatialScaper.git&d=DwIFaQ&c=slrrB7dE8n7gBJbeO0g-IQ&r=a52iHv92uCFjmQ0X7ISWLQ&m=p3Pa1pMHOCmsZErMwmLsQxNSygycSD5mM29uQj5Rd3HUX4CmwEpN10CAIXRXe-ta&s=VC2QYLJ0LbK--69FU7VNy9-fHqggfCJ_pcUhO_Kjnm0&e=
+git clone https://github.com/iranroman/SpatialScaper.git
 cd SpatialScaper
-pip install --editable ./
+pip install -e .
 ```
 <details>
 <summary>Click for more details</summary>
@@ -194,13 +194,12 @@ Also cite the RIR and sound event databases that SpatialScaper uses.
   author       = {Politis, Archontis and
                   Adavanne, Sharath and
                   Virtanen, Tuomas},
-  title        = {{TAU Spatial Room Impulse Response Database (TAU-
-                   SRIR DB)}},
+  title        = {{TAU Spatial Room Impulse Response Database (TAU-SRIR DB)}},
   month        = apr,
   year         = 2022,
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.6408611},
-  url          = {https://urldefense.proofpoint.com/v2/url?u=https-3A__doi.org_10.5281_zenodo.6408611&d=DwIFaQ&c=slrrB7dE8n7gBJbeO0g-IQ&r=a52iHv92uCFjmQ0X7ISWLQ&m=p3Pa1pMHOCmsZErMwmLsQxNSygycSD5mM29uQj5Rd3HUX4CmwEpN10CAIXRXe-ta&s=2du9hlrsn-kXG8J-KwbwXseWPY4vmKvj4wihasqlCL4&e= }
+  url          = {https://doi.org/10.5281/zenodo.6408611},
 }
 
 @dataset{orhun_olgun_2019_2635758,
@@ -213,7 +212,7 @@ Also cite the RIR and sound event databases that SpatialScaper uses.
   publisher    = {Zenodo},
   version      = {0.1.0},
   doi          = {10.5281/zenodo.2635758},
-  url          = {https://urldefense.proofpoint.com/v2/url?u=https-3A__doi.org_10.5281_zenodo.2635758&d=DwIFaQ&c=slrrB7dE8n7gBJbeO0g-IQ&r=a52iHv92uCFjmQ0X7ISWLQ&m=p3Pa1pMHOCmsZErMwmLsQxNSygycSD5mM29uQj5Rd3HUX4CmwEpN10CAIXRXe-ta&s=994W0KWjcGvIuvfZ7msfkEBkhUTZOuENqd0AH1JZ9_I&e= }
+  url          = {https://doi.org/10.5281/zenodo.2635758},
 }
 
 @article{mckenzie2021dataset,
@@ -247,5 +246,23 @@ Also cite the RIR and sound event databases that SpatialScaper uses.
   pages={1--8},
   year={2021},
   publisher={IEEE}
+}
+
+@article{chesworth2024room,
+  title={Room Impulse Response Dataset of a Recording Studio with Variable Wall Paneling Measured Using a 32-Channel Spherical Microphone Array and a B-Format Microphone Array},
+  author={Chesworth, Grace and Bastine, Amy and Abhayapala, Thushara},
+  journal={Applied Sciences},
+  volume={14},
+  number={5},
+  pages={2095},
+  year={2024},
+  publisher={MDPI}
+}
+
+@article{schneiderwind2019data,
+  title={Data set: Eigenmike-DRIRs, KEMAR 45BA-BRIRs, RIRs and 360◦ pictures captured at five positions of a small conference room},
+  author={Schneiderwind, Christian and Neidhardt, Annika and Klein, F and Fichna, S},
+  journal={45th Annual Conference on Acoustics (DAGA), Rostock, Germany},
+  year={2019}
 }
 ```
