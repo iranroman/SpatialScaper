@@ -40,7 +40,13 @@ setup(
         "pandas",
         "soundata",
         "tqdm",
-        "coverage",
-        "pytest",
     ],
+    # pip install 'spatialscaper[test]'
+    extras_require={
+        "test": [
+            "coverage",
+            "pytest",
+            "black",
+        ]
+    },
 )
