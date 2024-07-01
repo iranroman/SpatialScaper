@@ -65,7 +65,13 @@ python scripts/prepare_rirs.py
 
 **Attention:** the first time setup takes some time ⏳, we recommend running under a `screen` or `tmux` session.
 
-Note: stay tuned as we will soon release our A2B ambisonics encoder. In the meantime, download the METU FOA sofa file from this [google drive link](https://drive.google.com/file/d/1zamCd6OR6Tr5M40RdDhswYbT1wbGo2ZO/view?usp=sharing). Place alongside all other sofa files that `prepare_rirs.py` generates under `SpatialScaper/datasets/rir_datasets/spatialscaper_RIRs`. 
+Note: stay tuned as we will soon release our A2B ambisonics encoder. In the meantime, refer to the table below to download the respective FOA sofa file for the METU, RSoANU, and DAGA datasets. Place alongside all other sofa files that `prepare_rirs.py` generates under `SpatialScaper/datasets/rir_datasets/spatialscaper_RIRs`. 
+
+| Dataset     | URL                                                                                 |
+|-------------|-------------------------------------------------------------------------------------|
+| METU   | [Link](https://drive.google.com/file/d/1zamCd6OR6Tr5M40RdDhswYbT1wbGo2ZO/view?usp=sharing) |
+| RSoANU |  [Link](https://drive.google.com/file/d/1_EzzntIc_ypJ8MoLKreWGEhouWUKOCDY/view?usp=sharing)|
+| DAGA | |  [Link](https://drive.google.com/file/d/1Wa4XD9I_Xa7F2v_DitQtU4Zcru93Gnlf/view?usp=sharing)|
 
 <details>
 <summary>Full descriptions of available rooms </summary>
