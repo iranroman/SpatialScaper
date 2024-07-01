@@ -2,7 +2,6 @@ import os
 import math
 import random
 import glob
-import tqdm
 from collections import namedtuple
 
 import librosa
@@ -21,13 +20,13 @@ from .utils import (
     traj_2_ir_idx,
     find_indices_of_change,
     IR_normalizer,
+    spatialize,
     get_timegrid,
     get_labels,
     save_output,
     sort_matrix_by_columns,
 )
 from .sofa_utils import load_rir_pos, load_pos
-from .spatialize import spatialize
 
 
 # Sound event classes for DCASE Challenge
@@ -68,7 +67,7 @@ Event = namedtuple(
 __SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
 __PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "tau", "TAU-SNoise_DB")
 __ROOM_RIR_FILE__ = {
-    "metu": "metu_sparg_{fmt}.sofa",
+    "metu": "metu_{fmt}.sofa",
     "arni": "arni_{fmt}.sofa",
     "bomb_shelter": "bomb_shelter_{fmt}.sofa",
     "gym": "gym_{fmt}.sofa",
@@ -79,6 +78,9 @@ __ROOM_RIR_FILE__ = {
     "se203": "se203_{fmt}.sofa",
     "tb103": "tb103_{fmt}.sofa",
     "tc352": "tc352_{fmt}.sofa",
+    "motus": "motus_{fmt}.sofa",
+    "rsoanu": "rsoanu_{fmt}.sofa",
+    "daga": "daga_{fmt}.sofa",
 }
 
 
@@ -631,8 +633,7 @@ class Scaper:
         """
 
         all_labels = []
-        events = tqdm.tqdm(self.fg_events, desc="🧪 Spatializing events 🔊...")
-        for ievent, event in enumerate(events):
+        for ievent, event in enumerate(self.fg_events):
             # fetch trajectory from irs
             ir_idx = traj_2_ir_idx(all_ir_xyzs, event.event_position)
             irs = all_irs[ir_idx]
@@ -651,14 +652,21 @@ class Scaper:
             norm_irs = IR_normalizer(irs)
 
             # SPATIALIZE
-            # need at least a start and end point for IR interpolation
-            if len(irs) == 1:
+            norm_irs = np.transpose(norm_irs, (2, 1, 0))
+            if len(irs) > 1:
+                ir_times = np.linspace(0, event.event_duration, len(irs))
+                xS = spatialize(x, norm_irs, ir_times, sr=self.sr, s=event.snr)
+            else:
+                ir_times = np.linspace(0, event.event_duration, len(irs) + 1)
                 ir_xyzs = np.concatenate([ir_xyzs, ir_xyzs])
-            ir_times = np.linspace(0, event.event_duration, len(ir_xyzs))
-            norm_irs = np.transpose(
-                norm_irs, (1, 0, 2)
-            )  # (n_irs, n_ch, n_ir_samples) -> (n_ch, n_irs, n_ir_samples)
-            xS = spatialize(x, norm_irs, ir_times, sr=self.sr, snr=event.snr)
+                xS = []
+                for i in range(norm_irs.shape[1]):
+                    _x = scipy.signal.convolve(
+                        x, np.squeeze(norm_irs[:, i]), mode="full", method="fft"
+                    )
+                    xS.append(_x)
+                xS = np.array(xS).T
+                xS = xS[: len(x)]
 
             # standardize the spatialized audio
             event_scale = db2multiplier(self.ref_db + event.snr, np.mean(np.abs(xS)))
