@@ -243,4 +243,13 @@ Also cite the RIR and sound event databases that SpatialScaper uses.
   journal={arXiv preprint arXiv:1612.01840},
   year={2016}
 }
+
+@article{gotz2021dataset,
+  title={A dataset of higher-order Ambisonic room impulse responses and 3D models measured in a room with varying furniture},
+  author={G{\"o}tz, Georg and Schlecht, Sebastian J and Pulkki, Ville},
+  journal={2021 Immersive and 3D Audio: from Architecture to Automotive (I3DA)},
+  pages={1--8},
+  year={2021},
+  publisher={IEEE}
+}
 ```
