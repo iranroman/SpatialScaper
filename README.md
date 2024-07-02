@@ -91,6 +91,9 @@ The available rooms for soundscape generation are as follows:
 | se203         | Large classroom with hard floor and rows of desks. Ventilation noise.                          | Linear          | [Link](https://zenodo.org/records/6408611) |
 | tb103         | Lecture hall with inclined floor and rows of desks. Ventilation noise.                          | Linear          | [Link](https://zenodo.org/records/6408611) |
 | tc352         | Meeting room with hard floor and partially glass walls. Ventilation noise.                     | Circular        | [Link](https://zenodo.org/records/6408611) |
+| motus         | Seminar room with configurable furniture, carpet tiles, and absorption wedges.                   | Sparse        | [Link](https://zenodo.org/records/4923187) |
+| rsoanu        | ANU School of Music Recording Studio with variable wall panels: wood or felt.                    | Rectangular      | [Link](https://zenodo.org/records/10720345) |
+| daga          | Small conference room with large wood table and carpet flooring.                                |  Sparse    | [Link](https://zenodo.org/records/2593714) |
 
 Note that SRIR directions and distances differ with the room. Possible azimuths span the whole range of $\phi\in[-180,180)$, while the elevations span approximately a range between $\theta\in[-50,50]$ degrees.
 
