@@ -20,7 +20,7 @@ from .utils import (
     db2multiplier,
     traj_2_ir_idx,
     find_indices_of_change,
-    IR_normalizer,
+    IR_normalizer,    
     get_timegrid,
     get_labels,
     save_output,
@@ -68,7 +68,7 @@ Event = namedtuple(
 __SPATIAL_SCAPER_RIRS_DIR__ = "spatialscaper_RIRs"
 __PATH_TO_AMBIENT_NOISE_FILES__ = os.path.join("source_data", "tau", "TAU-SNoise_DB")
 __ROOM_RIR_FILE__ = {
-    "metu": "metu_sparg_{fmt}.sofa",
+    "metu": "metu_{fmt}.sofa",
     "arni": "arni_{fmt}.sofa",
     "bomb_shelter": "bomb_shelter_{fmt}.sofa",
     "gym": "gym_{fmt}.sofa",
@@ -79,6 +79,9 @@ __ROOM_RIR_FILE__ = {
     "se203": "se203_{fmt}.sofa",
     "tb103": "tb103_{fmt}.sofa",
     "tc352": "tc352_{fmt}.sofa",
+    "motus": "motus_{fmt}.sofa",
+    "rsoanu": "rsoanu_{fmt}.sofa",
+    "daga": "daga_{fmt}.sofa",
 }
 
 
@@ -652,7 +655,7 @@ class Scaper:
 
             # SPATIALIZE
             # need at least a start and end point for IR interpolation
-            if len(irs) == 1:
+            if len(irs) == 1:            
                 ir_xyzs = np.concatenate([ir_xyzs, ir_xyzs])
             ir_times = np.linspace(0, event.event_duration, len(ir_xyzs))
             norm_irs = np.transpose(

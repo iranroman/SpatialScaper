@@ -1,12 +1,12 @@
 <!-- omit in toc -->
 # SpatialScaper: a library to simulate and augment soundscapes for sound event localization and detection in realistic rooms.
 [![Platform](https://img.shields.io/badge/Platform-linux-lightgrey?logo=linux)](https://www.linux.org/)
-[![Python](https://img.shields.io/badge/Python-3.8%2B-orange?logo=python)](https://www.python.org/)	
+[![Python](https://img.shields.io/badge/Python-3.8%2B-orange?logo=python)](https://www.python.org/)
 [![arXiv](https://img.shields.io/badge/Arxiv-2401.03497-blueviolet?logo=arxiv)](https://arxiv.org/abs/2401.12238)
 [![CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
 
 > [!WARNING]
-> SpatialScaper is still undergoing active development. We have done our due diligence to test that  `example_generation.py` works as expected. However, please open an issue and describe any errors you encounter. Also, make sure to pull often, as we are actively adding more features. Note: You'll need 100GB of storage space to comfortably setup and run the DCASE Task 3 data generation pipeline. 
+> SpatialScaper is still undergoing active development. We have done our due diligence to test that  `example_generation.py` works as expected. However, please open an issue and describe any errors you encounter. Also, make sure to pull often, as we are actively adding more features. Note: You'll need 100GB of storage space to comfortably setup and run the DCASE Task 3 data generation pipeline.
 
 **Guides**
 - [Requirements and Installation](#requirements-and-installation)
@@ -23,11 +23,11 @@ To run the SpatialScaper library, manually setup your environment as follows.
 
 <!-- omit in toc -->
 #### Manual Environment Setup
-The minimum environment requirements are `Python >= 3.8`. You could find the versions of other dependencies we use in `setup.py`. 
-```shell 
+The minimum environment requirements are `Python >= 3.8`. You could find the versions of other dependencies we use in `setup.py`.
+```shell
 git clone https://github.com/iranroman/SpatialScaper.git
 cd SpatialScaper
-pip install --editable ./
+pip install -e .
 ```
 <details>
 <summary>Click for more details</summary>
@@ -50,22 +50,30 @@ python3.8 -m venv "ssenv"
 
 First we need to prepare sound event assets for soundscape synthesis. SpatialScaper works with any sound files that you wish to spatialize. You can get started using sound events from the [FSD50K](https://zenodo.org/record/4060432#.ZE7ely2B0Ts) and [FMA](https://github.com/mdeff/fma) (music) dataset by using.
 ```shell
-python scripts/prepare_fsd50k_fma.py --download_FSD --download_FMA --data_dir datasets
+python scripts/prepare_fsd50k_fma.py --download_FSD --download_FMA --cleanup
 ```
+The `--cleanup` argument deletes the original FSD50K and FMA zip files (to save space), keeping only the files needed to get started with SpatialScaper.
 
-This creates a `datasets/sound_event_datasets/FSD50K_FMA` directory with a structure of sound event categories and files. 
+This creates a `datasets/sound_event_datasets/FSD50K_FMA` directory with a structure of sound event categories and files.
 
 **Attention:** the first time setup takes some time ⏳, we recommend running under a `screen` or `tmux` session.
 
 ## Preparing RIR Datasets
 
 ```
-python scripts/prepare_rirs.py
+python scripts/prepare_rirs.py --cleanup
 ```
+The `--cleanup` argument deletes the original RIR database zip files (to save space).
 
 **Attention:** the first time setup takes some time ⏳, we recommend running under a `screen` or `tmux` session.
 
-Note: stay tuned as we will soon release our A2B ambisonics encoder. In the meantime, download the METU FOA sofa file from this [google drive link](https://drive.google.com/file/d/1zamCd6OR6Tr5M40RdDhswYbT1wbGo2ZO/view?usp=sharing). Place alongside all other sofa files that `prepare_rirs.py` generates under `SpatialScaper/datasets/rir_datasets/spatialscaper_RIRs`. 
+Note: stay tuned as we will soon release our A2B ambisonics encoder. In the meantime, refer to the table below to download the respective FOA sofa file for the METU, RSoANU, and DAGA datasets. Place alongside all other sofa files that `prepare_rirs.py` generates under `SpatialScaper/datasets/rir_datasets/spatialscaper_RIRs`. 
+
+| Dataset     | URL                                                                                 |
+|-------------|-------------------------------------------------------------------------------------|
+| METU   | [Link](https://drive.google.com/file/d/1zamCd6OR6Tr5M40RdDhswYbT1wbGo2ZO/view?usp=sharing) |
+| RSoANU | [Link](https://drive.google.com/file/d/1_EzzntIc_ypJ8MoLKreWGEhouWUKOCDY/view?usp=sharing)|
+| DAGA   | [Link](https://drive.google.com/file/d/1Wa4XD9I_Xa7F2v_DitQtU4Zcru93Gnlf/view?usp=sharing)|
 
 <details>
 <summary>Full descriptions of available rooms </summary>
@@ -85,6 +93,9 @@ The available rooms for soundscape generation are as follows:
 | se203         | Large classroom with hard floor and rows of desks. Ventilation noise.                          | Linear          | [Link](https://zenodo.org/records/6408611) |
 | tb103         | Lecture hall with inclined floor and rows of desks. Ventilation noise.                          | Linear          | [Link](https://zenodo.org/records/6408611) |
 | tc352         | Meeting room with hard floor and partially glass walls. Ventilation noise.                     | Circular        | [Link](https://zenodo.org/records/6408611) |
+| motus         | Seminar room with configurable furniture, carpet tiles, and absorption wedges.                 | Sparse                         | [Link](https://zenodo.org/records/4923187) |
+| rsoanu        | ANU School of Music Recording Studio with variable wall panels: wood or felt.                  | Rectangular                    | [Link](https://zenodo.org/records/10720345) |
+| daga          | Small conference room with large wood table and carpet flooring.                          | Sparse                         | [Link](https://zenodo.org/records/2593714) |
 
 Note that SRIR directions and distances differ with the room. Possible azimuths span the whole range of $\phi\in[-180,180)$, while the elevations span approximately a range between $\theta\in[-50,50]$ degrees.
 
@@ -92,7 +103,7 @@ Note that SRIR directions and distances differ with the room. Possible azimuths 
 
 ## Quick Examples for New Users
 
-Below we present the [example_generation.py](example_generation.py). The example generates 20 soundscapes, 1 minute long each, using audio clips from FSD50K, spatialized in the `gym` room. These soundscapes are consistent with the DCASE Task 3 format. 
+Below we present the [example_generation.py](example_generation.py). The example generates 20 soundscapes, 1 minute long each, using audio clips from FSD50K, spatialized in the `gym` room. These soundscapes are consistent with the DCASE Task 3 format.
 
 Execute as:
 
@@ -189,26 +200,25 @@ Also cite the RIR and sound event databases that SpatialScaper uses.
   author       = {Politis, Archontis and
                   Adavanne, Sharath and
                   Virtanen, Tuomas},
-  title        = {{TAU Spatial Room Impulse Response Database (TAU- 
-                   SRIR DB)}},
+  title        = {{TAU Spatial Room Impulse Response Database (TAU-SRIR DB)}},
   month        = apr,
   year         = 2022,
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.6408611},
-  url          = {https://doi.org/10.5281/zenodo.6408611}
+  url          = {https://doi.org/10.5281/zenodo.6408611},
 }
 
 @dataset{orhun_olgun_2019_2635758,
   author       = {Orhun Olgun and
                   Huseyin Hacihabiboglu},
-  title        = {{METU SPARG Eigenmike em32 Acoustic Impulse 
+  title        = {{METU SPARG Eigenmike em32 Acoustic Impulse
                    Response Dataset v0.1.0}},
   month        = apr,
   year         = 2019,
   publisher    = {Zenodo},
   version      = {0.1.0},
   doi          = {10.5281/zenodo.2635758},
-  url          = {https://doi.org/10.5281/zenodo.2635758}
+  url          = {https://doi.org/10.5281/zenodo.2635758},
 }
 
 @article{mckenzie2021dataset,
@@ -233,5 +243,32 @@ Also cite the RIR and sound event databases that SpatialScaper uses.
   author={Defferrard, Micha{\"e}l and Benzi, Kirell and Vandergheynst, Pierre and Bresson, Xavier},
   journal={arXiv preprint arXiv:1612.01840},
   year={2016}
+}
+
+@article{gotz2021dataset,
+  title={A dataset of higher-order Ambisonic room impulse responses and 3D models measured in a room with varying furniture},
+  author={G{\"o}tz, Georg and Schlecht, Sebastian J and Pulkki, Ville},
+  journal={2021 Immersive and 3D Audio: from Architecture to Automotive (I3DA)},
+  pages={1--8},
+  year={2021},
+  publisher={IEEE}
+}
+
+@article{chesworth2024room,
+  title={Room Impulse Response Dataset of a Recording Studio with Variable Wall Paneling Measured Using a 32-Channel Spherical Microphone Array and a B-Format Microphone Array},
+  author={Chesworth, Grace and Bastine, Amy and Abhayapala, Thushara},
+  journal={Applied Sciences},
+  volume={14},
+  number={5},
+  pages={2095},
+  year={2024},
+  publisher={MDPI}
+}
+
+@article{schneiderwind2019data,
+  title={Data set: Eigenmike-DRIRs, KEMAR 45BA-BRIRs, RIRs and 360◦ pictures captured at five positions of a small conference room},
+  author={Schneiderwind, Christian and Neidhardt, Annika and Klein, F and Fichna, S},
+  journal={45th Annual Conference on Acoustics (DAGA), Rostock, Germany},
+  year={2019}
 }
 ```
