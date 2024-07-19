@@ -147,6 +147,7 @@ def get_labels(ir_times, time_grid, IR_XYZs, class_id=None, source_id=0, polar=T
     if polar:
         coords = cartesian_to_polar(IR_XYZ_interp)[1:]
         coords[:, :2] = np.round(coords[:, :2], 3)
+        coords[:, -1] = np.round(100 * coords[:, -1])
     else:
         coords = IR_XYZ_interp[1:]
     labels = np.hstack(
