@@ -189,9 +189,9 @@ def prepare_motus(dataset_path, dest_path_sofa, audio_fmts=["foa", "mic"]):
     for fmt in audio_fmts:
         RIR_file_names = os.listdir(dataset_path)
         if fmt == "foa":
-            RIR_file_names = [f for f in RIR_file_names if "sh" in f]
+            RIR_file_names = [f for f in RIR_file_names if "sh" in f and f.endswith(".wav")]
         elif fmt == "mic":
-            RIR_file_names = [f for f in RIR_file_names if "raw" in f]
+            RIR_file_names = [f for f in RIR_file_names if "raw" in f and f.endswith(".wav")]
         IRs, xyzs = [], []
         for filename in RIR_file_names:
             source_pos_index = filename.split("_")[1]
@@ -526,7 +526,7 @@ if __name__ == "__main__":
     download_and_extract_remotes(MOTUS_REMOTES["remotes"], motus_path, args.cleanup)
     prepare_motus(motus_path, sofa_path)
 
-    ## RSOANU
+    # RSOANU
     rsoanu_path = source_path / RSOANU_REMOTES["database_name"]
     download_and_extract_remotes(RSOANU_REMOTES["remotes"], rsoanu_path, args.cleanup)
     prepare_rsoanu(rsoanu_path, sofa_path)
